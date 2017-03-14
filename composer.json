@@ -1,0 +1,23 @@
+{
+    "name": "rafaelnajera/datatable",
+    "type": "library",
+    "description": "A simple data table interface",
+    "keywords": ["data"],
+    "homepage": "http://rafaelnajera.com/datatable",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rafael Nájera",
+            "email": "rafael@najera.ca",
+            "homepage": "http://rafaelnajera.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "DataTable\\": "DataTable"
+        }
+    }
+}
