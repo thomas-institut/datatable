@@ -1,2 +1,4 @@
 nbproject/
 vendor/
+/test/config.php
+/test/coverage/
