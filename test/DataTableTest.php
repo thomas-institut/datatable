@@ -37,16 +37,9 @@ use PHPUnit\Framework\TestCase;
 class DataTableTest extends TestCase {
     
     var $numRows = 100;
-    static $profiler;
-    public static function setUpBeforeClass(){
-     
-        self::$profiler = new SimpleProfiler;
-        self::$profiler->timingPoint("Start");
-    }
     
     function testInMemoryDataTableCreation() {
         $dt = new InMemoryDataTable();
-        self::$profiler->timingPoint("Data table setup");
         $this->assertSame(false, $dt->rowExistsById(1));
         
         $ids = array();
@@ -58,7 +51,7 @@ class DataTableTest extends TestCase {
             $this->assertSame(true, $dt->rowExistsById($newId), $testMsg);
             array_push($ids, $newId);
         }
-        self::$profiler->timingPoint("Rows created", $this->numRows);
+
         // Some random deletions and additions
          $nIterations = $this->numRows/10;
         for ($i = 0; $i < $nIterations; $i++){
@@ -72,7 +65,6 @@ class DataTableTest extends TestCase {
             $this->assertSame($theId, $newId, $testMsg);
             
         }
-        self::$profiler->timingPoint("Random deletions and additions", $nIterations*2);
         return $dt;
     }
     
@@ -95,8 +87,6 @@ class DataTableTest extends TestCase {
             $this->assertNotSame(false, $theId3, $testMsg);
             $this->assertEquals($theId, $theId3, $testMsg);
         }
-        self::$profiler->timingPoint("Random searches", $nSearches*3);
-        
     }
     
     /**
@@ -118,8 +108,16 @@ class DataTableTest extends TestCase {
             $this->assertSame($someInt, $theRow['somekey']);
         }
     }
-     public static function tearDownAfterClass(){
-        //print self::$profiler->getReport();
+    
+    
+    public function  testNonExistentRows()
+    {
+        $dt = new InMemoryDataTable();
+        $this->assertFalse($dt->rowExistsById(1));
+        $this->assertFalse($dt->getRow(1));
+        $this->assertFalse($dt->findRow(['key' => 'somevalue']));
+        $this->assertFalse($dt->getIdForKeyValue('key', 'somevalue'));
+        $this->assertEquals([], $dt->getAllRows());
         
     }
 }

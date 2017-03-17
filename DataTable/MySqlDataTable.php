@@ -51,9 +51,11 @@ class MySqlDataTable extends DataTable
         $this->tableName = $tn;
         // Pre-prepare common statements
         $this->statements['rowExistsById'] = 
-                $this->db->prepare('SELECT id FROM ' . $this->tableName . ' WHERE id= :id');
+                $this->db->prepare('SELECT id FROM ' . $this->tableName . 
+                        ' WHERE id= :id');
         $this->statements['deleteRow'] = 
-                $this->db->prepare('DELETE FROM `' . $this->tableName . '` WHERE `id`= :id');
+                $this->db->prepare('DELETE FROM `' . $this->tableName . 
+                        '` WHERE `id`= :id');
 
     }
     
@@ -73,14 +75,16 @@ class MySqlDataTable extends DataTable
             array_push($values, $this->quote($theRow[$key]));
         }
         $sql .= '(' . implode(',', $values) . ');';
-        if ($this->db->query($sql) === FALSE){
-            error_log("Can't create, query:  $sql; error info: " . $this->db->errorInfo()[2]);
+        if ($this->db->query($sql) === FALSE) {
+//            error_log("Can't create, query:  $sql; error info: " . 
+//                    $this->db->errorInfo()[2]);
             return false;
         }
         return $theRow['id'];
     }
     
-    public function realUpdateRow($theRow) {
+    public function realUpdateRow($theRow)
+    {
         $keys = array_keys($theRow);
         $sets = array();
         foreach($keys as $key){
@@ -93,41 +97,38 @@ class MySqlDataTable extends DataTable
         $sql = 'UPDATE ' . $this->tableName . ' SET ' . 
                 implode(',', $sets) . ' WHERE id=' . $theRow['id'];
         //error_log("Executing query: $sql");
-        if ($this->db->query($sql) === FALSE){
+        if ($this->db->query($sql) === false) {
             return false;
         }
         return $theRow['id'];
     }
     
-    public function quote($v){
-        if (is_string($v)){
+    public function quote($v)
+    {
+        if (is_string($v)) {
             return $this->db->quote($v);
         }
-        if (is_null($v)){
+        if (is_null($v)) {
             return 'NULL';
         }
         return (string) $v;
     }
     
-    public function getAllRows() {
-        $r = $this
-                ->db
-                ->query('SELECT * FROM ' . $this->tableName);
-        $rows = array();
-        
-        while ($row = $r->fetch(PDO::FETCH_ASSOC)){
-            array_push($rows, $row);
+    public function getAllRows() 
+    {
+        $r = $this->db->query('SELECT * FROM ' . $this->tableName);
+        if ($r === false) {
+            return false;
         }
-        
-        return $rows;
+        return $r->fetchAll(PDO::FETCH_ASSOC);
     }
     
     public function getRow($rowId) {
-        $r = $this
-                ->db
-                ->query('SELECT * FROM ' . $this->tableName . ' WHERE `id`=' . $rowId . ' LIMIT 1')
+        $r = $this->db
+                ->query('SELECT * FROM ' . $this->tableName . 
+                        ' WHERE `id`=' . $rowId . ' LIMIT 1')
                 ->fetch(PDO::FETCH_ASSOC);
-        if ($r === false){
+        if ($r === false) {
             return false;
         }
         $r['id'] = (int) $r['id'];
@@ -138,8 +139,8 @@ class MySqlDataTable extends DataTable
     public function getMaxId() {
         $query = 'SELECT MAX(id) FROM ' . $this->tableName;
         $r = $this->db->query($query);
-        if ($r === FALSE){
-            print("Query returned false: $query\n");
+        if ($r === false) {
+            //print("Query returned false: $query\n");
             return 0;
         }
         return $r->fetchColumn();
@@ -157,12 +158,13 @@ class MySqlDataTable extends DataTable
      *                   returns an array of ints. Returns false if not
      *                   rows are found
      */
-    public function findRows($theRow, $maxResults = false) {
+    public function findRows($theRow, $maxResults = false)
+    {
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key){
             $c = $key . '=';
-            if (is_string($theRow[$key])){
+            if (is_string($theRow[$key])) {
                 $c .= $this->db->quote($theRow[$key]);
             } 
             else {
@@ -170,12 +172,13 @@ class MySqlDataTable extends DataTable
             }
             array_push($conditions, $c);
         }
-        $sql = 'SELECT id FROM ' . $this->tableName . ' WHERE ' . implode(' AND ', $conditions);
+        $sql = 'SELECT id FROM ' . $this->tableName . ' WHERE ' . 
+                implode(' AND ', $conditions);
         if ($maxResults){
             $sql .= ' LIMIT ' . $maxResults;
         }
         $r = $this->db->query($sql);
-        if ( $r === FALSE){
+        if ( $r === false) {
             return false;
         }
         if ($maxResults == 1){
@@ -186,7 +189,7 @@ class MySqlDataTable extends DataTable
             return  $theId;
         }
         $ids = array();
-        while ($id = (int) $r->fetchColumn()){
+        while ($id = (int) $r->fetchColumn()) {
             array_push($ids, $id);
         }
         if (count($ids)== 0){
@@ -195,12 +198,15 @@ class MySqlDataTable extends DataTable
         return $ids;
     }
     
-    public function findRow($theRow){
+    public function findRow($theRow)
+    {
         return $this->findRows($theRow, 1);
     }
     
-    public function realDeleteRow($rowId) {
-        return $this->statements['deleteRow']->execute([':id' => $rowId]) !== false;
+    public function realDeleteRow($rowId)
+    {
+        return $this->statements['deleteRow']
+                ->execute([':id' => $rowId]) !== false;
     }
 }
 

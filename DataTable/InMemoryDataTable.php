@@ -31,10 +31,10 @@ use \PDO as PDO;
 class InMemoryDataTable extends DataTable 
 {
     
-    private $theData = array();
+    private $theData = [];
     
     public function getAllRows() {
-        return $theData;
+        return $this->theData;
     }
     
     public function rowExistsById($rowId){
@@ -72,7 +72,10 @@ class InMemoryDataTable extends DataTable
     }
     
     public function getRow($rowId) {
-        return $this->theData[$rowId];
+        if ($this->rowExistsById($rowId)) {
+            return $this->theData[$rowId];
+        }
+        return false;
     }
     
     public function getIdForKeyValue($key, $value) {

@@ -27,6 +27,7 @@
 namespace DataTable;
 
 require "../vendor/autoload.php";
+require 'config.php';
 
 use PHPUnit\Framework\TestCase;
 use \PDO;
@@ -36,20 +37,39 @@ use \PDO;
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
 class SQLDataTableTest extends TestCase {
-    protected static $db;
-    var $numRows = 100;
-    static $profiler;
     
-    public static function setUpBeforeClass(){
-        self::$db = new PDO('mysql:dbname=test;host=127.0.0.1', 'test', 'j0j0j0');
-        self::$db->query('TRUNCATE TABLE testtable');
-        self::$profiler = new SimpleProfiler;
-        self::$profiler->timingPoint("Start");
+    var $numRows = 100;
+    
+    public function getPdo() 
+    {
+        global $config;
+        
+        return new PDO('mysql:dbname=' . $config['db'] . 
+                ';host=' . $config['host'], $config['user'], 
+                $config['pwd']);
+        
     }
     
-    public function test1(){
-        $dt = new MySqlDataTable(self::$db, 'testtable');
-        self::$profiler->timingPoint("Data table setup");
+    public function resetTestDb($pdo)
+    {
+        $tableSetupSQL =<<<EOD
+            DROP TABLE IF EXISTS `testtable`;
+            CREATE TABLE IF NOT EXISTS `testtable` (
+              `id` int(11) UNSIGNED NOT NULL,
+              `somekey` int(11) DEFAULT NULL,
+              `someotherkey` varchar(100) DEFAULT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+EOD;
+        $pdo->query($tableSetupSQL);
+        
+    }
+    
+    public function test1()
+    {
+        $pdo = $this->getPdo();
+        $this->resetTestDb($pdo);
+        $dt = new MySqlDataTable($pdo, 'testtable');
         $this->assertSame(false, $dt->rowExistsById(1));
         
         $ids = array();
@@ -62,7 +82,6 @@ class SQLDataTableTest extends TestCase {
             array_push($ids, $newId);
         }
         
-        self::$profiler->timingPoint("Rows created", $this->numRows);
         // Some random deletions and additions
         $nIterations = $this->numRows/10;
         for ($i = 0; $i < $nIterations; $i++){
@@ -76,16 +95,17 @@ class SQLDataTableTest extends TestCase {
             $this->assertSame($theId, $newId, $testMsg);
             
         }
-        self::$profiler->timingPoint("Random deletions and additions", $nIterations*2);
-        return $dt;
     }
     
      /**
      * 
      * @depends test1
      */
-    function testEscaping(MySqlDataTable $dt){
+    function testEscaping()
+    {
         
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
         // somekey is supposed to be an integer
         $id = $dt->createRow(['somekey' => 'A string']);
         $this->assertSame(false, $id);
@@ -110,8 +130,10 @@ class SQLDataTableTest extends TestCase {
      * 
      * @depends test1
      */
-    function testFind(MySqlDataTable $dt){
-        //print_r($dt);
+    function testFind()
+    {
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
         $nSearches = 100;
         for ($i = 0; $i < $nSearches; $i++){
             $someInt = rand(1, $this->numRows);
@@ -126,16 +148,16 @@ class SQLDataTableTest extends TestCase {
             $this->assertNotSame(false, $theId3, $testMsg);
             $this->assertEquals($theId, $theId3, $testMsg);
         }
-        
-        self::$profiler->timingPoint("Random searches", $nSearches*3);
-        
     }
     
      /**
      * 
      * @depends test1
      */
-    function testFindDuplicates(MySqlDataTable $dt){
+    function testFindDuplicates()
+    {
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
         $someString = 'This string should not be in any row';
         
         $nDuplicates = 10;
@@ -162,7 +184,10 @@ class SQLDataTableTest extends TestCase {
      * `
      * @depends test1
      */
-    public function testUpdate(MySqlDataTable $dt){
+    public function testUpdate()
+    {
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
         $nUpdates = 100;
         for ($i = 0; $i < $nUpdates; $i++){
             $someInt = rand(1, $this->numRows);
@@ -189,19 +214,18 @@ class SQLDataTableTest extends TestCase {
         }
     }
     
-    
-    
-   /**
-     * 
+    /**
      * @depends test1
      */
-    function testRandomIds (){
-        self::$profiler->timingPoint("Start of testRandom Ids");
+    function testRandomIds ()
+    {
         $minId = 100000;
         $maxId = 200000;
-        $dt = new MySqlDataTableWithRandomIds(self::$db, 'testtable', $minId, $maxId);
-        self::$profiler->timingPoint("Data table setup");
         
+        $pdo = $this->getPdo();
+        
+        $dt = new MySqlDataTableWithRandomIds($pdo, 'testtable', $minId, $maxId);
+       
         // Adding new rows
         $nRows = 10;
         for ($i = 0; $i < $nRows; $i++){
@@ -209,24 +233,25 @@ class SQLDataTableTest extends TestCase {
             $this->assertGreaterThanOrEqual($minId, $newID);
             $this->assertLessThanOrEqual($maxId, $newID);
         }
-        self::$profiler->timingPoint("Rows with random Ids added", $nRows);
-        
+
         // Trying to add rows with random Ids, but the Ids are all already taken,
         // new IDs should be greater than the rows constructed in the first test.
         $nRows = 10;
-        $dt2 = new MySqlDataTableWithRandomIds(self::$db, 'testtable', 1, $this->numRows);
+        $dt2 = new MySqlDataTableWithRandomIds($pdo, 'testtable', 1, $this->numRows);
         for ($i = 0; $i < $nRows; $i++){
             $newID = $dt2->createRow([ 'somekey' => $i, 'someotherkey' => "textvalue$i"] );
             $this->assertNotSame(false, $newID);
             $this->assertGreaterThan($this->numRows, $newID);
         }
-        self::$profiler->timingPoint("Rows with random Ids added", $nRows);
     }
     
-    public static function tearDownAfterClass(){
-        self::$db = null;
-        //print self::$profiler->getReport();
+    public function testGetAllRows()
+    {
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
         
+        $rows = $dt->getAllRows();
+        $this->assertNotFalse($rows);
+        $this->assertNotEquals([], $rows);
     }
-    
 }
