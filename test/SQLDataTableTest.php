@@ -65,6 +65,26 @@ EOD;
         
     }
     
+    public function resetTestDbWithBadTables($pdo)
+    {
+        $tableSetupSQL =<<<EOD
+            DROP TABLE IF EXISTS `testtablebad1`;
+            CREATE TABLE IF NOT EXISTS `testtablebad1` (
+              `id` varchar(100) NOT NULL,
+              `somekey` int(11) DEFAULT NULL,
+              `someotherkey` varchar(100) DEFAULT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+            DROP TABLE IF EXISTS `testtablebad2`;                
+            CREATE TABLE IF NOT EXISTS `testtablebad2` (
+              `somekey` int(11) DEFAULT NULL,
+              `someotherkey` varchar(100) DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+EOD;
+        $pdo->query($tableSetupSQL);
+        
+    }
+    
     public function test1()
     {
         $pdo = $this->getPdo();
@@ -245,6 +265,9 @@ EOD;
         }
     }
     
+    /**
+     * @depends test1
+     */
     public function testGetAllRows()
     {
         $pdo = $this->getPdo();
@@ -254,4 +277,70 @@ EOD;
         $this->assertNotFalse($rows);
         $this->assertNotEquals([], $rows);
     }
+    
+    public function testRowExistsById()
+    {
+        $pdo = $this->getPdo();
+        $this->resetTestDb($pdo);
+        $dt = new MySqlDataTable($pdo, 'testtable');
+        $this->assertSame(0, $dt->getMaxId());
+        
+        $theRow = ['id' => 1, 'somekey' => 25];
+        
+        $r = $dt->createRow($theRow);
+        $this->assertEquals(1, $r);
+        $this->assertSame(1, $dt->getMaxId());
+        
+        $this->assertTrue($dt->rowExistsById(1));
+        $this->assertTrue($dt->rowExistsById('1'));
+        $this->assertFalse($dt->rowExistsById('b'));
+        $this->assertFalse($dt->rowExistsById(0));
+        
+        $theRow = ['id' => 100, 'somekey' => 25];
+        $r = $dt->createRow($theRow);
+        $this->assertEquals(100, $r);
+        $this->assertSame(100, $dt->getMaxId());
+        $this->assertTrue($dt->rowExistsById(100));
+        $this->assertTrue($dt->rowExistsById('100'));
+        
+    }
+    
+    
+    public function testBadTables() 
+    {
+        $pdo = $this->getPdo();
+        $this->resetTestDbWithBadTables($pdo);
+        $dt = new MySqlDataTable($pdo, 'testtablebad1');
+
+        $this->assertFalse($dt->isDbTableValid());
+        
+        $dt = new MySqlDataTable($pdo, 'testtablebad2');
+        $this->assertFalse($dt->isDbTableValid());
+        
+        $dt = new MySqlDataTable($pdo, 'nonexistenttable');
+        $this->assertFalse($dt->isDbTableValid());
+        
+        // This should all return false right away
+        $this->assertFalse($dt->rowExistsById(1));
+        $this->assertFalse($dt->createRow(['id' => 1, 'somekey' => 'test']));
+        $this->assertFalse($dt->getAllRows());
+        $this->assertFalse($dt->getRow(1));
+        $this->assertFalse($dt->getMaxId());
+        $this->assertFalse($dt->findRows(['id' => 1, 'somekey' => 'test2']));
+    }
+    
+    /**
+     * Tests empty searches and failed searches
+     * @depends test1
+     */
+    public function testFindRows()
+    {
+        $pdo = $this->getPdo();
+        $dt = new MySqlDataTable($pdo, 'testtable');
+        
+        $this->assertFalse($dt->findRows([]));
+        $this->assertFalse($dt->findRows(['somekey' => 'This is not in the DB']));
+    }
+    
+
 }

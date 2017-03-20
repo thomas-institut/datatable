@@ -118,6 +118,73 @@ class DataTableTest extends TestCase {
         $this->assertFalse($dt->findRow(['key' => 'somevalue']));
         $this->assertFalse($dt->getIdForKeyValue('key', 'somevalue'));
         $this->assertEquals([], $dt->getAllRows());
+        $this->assertTrue($dt->deleteRow(1));
         
     }
+    
+    public function testCreateRow()
+    {
+        $dt = new InMemoryDataTable();
+        // Id not integer
+        $r = $dt->createRow(['id' => 'notanumber', 'value' => 'test']);
+        $this->assertFalse($r);
+        
+        
+        $r = $dt->createRow(['id' => 1, 'value' => 'test']);
+        $this->assertEquals(1, $r);
+        // Trying to create an existing row
+        $r = $dt->createRow(['id' => 1, 'value' => 'anothervalue']);
+        $this->assertFalse($r);
+        $row = $dt->getRow(1);
+        $this->assertEquals('test', $row['value']);
+    }
+    
+    public function testUpdateRow()
+    {
+        $dt = new InMemoryDataTable();
+        $theRow = ['id' => 1, 'value' => 'test'];
+        
+        $r = $dt->createRow($theRow);
+        $this->assertEquals(1, $r);
+        
+        // No Id in row
+        $r = $dt->updateRow(['value' => 'testUpdate']);
+        $this->assertFalse($r);
+        $updatedRow = $dt->getRow(1);
+        $this->assertEquals($theRow, $updatedRow);
+        
+        // Id 0, which is invalid
+        $r = $dt->updateRow(['id'=> 0, 'value' => 'testUpdate']);
+        $this->assertFalse($r);
+        $updatedRow = $dt->getRow(1);
+        $this->assertEquals($theRow, $updatedRow);
+        
+        // Id not integer
+        $r = $dt->updateRow(['id'=> '1', 'value' => 'testUpdate']);
+        $this->assertFalse($r);
+        $updatedRow = $dt->getRow(1);
+        $this->assertEquals($theRow, $updatedRow);
+        
+        // Row doesn't exist
+        $r = $dt->updateRow(['id'=> 2, 'value' => 'testUpdate']);
+        $this->assertFalse($r);
+        $updatedRow = $dt->getRow(1);
+        $this->assertEquals($theRow, $updatedRow);
+    }
+    
+    public function testRowExistsById()
+    {
+        $dt = new InMemoryDataTable();
+        $theRow = ['id' => 1, 'value' => 'test'];
+        
+        $r = $dt->createRow($theRow);
+        $this->assertEquals(1, $r);
+        
+        $this->assertTrue($dt->rowExistsById(1));
+        $this->assertTrue($dt->rowExistsById('1'));
+        $this->assertFalse($dt->rowExistsById('b'));
+        $this->assertFalse($dt->rowExistsById(0));
+    }
+            
 }
+

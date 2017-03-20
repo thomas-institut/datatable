@@ -36,9 +36,11 @@ class MySqlDataTable extends DataTable
 {
     
     /** @var PDO */
-    protected $db;
+    protected $dbConn;
     protected $tableName;
     protected $statements;
+    
+    private $validDbTable;
     
     /**
      * 
@@ -46,27 +48,72 @@ class MySqlDataTable extends DataTable
      * @param string $tn  SQL table name
      */
     public function __construct($theDb, $tn) {
-        $this->db = $theDb;
-        $this->db->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+        $this->dbConn = $theDb;
+        $this->dbConn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
         $this->tableName = $tn;
+        
+        $this->validDbTable = $this->realIsDbTableValid();
+        if (!$this->validDbTable) {
+            return;
+        }
+       
         // Pre-prepare common statements
         $this->statements['rowExistsById'] = 
-                $this->db->prepare('SELECT id FROM ' . $this->tableName . 
+                $this->dbConn->prepare('SELECT id FROM ' . $this->tableName . 
                         ' WHERE id= :id');
         $this->statements['deleteRow'] = 
-                $this->db->prepare('DELETE FROM `' . $this->tableName . 
+                $this->dbConn->prepare('DELETE FROM `' . $this->tableName . 
                         '` WHERE `id`= :id');
 
     }
     
+    public function isDbTableValid() 
+    {
+        return $this->validDbTable;
+    }
+    
+    /**
+     * Returns true if the table in the DB has 
+     * at least an id column of type int
+     */
+    private function realIsDbTableValid()
+    {
+         $result = $this->dbConn->query(
+                 'SHOW COLUMNS FROM ' . $this->tableName . ' LIKE \'id\'');
+         if ($result === false) {
+             // This means that the table does not exist!
+             return false;
+         }
+         
+         if ($result->rowCount() != 1) {
+             return false;
+         }
+         
+         $columnInfo = $result->fetch(PDO::FETCH_ASSOC);
+         
+         if (preg_match('/^int/', $columnInfo['Type'])) {
+             return true;
+         }
+         
+         return false;
+         
+    }
+    
     public function rowExistsById($rowId) {
+        if (!$this->isDbTableValid()) {
+            return false;
+        }
         if ($this->statements['rowExistsById']->execute(['id' => $rowId])){
             return $this->statements['rowExistsById']->rowCount() === 1;
         }
-        return false;
+        // can't get here in testing
+        return false; // @codeCoverageIgnore  
     }
     
     public function realCreateRow($theRow) {
+        if (!$this->isDbTableValid()) {
+            return false;
+        }
         $keys = array_keys($theRow);
         $sql = 'INSERT INTO `' . $this->tableName . '` (' . 
                 implode(',', $keys) . ') VALUES ';
@@ -75,7 +122,7 @@ class MySqlDataTable extends DataTable
             array_push($values, $this->quote($theRow[$key]));
         }
         $sql .= '(' . implode(',', $values) . ');';
-        if ($this->db->query($sql) === FALSE) {
+        if ($this->dbConn->query($sql) === FALSE) {
 //            error_log("Can't create, query:  $sql; error info: " . 
 //                    $this->db->errorInfo()[2]);
             return false;
@@ -97,7 +144,7 @@ class MySqlDataTable extends DataTable
         $sql = 'UPDATE ' . $this->tableName . ' SET ' . 
                 implode(',', $sets) . ' WHERE id=' . $theRow['id'];
         //error_log("Executing query: $sql");
-        if ($this->db->query($sql) === false) {
+        if ($this->dbConn->query($sql) === false) {
             return false;
         }
         return $theRow['id'];
@@ -106,7 +153,7 @@ class MySqlDataTable extends DataTable
     public function quote($v)
     {
         if (is_string($v)) {
-            return $this->db->quote($v);
+            return $this->dbConn->quote($v);
         }
         if (is_null($v)) {
             return 'NULL';
@@ -116,20 +163,29 @@ class MySqlDataTable extends DataTable
     
     public function getAllRows() 
     {
-        $r = $this->db->query('SELECT * FROM ' . $this->tableName);
-        if ($r === false) {
+        if (!$this->isDbTableValid()) {
             return false;
+        }
+        $r = $this->dbConn->query('SELECT * FROM ' . $this->tableName);
+        if ($r === false) {
+            // Can't get here in testing: query only fails on MySQL failure
+            return false; // @codeCoverageIgnore  
         }
         return $r->fetchAll(PDO::FETCH_ASSOC);
     }
     
     public function getRow($rowId) {
-        $r = $this->db
+        if (!$this->isDbTableValid()) {
+            return false;
+        }
+        
+        $r = $this->dbConn
                 ->query('SELECT * FROM ' . $this->tableName . 
                         ' WHERE `id`=' . $rowId . ' LIMIT 1')
                 ->fetch(PDO::FETCH_ASSOC);
         if ($r === false) {
-            return false;
+            // Can't get here in testing: query only fails on MySQL failure
+            return false; // @codeCoverageIgnore  
         }
         $r['id'] = (int) $r['id'];
         return $r;
@@ -137,13 +193,21 @@ class MySqlDataTable extends DataTable
     }
     
     public function getMaxId() {
+        if (!$this->isDbTableValid()) {
+            return false;
+        }
         $query = 'SELECT MAX(id) FROM ' . $this->tableName;
-        $r = $this->db->query($query);
+        $r = $this->dbConn->query($query);
         if ($r === false) {
             //print("Query returned false: $query\n");
+            // Can't get here in testing: query only fails on MySQL failure
+            return false; // @codeCoverageIgnore  
+        }
+        $maxId = $r->fetchColumn();
+        if ($maxId === null) {
             return 0;
         }
-        return $r->fetchColumn();
+        return (int) $maxId;
     }
     
     public function getIdForKeyValue($key, $value) {
@@ -160,24 +224,27 @@ class MySqlDataTable extends DataTable
      */
     public function findRows($theRow, $maxResults = false)
     {
+        if (!$this->isDbTableValid()) {
+            return false;
+        }
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key){
             $c = $key . '=';
             if (is_string($theRow[$key])) {
-                $c .= $this->db->quote($theRow[$key]);
+                $c .= $this->dbConn->quote($theRow[$key]);
             } 
             else {
                 $c .= $theRow[$key];
             }
-            array_push($conditions, $c);
+            $conditions[] = $c;
         }
         $sql = 'SELECT id FROM ' . $this->tableName . ' WHERE ' . 
                 implode(' AND ', $conditions);
         if ($maxResults){
             $sql .= ' LIMIT ' . $maxResults;
         }
-        $r = $this->db->query($sql);
+        $r = $this->dbConn->query($sql);
         if ( $r === false) {
             return false;
         }
@@ -186,11 +253,11 @@ class MySqlDataTable extends DataTable
             if ($theId == 0){
                 return false;
             }
-            return  $theId;
+            return $theId;
         }
-        $ids = array();
+        $ids = [];
         while ($id = (int) $r->fetchColumn()) {
-            array_push($ids, $id);
+            $ids[] = $id;
         }
         if (count($ids)== 0){
             return false;
