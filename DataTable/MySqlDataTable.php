@@ -76,7 +76,7 @@ class MySqlDataTable extends DataTable
      * Returns true if the table in the DB has 
      * at least an id column of type int
      */
-    private function realIsDbTableValid()
+    protected function realIsDbTableValid()
     {
          $result = $this->dbConn->query(
                  'SHOW COLUMNS FROM ' . $this->tableName . ' LIKE \'id\'');
@@ -122,6 +122,7 @@ class MySqlDataTable extends DataTable
             array_push($values, $this->quote($theRow[$key]));
         }
         $sql .= '(' . implode(',', $values) . ');';
+        //print "About to do MySQL dt realCreateRow: $sql\n";
         if ($this->dbConn->query($sql) === FALSE) {
 //            error_log("Can't create, query:  $sql; error info: " . 
 //                    $this->db->errorInfo()[2]);
@@ -258,7 +259,7 @@ class MySqlDataTable extends DataTable
                 ->execute([':id' => $rowId]) !== false;
     }
     
-    private function forceIntIds($theRows) 
+    protected function forceIntIds($theRows) 
     {
         $rows = $theRows;
         for ($i = 0; $i < count($rows); $i++) {

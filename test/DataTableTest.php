@@ -37,7 +37,7 @@ use PHPUnit\Framework\TestCase;
 abstract class DataTableTest extends TestCase {
     
     var $numRows = 100;
-    var $numIterations = 10;
+    var $numIterations = 50;
     
  
     
@@ -140,8 +140,8 @@ abstract class DataTableTest extends TestCase {
             $this->assertNotFalse($dt->updateRow(['id'=>$theId, 'someotherkey' => $newTextValue]));
             $theRow2 = $dt->getRow($theId);
             $this->assertNotFalse($theRow2);
-            $this->assertEquals($newTextValue, $theRow2['someotherkey']);
-            $this->assertEquals($someInt, $theRow2['somekey']);
+            $this->assertEquals($newTextValue, $theRow2['someotherkey'], $testMsg);
+            $this->assertEquals($someInt, $theRow2['somekey'], $testMsg);
         }
     }
     

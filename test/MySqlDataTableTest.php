@@ -29,6 +29,8 @@ namespace DataTable;
 require "../vendor/autoload.php";
 require 'config.php';
 
+require_once 'DataTableTest.php';
+
 use PHPUnit\Framework\TestCase;
 use \PDO;
 /**
@@ -95,7 +97,7 @@ EOD;
     
     function testEscaping()
     {
-        parent::testUpdateRow();
+        parent::testEscaping();
         
         $pdo = $this->getPdo();
         $dt = new MySqlDataTable($pdo, 'testtable');
@@ -140,18 +142,7 @@ EOD;
         
         // Null values are fine (because the table schema allows them)
         $this->assertNotFalse($dt->updateRow(['id' => 1, 'value' => NULL]));
-        
-        
     }
-
-//    public function testFindRows()
-//    {
-//        $pdo = $this->getPdo();
-//        $dt = new MySqlDataTable($pdo, 'testtable');
-//        
-//        $this->assertFalse($dt->findRows([]));
-//        $this->assertFalse($dt->findRows(['somekey' => 'This is not in the DB']));
-//    }
     
 
 }
