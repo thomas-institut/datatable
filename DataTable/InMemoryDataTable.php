@@ -59,7 +59,7 @@ class InMemoryDataTable extends DataTable
         foreach ($keys as $k){
             $this->theData[$id][$k] = $theRow[$k];
         }
-        return true;
+        return $id;
     }
     
     public function getMaxId() {
@@ -82,7 +82,9 @@ class InMemoryDataTable extends DataTable
         return array_search($value, array_column($this->theData, $key, 'id'), TRUE);
     }
     
-    public function findRow($givenRow) {
+    public function realFindRows($givenRow, $maxResults) 
+    {
+        $results = [];
         $givenRowKeys = array_keys($givenRow);
         foreach($this->theData as $dataRow){
             $match = true;
@@ -92,9 +94,12 @@ class InMemoryDataTable extends DataTable
                 }
             }
             if ($match){
-                return ($dataRow['id']);
+                $results[] = $dataRow;
+                if ($maxResults && count($results) === $maxResults) {
+                    return $results;
+                }
             }
         }
-        return false;
+        return $results;
     }
 }

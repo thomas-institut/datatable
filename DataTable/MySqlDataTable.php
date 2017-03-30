@@ -49,7 +49,7 @@ class MySqlDataTable extends DataTable
      */
     public function __construct($theDb, $tn) {
         $this->dbConn = $theDb;
-        $this->dbConn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
+        //$this->dbConn->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, false);
         $this->tableName = $tn;
         
         $this->validDbTable = $this->realIsDbTableValid();
@@ -127,7 +127,7 @@ class MySqlDataTable extends DataTable
 //                    $this->db->errorInfo()[2]);
             return false;
         }
-        return $theRow['id'];
+        return (int) $theRow['id'];
     }
     
     public function realUpdateRow($theRow)
@@ -171,7 +171,7 @@ class MySqlDataTable extends DataTable
             // Can't get here in testing: query only fails on MySQL failure
             return false; // @codeCoverageIgnore  
         }
-        return $r->fetchAll(PDO::FETCH_ASSOC);
+        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
     public function getRow($rowId) {
@@ -222,7 +222,7 @@ class MySqlDataTable extends DataTable
      *                   returns an array of ints. Returns false if not
      *                   rows are found
      */
-    public function findRows($theRow, $maxResults = false)
+    public function realfindRows($theRow, $maxResults)
     {
         if (!$this->isDbTableValid()) {
             return false;
@@ -239,7 +239,7 @@ class MySqlDataTable extends DataTable
             }
             $conditions[] = $c;
         }
-        $sql = 'SELECT id FROM ' . $this->tableName . ' WHERE ' . 
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE ' . 
                 implode(' AND ', $conditions);
         if ($maxResults){
             $sql .= ' LIMIT ' . $maxResults;
@@ -248,32 +248,25 @@ class MySqlDataTable extends DataTable
         if ( $r === false) {
             return false;
         }
-        if ($maxResults == 1){
-            $theId = (int) $r->fetchColumn();
-            if ($theId == 0){
-                return false;
-            }
-            return $theId;
-        }
-        $ids = [];
-        while ($id = (int) $r->fetchColumn()) {
-            $ids[] = $id;
-        }
-        if (count($ids)== 0){
-            return false;
-        }
-        return $ids;
-    }
-    
-    public function findRow($theRow)
-    {
-        return $this->findRows($theRow, 1);
+
+        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
     public function realDeleteRow($rowId)
     {
         return $this->statements['deleteRow']
                 ->execute([':id' => $rowId]) !== false;
+    }
+    
+    private function forceIntIds($theRows) 
+    {
+        $rows = $theRows;
+        for ($i = 0; $i < count($rows); $i++) {
+            if (!is_int($rows[$i]['id'])) {
+                $rows[$i]['id'] = (int) $rows[$i]['id'];
+            }
+        }
+        return $rows;
     }
 }
 

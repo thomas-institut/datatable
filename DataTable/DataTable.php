@@ -94,7 +94,7 @@ abstract class DataTable {
     }
     
     /**
-     * Searches the table for a row with the same data as the given row
+     * Searches the table for rows with the same data as the given row
      * 
      * Only the keys given in $theRow are checked; so, for example,
      * if $theRow is missing a key that exists in the actual rows
@@ -102,9 +102,37 @@ abstract class DataTable {
      * will return any row that matches exactly the given keys independently
      * of the missing ones.
      * 
+     * if $maxResults === false, all results will be returned
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, returns false
+     * 
      * @return int the Row Id 
      */
-    abstract public function findRow($theRow);
+    public function findRows($theRow, $maxResults=false) 
+    {
+        if ($maxResults !== false && $maxResults <= 0)
+            return false;
+        
+        return $this->realFindRows($theRow, $maxResults);
+    }
+    
+    /**
+     * Returns false on error, or an array with results (which could be
+     * empty
+     */
+    abstract public function realFindRows($theRow, $maxResults);
+    
+    public function findRow($theRow) {
+        $r = $this->findRows($theRow, 1);
+        if ($r === false) {
+            return false;
+        }
+        
+        if ($r === []) {
+            return false;
+        }
+        return $r[0];
+    }
     
     /**
      * Updates the table with the given row, which must contain an 'id'
@@ -114,20 +142,16 @@ abstract class DataTable {
      * 
      * @return boolean
      */
-    public function updateRow($theRow){
+    public function updateRow($theRow)
+    {
         if (!isset($theRow['id']) || $theRow['id']===0){
-            //error_log("Can't update, no id set: " . $theRow['id'] ."\n");
             return false;
         }
-        else {
-            if (!is_int($theRow['id'])){
-                //error_log("Can't update, id is not int: " . $theRow['id'] . " is " . gettype($theRow['id']) . "\n");
-                return false;
-            }
-            if (!$this->rowExistsById($theRow['id'])){
-                //error_log("Can't update, row exists: " . $theRow['id'] ."\n");
-                return false;
-            }
+        if (!is_int($theRow['id'])){
+            return false;
+        }
+        if (!$this->rowExistsById($theRow['id'])){
+            return false;
         }
         return $this->realUpdateRow($theRow);
     }
