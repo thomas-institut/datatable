@@ -126,4 +126,108 @@ EOD;
         $this->assertFalse($dt->findRows(['id' => 1, 'somekey' => 'test2']));
         
     }
+    
+
+    public function testFindRowsWithTime()
+    {
+        $dt = $this->createEmptyDt();
+        
+        $t0 = '2010-01-01';
+        $times = [ '2014-01-01', 
+            '2015-01-01', 
+            '2016-01-01'];
+       
+        $nEntries = 10;
+        $theKey = 1000;
+        
+        $ids = [];
+        for ($i = 0; $i < $nEntries; $i++) {
+            $id = $dt->createRowWithTime(['somekey' => $theKey], $t0);
+            $this->assertNotFalse($id);
+            $ids[] = $id;
+            $j = 1;
+            foreach($times as $t) {
+                $r2 = $dt->realUpdateRowWithTime(['id' => $id,
+                    'someotherkey' => 'Value' . 
+                    $j++], $t);
+                $this->assertNotFalse($r2);
+            }
+        }
+        
+        foreach($ids as $id) {
+            $row = $dt->getRow($id);
+            $this->assertNotFalse($row);
+            $this->assertEquals($theKey, $row['somekey']);
+            $this->assertEquals('Value3', $row['someotherkey']);
+        }
+        
+        $foundsRows1 = $dt->findRows(['someotherkey' => 'Value1']);
+        $this->assertEquals([], $foundsRows1);
+        
+        $foundsRows2 = $dt->findRows(['someotherkey' => 'Value2']);
+        $this->assertEquals([], $foundsRows2);
+        
+        $foundsRows3 = $dt->findRows(['someotherkey' => 'Value3']);
+        $this->assertCount($nEntries, $foundsRows3);
+        
+        $foundRows4 = $dt->realfindRowsWithTime(['someotherkey' => 'Value3'], 
+                false, '2016-01-01 12:00:00');
+        $this->assertCount(10, $foundRows4);
+        
+        $foundRows5 = $dt->realfindRowsWithTime(['someotherkey' => 'Value2'], 
+                false, '2015-01-01 12:00:00');
+        $this->assertCount(10, $foundRows5);
+        
+        $foundRows6 = $dt->realfindRowsWithTime(['someotherkey' => 'Value1'], 
+                false, '2014-01-01 12:00:00');
+        $this->assertCount(10, $foundRows6);
+        
+        $foundRows7 = $dt->findRows(['somekey' => $theKey]);
+        $this->assertCount(10, $foundRows7);
+        
+        $foundRows8 = $dt->realfindRowsWithTime(['somekey' => $theKey], 
+                false, '2015-01-01 12:00:00');
+        $this->assertCount(10, $foundRows8);
+        foreach($foundRows8 as $row) {
+            $this->assertEquals('Value2', $row['someotherkey']);
+        }
+        
+        $foundRows9 = $dt->realfindRowsWithTime(['somekey' => $theKey], 
+                false, '2014-01-01 12:00:00');
+        $this->assertCount(10, $foundRows9);
+        foreach($foundRows9 as $row) {
+            $this->assertEquals('Value1', $row['someotherkey']);
+        }
+        
+        $foundRows10 = $dt->realfindRowsWithTime(['somekey' => $theKey], 
+                false, '2013-01-01');
+        $this->assertCount(10, $foundRows10);
+        foreach($foundRows10 as $row) {
+            $this->assertTrue(is_null($row['someotherkey']));
+        }
+        
+        $foundRows11 = $dt->realfindRowsWithTime(['somekey' => $theKey], 
+                false, '2000-01-01 12:00:00');
+        $this->assertCount(0, $foundRows11);
+        
+    }
+    
+    public function testCreateRowWithTime()
+    {
+        $dt = $this->createEmptyDt();
+        $time = MySqlUnitemporalDataTable::now();
+        // Id not integer
+        $r = $dt->createRowWithTime(['id' => 'notanumber', 'value' => 'test'], 
+                $time);
+        $this->assertFalse($r);
+        
+        
+        $r = $dt->createRowWithTime(['id' => 1, 'value' => 'test'], $time);
+        $this->assertEquals(1, $r);
+        // Trying to create an existing row
+        $r = $dt->createRowWithTime(['id' => 1, 'value' => 'anothervalue'], $time);
+        $this->assertFalse($r);
+        $row = $dt->getRow(1);
+        $this->assertEquals('test', $row['value']);
+    }
 }
