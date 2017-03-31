@@ -141,8 +141,8 @@ EOD;
         $ids = [];
         for ($i = 0; $i < $nEntries; $i++) {
             $rowId = $dataTable->createRowWithTime(
-                    ['somekey' => $theKey], 
-                    $timeZero
+                ['somekey' => $theKey],
+                $timeZero
             );
             $this->assertNotFalse($rowId);
             $ids[] = $rowId;
@@ -175,24 +175,33 @@ EOD;
         $this->assertCount($nEntries, $foundsRows3);
         
         // Time info should be irrelevant for the search:
-        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero, 
+        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
             'someotherkey' => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
-        $foundsRows3 = $dataTable->findRows(['valid_until'=> $timeZero, 
+        $foundsRows3 = $dataTable->findRows(['valid_until'=> $timeZero,
             'someotherkey' => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
-        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero, 
+        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
             'valid_until' => $timeZero,
             'someotherkey' => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
+                
         // Search the keys in the times they are valid
         $foundRows4 = $dataTable->realfindRowsWithTime(
             ['someotherkey' => 'Value3'],
             false,
             '2016-01-01 12:00:00'
+        );
+        $this->assertCount(10, $foundRows4);
+        
+        // timestamps should be fine as well
+        $foundRows4 = $dataTable->realfindRowsWithTime(
+            ['someotherkey' => 'Value3'],
+            false,
+            time()-86400 // a day ago
         );
         $this->assertCount(10, $foundRows4);
         
@@ -210,7 +219,7 @@ EOD;
         );
         $this->assertCount(10, $foundRows6);
         
-        // Search the common key, only the latest version should 
+        // Search the common key, only the latest version should
         // be returned
         $foundRows7 = $dataTable->findRows(['somekey' => $theKey]);
         $this->assertCount(10, $foundRows7);
@@ -279,5 +288,76 @@ EOD;
         $this->assertFalse($res);
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
+    }
+    
+    public function testWrongTimes()
+    {
+        $dataTable = $this->createEmptyDt();
+        
+        $nEntries = 10;
+        // create some rows
+        for ($i=0; $i<$nEntries; $i++) {
+            $rowId = $dataTable->createRow(['somekey' => $i+1]);
+        }
+        
+        // These should all return false
+        $this->assertFalse($dataTable->createRowWithTime(
+            ['somekey' => 100],
+            []  // array for time
+        ));
+        
+        $this->assertFalse($dataTable->createRowWithTime(
+            ['somekey' => 100],
+            true  // boolean for time
+        ));
+        
+        $this->assertFalse($dataTable->createRowWithTime(
+            ['somekey' => 100],
+            new \ArrayObject()  // object for time
+        ));
+        
+        $this->assertFalse($dataTable->realUpdateRowWithTime(
+            ['id' => $rowId, 'somekey' => 100],
+            []  // array for time
+        ));
+        
+        $this->assertFalse($dataTable->realUpdateRowWithTime(
+            ['id' => $rowId, 'somekey' => 100],
+            true  // boolean for time
+        ));
+        
+        $this->assertFalse($dataTable->realUpdateRowWithTime(
+            ['id' => $rowId, 'somekey' => 100],
+            new \ArrayObject()  // object for time
+        ));
+        
+        $this->assertFalse($dataTable->getAllRowsWithTime([]));
+        $this->assertFalse($dataTable->getAllRowsWithTime(true));
+        $this->assertFalse($dataTable->getAllRowsWithTime(new \ArrayObject()));
+        
+        $this->assertFalse($dataTable->getRowWithTime($rowId, []));
+        $this->assertFalse($dataTable->getRowWithTime($rowId, true));
+        $this->assertFalse($dataTable->getRowWithTime(
+            $rowId,
+            new \ArrayObject()
+        ));
+        
+        $this->assertFalse($dataTable->realfindRowsWithTime(
+            ['somekey' => 5],
+            false,
+            []
+        ));
+        
+        $this->assertFalse($dataTable->realfindRowsWithTime(
+            ['somekey' => 5],
+            false,
+            true
+        ));
+        
+        $this->assertFalse($dataTable->realfindRowsWithTime(
+            ['somekey' => 5],
+            false,
+            new \ArrayObject()
+        ));
     }
 }

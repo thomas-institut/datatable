@@ -134,7 +134,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param string $time  in MySql format, e.g., '2010-09-20 18:25:25'
      * @return boolean
      */
-    public function createRowWithTime($theRow, string $time)
+    public function createRowWithTime($theRow, $time)
     {
         if (!isset($theRow['id']) || $theRow['id']===0) {
             $theRow['id'] = $this->getOneUnusedId();
@@ -159,11 +159,16 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param type $time
      * @return boolean
      */
-    protected function realCreateRowWithTime($theRow, $time)
+    protected function realCreateRowWithTime($theRow, $timeVar)
     {
         if (!$this->isDbTableValid()) {
             return false;
         }
+        $time = self::getMySqlDateTimeFromVariable($timeVar);
+        if ($time === false) {
+            return false;
+        }
+        
         $theRow['valid_from'] = $time;
         $theRow['valid_until'] = self::END_OF_TIMES;
         
@@ -176,7 +181,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param type $theRow
      * @param string $time
      */
-    public function makeRowInvalid($theRow, string $time)
+    protected function makeRowInvalid($theRow, string $time)
     {
         $sql = 'UPDATE ' . $this->tableName . ' SET ' .
                 ' valid_until=' . $this->quote($time).
@@ -206,8 +211,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param type $time
      * @return type
      */
-    public function realUpdateRowWithTime($theRow, string $time)
+    public function realUpdateRowWithTime($theRow, $timeVar)
     {
+        $time = self::getMySqlDateTimeFromVariable($timeVar);
+        if ($time === false) {
+            return false;
+        }
         $oldRow = $this->realGetRow($theRow['id']);
         $this->makeRowInvalid($oldRow, $time);
         foreach (array_keys($oldRow) as $key) {
@@ -237,11 +246,17 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param type $time
      * @return array
      */
-    public function getAllRowsWithTime($time)
+    public function getAllRowsWithTime($timeVar)
     {
         if (!$this->isDbTableValid()) {
             return false;
         }
+        
+        $time = self::getMySqlDateTimeFromVariable($timeVar);
+        if ($time === false) {
+            return false;
+        }
+        
         $time = $this->quote($time);
         $res = $this->dbConn->query('SELECT * FROM ' . $this->tableName .
                 ' WHERE valid_from <= ' . $time .
@@ -299,9 +314,14 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @param type $time
      * @return array|boolean
      */
-    public function getRowWithTime($rowId, $time)
+    public function getRowWithTime($rowId, $timeVar)
     {
         if (!$this->isDbTableValid()) {
+            return false;
+        }
+        
+        $time = self::getMySqlDateTimeFromVariable($timeVar);
+        if ($time === false) {
             return false;
         }
       
@@ -345,9 +365,13 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      *                   returns an array of ints. Returns false if not
      *                   rows are found
      */
-    public function realfindRowsWithTime($theRow, $maxResults, $time)
+    public function realfindRowsWithTime($theRow, $maxResults, $timeVar)
     {
         if (!$this->isDbTableValid()) {
+            return false;
+        }
+        $time = self::getMySqlDateTimeFromVariable($timeVar);
+        if ($time === false) {
             return false;
         }
         $keys = array_keys($theRow);
@@ -401,10 +425,25 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      */
     public static function now()
     {
-        $timeNow = microtime(true);
-        $intTime =  floor($timeNow);
+        return self::getMySqlDatetimeFromTimestamp(microtime(true));
+    }
+    
+    private static function getMySqlDatetimeFromTimestamp($timeStamp)
+    {
+        $intTime =  floor($timeStamp);
         $date=date(self::MYSQL_DATE_FORMAT, $intTime);
-        $microSeconds = (int) floor(($timeNow - $intTime)*1000000);
+        $microSeconds = (int) floor(($timeStamp - $intTime)*1000000);
         return sprintf("%s.%06d", $date, $microSeconds);
+    }
+    
+    public static function getMySqlDateTimeFromVariable($timeVar)
+    {
+        if (is_numeric($timeVar)) {
+            return self::getMySqlDatetimeFromTimestamp((float) $timeVar);
+        }
+        if (is_string($timeVar)) {
+            return $timeVar;
+        }
+        return false;
     }
 }
