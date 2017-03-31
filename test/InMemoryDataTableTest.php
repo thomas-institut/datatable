@@ -25,19 +25,16 @@
  */
 namespace DataTable;
 
-require "../vendor/autoload.php";
-
 /**
  * Description of DataTableTest
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-class InMemoryDataTableTest extends DataTableTest {
+class InMemoryDataTableTest extends DataTableTest
+{
     
-    public function createEmptyDt() {
-        
+    public function createEmptyDt()
+    {
         return new InMemoryDataTable();
     }
-            
 }
-

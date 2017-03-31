@@ -1,7 +1,7 @@
 <?php
 /**
  * Sample configuration file
- * 
+ *
  * Edit with your database environment
  */
 $config['host'] = "localhost";

@@ -25,8 +25,6 @@
  */
 namespace DataTable;
 
-require "../vendor/autoload.php";
-
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,75 +32,76 @@ use PHPUnit\Framework\TestCase;
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-abstract class DataTableTest extends TestCase {
+abstract class DataTableTest extends TestCase
+{
     
-    var $numRows = 100;
-    var $numIterations = 50;
-    
- 
+    public $numRows = 100;
+    public $numIterations = 50;
     
     abstract public function createEmptyDt();
     
-    private function fillUpTestDataTable($dt) 
+    private function fillUpTestDataTable($dataTable)
     {
-        for ($i = 1 ; $i <= $this->numRows; $i++){
+        for ($i = 1; $i <= $this->numRows; $i++) {
             $someRow = ['somekey' => $i, 'someotherkey' => "textvalue$i"];
-            $newId = $dt->createRow($someRow);
+            $dataTable->createRow($someRow);
         }
-        return $dt;
+        return $dataTable;
     }
     
-    public function testCreation() {
+    public function testCreation()
+    {
         
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
         
-        $this->assertSame(false, $dt->rowExistsById(1));
+        $this->assertSame(false, $dataTable->rowExistsById(1));
         
         $ids = array();
-        for ($i = 1 ; $i <= $this->numRows; $i++){
+        for ($i = 1; $i <= $this->numRows; $i++) {
             $someRow = [ 'somekey' => $i, 'someotherkey' => "textvalue$i"];
             $testMsg = "Creating rows, iteration $i";
-            $newId = $dt->createRow($someRow);
+            $newId = $dataTable->createRow($someRow);
             $this->assertNotFalse($newId, $testMsg);
-            $this->assertTrue($dt->rowExistsById($newId), $testMsg);
+            $this->assertTrue($dataTable->rowExistsById($newId), $testMsg);
             array_push($ids, $newId);
         }
 
         // Some random deletions and additions
-        for ($i = 0; $i < $this->numIterations; $i++){
+        for ($i = 0; $i < $this->numIterations; $i++) {
             $theId = $ids[rand(0, $this->numRows-1)];
-            $testMsg = "Random deletions and additions,  iteration $i, id=$theId";
-            $this->assertTrue($dt->rowExistsById($theId), $testMsg);
-            $this->assertTrue($dt->deleteRow($theId), $testMsg);
-            $this->assertFalse($dt->rowExistsById($theId), $testMsg);
-            $newId = $dt->createRow([ 'id' => $theId, 
+            $testMsg = "Random deletions and additions,  iteration $i, "
+                    . "id=$theId";
+            $this->assertTrue($dataTable->rowExistsById($theId), $testMsg);
+            $this->assertTrue($dataTable->deleteRow($theId), $testMsg);
+            $this->assertFalse($dataTable->rowExistsById($theId), $testMsg);
+            $newId = $dataTable->createRow([ 'id' => $theId,
                 'somekey' => $theId, 'someotherkey' => "textvalue$theId" ]);
-            $this->assertNotFalse($newId, $testMsg );
+            $this->assertNotFalse($newId, $testMsg);
             $this->assertSame($theId, $newId, $testMsg);
-            
         }
     }
     
     public function testFindSingle()
     {
-        $dt = $this->fillUpTestDataTable($this->createEmptyDt());
+        $dataTable = $this->fillUpTestDataTable($this->createEmptyDt());
 
-        $this->assertFalse($dt->findRows(['it' => 'doesntmatter'], -1));
-        $this->assertFalse($dt->findRows(['it' => 'doesntmatter'], 0));
+        $this->assertFalse($dataTable->findRows(['it' => 'doesntmatter'], -1));
+        $this->assertFalse($dataTable->findRows(['it' => 'doesntmatter'], 0));
         
         // Random searches
         $nSearches = $this->numIterations;
-        for ($i = 0; $i < $nSearches; $i++){
+        for ($i = 0; $i < $nSearches; $i++) {
             $someInt = rand(1, $this->numRows);
             $someTextvalue = "textvalue$someInt";
             $testMsg = "Random searches,  iteration $i, int=$someInt";
-            $theRow = $dt->findRow(['somekey' => $someInt]);
+            $theRow = $dataTable->findRow(['somekey' => $someInt]);
             $this->assertNotFalse($theRow, $testMsg);
             $this->assertTrue(is_int($theRow['id']));
-            $theRow2 = $dt->findRow(['someotherkey' => $someTextvalue]);
+            $theRow2 = $dataTable->findRow(['someotherkey' => $someTextvalue]);
             $this->assertNotFalse($theRow, $testMsg);
             $this->assertEquals($theRow['id'], $theRow2['id'], $testMsg);
-            $theRow3 = $dt->findRow(['somekey' => $someInt, 'someotherkey' => $someTextvalue]);
+            $theRow3 = $dataTable->findRow(['somekey' => $someInt,
+                'someotherkey' => $someTextvalue]);
             $this->assertNotFalse($theRow3, $testMsg);
             $this->assertEquals($theRow['id'], $theRow3['id'], $testMsg);
             $this->assertTrue(is_int($theRow['id']));
@@ -111,144 +110,145 @@ abstract class DataTableTest extends TestCase {
     
     public function testFindMultiple()
     {
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
         
         for ($i = 0; $i < $this->numRows; $i++) {
-            $this->assertNotFalse($dt->createRow(['somekey' => 100]));
+            $this->assertNotFalse($dataTable->createRow(['somekey' => 100]));
         }
         
         for ($i = 1; $i <= $this->numRows; $i++) {
-            $this->assertCount($i, $dt->findRows(['somekey' => 100], $i));
+            $this->assertCount($i, $dataTable->findRows(['somekey' => 100], $i));
         }
         
-        for ($i = $this->numRows+1; 
-             $i <= $this->numRows+1+ $this->numIterations; $i++) {
-            $this->assertCount($this->numRows, $dt->findRows(['somekey' => 100], $i));
+        for ($i = $this->numRows+1;
+            $i <= $this->numRows+1+ $this->numIterations; $i++) {
+            $this->assertCount(
+                $this->numRows,
+                $dataTable->findRows(['somekey' => 100], $i)
+            );
         }
     }
     
-    public function testUpdate(){
-        $dt = $this->fillUpTestDataTable($this->createEmptyDt());
+    public function testUpdate()
+    {
+        $dataTable = $this->fillUpTestDataTable($this->createEmptyDt());
         $nUpdates = $this->numIterations;
-        for ($i = 0; $i < $nUpdates; $i++){
+        for ($i = 0; $i < $nUpdates; $i++) {
             $someInt = rand(1, $this->numRows);
             $newTextValue = "NewTextValue$someInt";
             $testMsg = "Random updates,  iteration $i, int=$someInt";
-            $theRow = $dt->findRow(['somekey' => $someInt]);
+            $theRow = $dataTable->findRow(['somekey' => $someInt]);
             $this->assertNotFalse($theRow, $testMsg);
             $theId = $theRow['id'];
-            $this->assertNotFalse($dt->updateRow(['id'=>$theId, 'someotherkey' => $newTextValue]));
-            $theRow2 = $dt->getRow($theId);
+            $this->assertNotFalse($dataTable->updateRow(['id'=>$theId,
+                'someotherkey' => $newTextValue]));
+            $theRow2 = $dataTable->getRow($theId);
             $this->assertNotFalse($theRow2);
-            $this->assertEquals($newTextValue, $theRow2['someotherkey'], $testMsg);
+            $this->assertEquals(
+                $newTextValue,
+                $theRow2['someotherkey'],
+                $testMsg
+            );
             $this->assertEquals($someInt, $theRow2['somekey'], $testMsg);
         }
     }
     
     public function testNonExistentRows()
     {
-        $dt = $this->createEmptyDt();
-        $this->assertFalse($dt->rowExistsById(1));
-        $this->assertFalse($dt->getRow(1));
-        $this->assertFalse($dt->findRow(['key' => 'somevalue']));
-        $this->assertFalse($dt->getIdForKeyValue('key', 'somevalue'));
-        $this->assertEquals([], $dt->getAllRows());
-        $this->assertTrue($dt->deleteRow(1));
-        
+        $dataTable = $this->createEmptyDt();
+        $this->assertFalse($dataTable->rowExistsById(1));
+        $this->assertFalse($dataTable->getRow(1));
+        $this->assertFalse($dataTable->findRow(['key' => 'somevalue']));
+        $this->assertFalse($dataTable->getIdForKeyValue('key', 'somevalue'));
+        $this->assertEquals([], $dataTable->getAllRows());
+        $this->assertTrue($dataTable->deleteRow(1));
     }
     
     public function testCreateRow()
     {
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
         // Id not integer
-        $r = $dt->createRow(['id' => 'notanumber', 'value' => 'test']);
-        $this->assertFalse($r);
+        $res = $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
+        $this->assertFalse($res);
         
         
-        $r = $dt->createRow(['id' => 1, 'value' => 'test']);
-        $this->assertEquals(1, $r);
+        $res = $dataTable->createRow(['id' => 1, 'value' => 'test']);
+        $this->assertEquals(1, $res);
         // Trying to create an existing row
-        $r = $dt->createRow(['id' => 1, 'value' => 'anothervalue']);
-        $this->assertFalse($r);
-        $row = $dt->getRow(1);
+        $res = $dataTable->createRow(['id' => 1, 'value' => 'anothervalue']);
+        $this->assertFalse($res);
+        $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
     }
     
     public function testUpdateRow()
     {
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
         $theRow = [
-            'id' => 1, 
-            'value' => 'test', 
-            'somekey' => 0, 
+            'id' => 1,
+            'value' => 'test',
+            'somekey' => 0,
             'someotherkey' => 0
         ];
-        $r = $dt->createRow($theRow);
-        $this->assertEquals(1, $r);
+        $res = $dataTable->createRow($theRow);
+        $this->assertEquals(1, $res);
         
-        $this->assertFalse($dt->updateRow([]));
+        $this->assertFalse($dataTable->updateRow([]));
         // No Id in row
-        $this->assertFalse($dt->updateRow(['value' => 'testUpdate']));
-        $updatedRow = $dt->getRow(1);
+        $this->assertFalse($dataTable->updateRow(['value' => 'testUpdate']));
+        $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Id 0, which is invalid
-        $r = $dt->updateRow(['id'=> 0, 'value' => 'testUpdate']);
-        $this->assertFalse($r);
-        $updatedRow = $dt->getRow(1);
+        $res = $dataTable->updateRow(['id'=> 0, 'value' => 'testUpdate']);
+        $this->assertFalse($res);
+        $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Id not integer
-        $r = $dt->updateRow(['id'=> '1', 'value' => 'testUpdate']);
-        $this->assertFalse($r);
-        $updatedRow = $dt->getRow(1);
+        $res = $dataTable->updateRow(['id'=> '1', 'value' => 'testUpdate']);
+        $this->assertFalse($res);
+        $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Row doesn't exist
-        $r = $dt->updateRow(['id'=> 2, 'value' => 'testUpdate']);
-        $this->assertFalse($r);
-        $updatedRow = $dt->getRow(1);
+        $res = $dataTable->updateRow(['id'=> 2, 'value' => 'testUpdate']);
+        $this->assertFalse($res);
+        $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
     }
     
     public function testRowExistsById()
     {
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
         $theRow = ['id' => 1, 'value' => 'test'];
         
-        $r = $dt->createRow($theRow);
-        $this->assertEquals(1, $r);
+        $res = $dataTable->createRow($theRow);
+        $this->assertEquals(1, $res);
         
-        $this->assertTrue($dt->rowExistsById(1));
-        $this->assertTrue($dt->rowExistsById('1'));
-        $this->assertFalse($dt->rowExistsById('b'));
-        $this->assertFalse($dt->rowExistsById(0));
+        $this->assertTrue($dataTable->rowExistsById(1));
+        $this->assertTrue($dataTable->rowExistsById('1'));
+        $this->assertFalse($dataTable->rowExistsById('b'));
+        $this->assertFalse($dataTable->rowExistsById(0));
     }
     
     
-    function testEscaping()
+    public function testEscaping()
     {
-        
-        $dt = $this->createEmptyDt();
-        // somekey is supposed to be an integer
+        $dataTable = $this->createEmptyDt();
 
-        //$id = $dt->createRow(['somekey' => 'A string']);
-        //$this->assertSame(false, $id);
-        
-        // This should work
-        $id = $dt->createRow(['somekey' => 120]);
-        $this->assertNotFalse($id);
-        $theRow = $dt->getRow($id);
-        $this->assertSame($id, $theRow['id']);
+        $rowId = $dataTable->createRow(['somekey' => 120]);
+        $this->assertNotFalse($rowId);
+        $theRow = $dataTable->getRow($rowId);
+        $this->assertSame($rowId, $theRow['id']);
         $this->assertEquals(120, $theRow['somekey']);
         $this->assertFalse(isset($theRow['someotherkey']));
-        $id2 = $dt->updateRow(['id' => $id, 'somekey' => NULL, 'someotherkey' => 'Some string']);
-        $this->assertSame($id, $id2);
-        $theRow2 = $dt->getRow($id2);
+        $id2 = $dataTable->updateRow(['id' => $rowId, 'somekey' => null,
+            'someotherkey' => 'Some string']);
+        $this->assertSame($rowId, $id2);
+        $theRow2 = $dataTable->getRow($id2);
         $this->assertSame($id2, $theRow2['id']);
-        $this->assertEquals(NULL, $theRow2['somekey']);
+        $this->assertEquals(null, $theRow2['somekey']);
         $this->assertSame('Some string', $theRow2['someotherkey']);
     }
-
 }
-

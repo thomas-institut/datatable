@@ -9,12 +9,10 @@ Note: processIsolation set to true so that code coverage reporting
       https://github.com/sebastianbergmann/php-code-coverage/issues/411#issuecomment-217353411
 
 -->
-<phpunit colors="true" processIsolation="true">
-
+<phpunit colors="true" processIsolation="true" bootstrap="bootstrap.php">
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
             <directory suffix=".php">../DataTable</directory>
         </whitelist>
     </filter>    
-    
 </phpunit>

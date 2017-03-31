@@ -26,61 +26,69 @@
 
 namespace DataTable;
 
-require "../vendor/autoload.php";
-require 'config.php';
-
 use PHPUnit\Framework\TestCase;
 use \PDO;
+
 /**
  * Description of SQLDataTableTest
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest {
+class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
+{
     
-    var $minId = 100000;
-    var $maxId = 200000;
+    public $minId = 100000;
+    public $maxId = 200000;
     
-    public function createEmptyDt() 
+    public function createEmptyDt()
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlDataTableWithRandomIds($pdo, 'testtable', 
-                $this->minId, $this->maxId);
+        return new MySqlDataTableWithRandomIds(
+            $pdo,
+            'testtable',
+            $this->minId,
+            $this->maxId
+        );
     }
     
-    function testRandomIds ()
+    public function testRandomIds()
     {
         
-        $dt = $this->createEmptyDt();
+        $dataTable = $this->createEmptyDt();
        
         // Adding new rows
         $nRows = 10;
-        for ($i = 0; $i < $nRows; $i++){
-            $newId = $dt->createRow([ 'somekey' => $i, 'someotherkey' => "textvalue$i"] );
+        for ($i = 0; $i < $nRows; $i++) {
+            $newId = $dataTable->createRow(['somekey' => $i,
+                'someotherkey' => "textvalue$i"]);
             $this->assertGreaterThanOrEqual($this->minId, $newId);
             $this->assertLessThanOrEqual($this->maxId, $newId);
         }
-
         
-        // Add new rows with fixed Ids 
+        // Add new rows with fixed Ids
         $nRows = $this->numRows;
         for ($i = 0; $i < $nRows; $i++) {
-            $newId = $dt->createRow([ 'id' => $i+1, 'somekey' => $i, 
-                'someotherkey' => "textvalue$i"] );
+            $newId = $dataTable->createRow(['id' => $i+1, 'somekey' => $i,
+                'someotherkey' => "textvalue$i"]);
             $this->assertEquals($i+1, $newId);
         }
         
-        
-        // Trying to add rows with random Ids, but the Ids are all already taken,
+        // Trying to add rows with random Ids, but the Ids are all
+        // already taken
         $nRows = 10;
         $pdo = $this->getPdo();
-        $dt2 = new MySqlDataTableWithRandomIds($pdo, 'testtable', 1, $this->numRows);
-        for ($i = 0; $i < $nRows; $i++){
-            $newID = $dt2->createRow([ 'somekey' => $i, 'someotherkey' => "textvalue$i"] );
+        $dt2 = new MySqlDataTableWithRandomIds(
+            $pdo,
+            'testtable',
+            1,
+            $this->numRows
+        );
+        for ($i = 0; $i < $nRows; $i++) {
+            $newID = $dt2->createRow([ 'somekey' => $i,
+                'someotherkey' => "textvalue$i"]);
             $this->assertNotSame(false, $newID);
             $this->assertGreaterThan($this->numRows, $newID);
         }
     }
-
 }

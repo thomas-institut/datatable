@@ -28,72 +28,83 @@ namespace DataTable;
 
 use \PDO as PDO;
 
-class InMemoryDataTable extends DataTable 
+class InMemoryDataTable extends DataTable
 {
     
     private $theData = [];
     
-    public function getAllRows() {
+    public function getAllRows()
+    {
         return $this->theData;
     }
     
-    public function rowExistsById($rowId){
+    public function rowExistsById($rowId)
+    {
         return isset($this->theData[$rowId]);
     }
     
-    public function realCreateRow($theRow){
+    public function realCreateRow($theRow)
+    {
         $this->theData[$theRow['id']] = [];
         $this->theData[$theRow['id']] = $theRow;
         return $theRow['id'];
     }
     
-    public function realDeleteRow($rowId) {
+    public function realDeleteRow($rowId)
+    {
         unset($this->theData[$rowId]);
         return true;
     }
     
-    public function realUpdateRow($theRow) {
+    public function realUpdateRow($theRow)
+    {
         $keys = array_keys($theRow);
-        $id = $theRow['id'];
+        $rowId = $theRow['id'];
         
-        foreach ($keys as $k){
-            $this->theData[$id][$k] = $theRow[$k];
+        foreach ($keys as $k) {
+            $this->theData[$rowId][$k] = $theRow[$k];
         }
-        return $id;
+        return $rowId;
     }
     
-    public function getMaxId() {
-        if (count($this->theData) !== 0){
+    public function getMaxId()
+    {
+        if (count($this->theData) !== 0) {
             return max(array_column($this->theData, 'id'));
-        }
-        else{
+        } else {
             return 0;
         }
     }
     
-    public function getRow($rowId) {
+    public function getRow($rowId)
+    {
         if ($this->rowExistsById($rowId)) {
             return $this->theData[$rowId];
         }
         return false;
     }
     
-    public function getIdForKeyValue($key, $value) {
-        return array_search($value, array_column($this->theData, $key, 'id'), TRUE);
+    public function getIdForKeyValue($key, $value)
+    {
+        return array_search(
+            $value,
+            array_column($this->theData, $key, 'id'),
+            true
+        );
     }
     
-    public function realFindRows($givenRow, $maxResults) 
+    public function realFindRows($givenRow, $maxResults)
     {
         $results = [];
         $givenRowKeys = array_keys($givenRow);
-        foreach($this->theData as $dataRow){
+        foreach ($this->theData as $dataRow) {
             $match = true;
-            foreach ($givenRowKeys as $key){
-                if ($dataRow[$key] !== $givenRow[$key]){
+            foreach ($givenRowKeys as $key) {
+                if ($dataRow[$key] !== $givenRow[$key]) {
                     $match = false;
                 }
             }
-            if ($match){
+            if ($match) {
                 $results[] = $dataRow;
                 if ($maxResults && count($results) === $maxResults) {
                     return $results;

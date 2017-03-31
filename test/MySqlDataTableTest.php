@@ -26,37 +26,35 @@
 
 namespace DataTable;
 
-require "../vendor/autoload.php";
-require 'config.php';
-
-require_once 'DataTableTest.php';
-
 use PHPUnit\Framework\TestCase;
 use \PDO;
+
 /**
  * Description of SQLDataTableTest
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableTest extends DataTableTest {
+class MySqlDataTableTest extends DataTableTest
+{
     
-    var $numRows = 100;
+    public $numRows = 100;
     
-    public function createEmptyDt() 
+    public function createEmptyDt()
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
         return new MySqlDataTable($pdo, 'testtable');
     }
     
-    public function getPdo() 
+    public function getPdo()
     {
         global $config;
         
-        return new PDO('mysql:dbname=' . $config['db'] . 
-                ';host=' . $config['host'], $config['user'], 
-                $config['pwd']);
-        
+        return new PDO(
+            'mysql:dbname=' . $config['db'] . ';host=' . $config['host'],
+            $config['user'],
+            $config['pwd']
+        );
     }
 
     public function resetTestDb($pdo)
@@ -72,7 +70,6 @@ class MySqlDataTableTest extends DataTableTest {
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
-        
     }
     
     public function resetTestDbWithBadTables($pdo)
@@ -92,57 +89,57 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
-        
     }
     
-    function testEscaping()
+    public function testEscaping()
     {
         parent::testEscaping();
         
         $pdo = $this->getPdo();
-        $dt = new MySqlDataTable($pdo, 'testtable');
+        $dataTable = new MySqlDataTable($pdo, 'testtable');
         // somekey is supposed to be an integer
-        $id = $dt->createRow(['somekey' => 'A string']);
-        $this->assertSame(false, $id);
+        $rowId = $dataTable->createRow(['somekey' => 'A string']);
+        $this->assertSame(false, $rowId);
     }
-
    
-    public function testBadTables() 
+    public function testBadTables()
     {
         $pdo = $this->getPdo();
         $this->resetTestDbWithBadTables($pdo);
-        $dt = new MySqlDataTable($pdo, 'testtablebad1');
+        $dataTable = new MySqlDataTable($pdo, 'testtablebad1');
 
-        $this->assertFalse($dt->isDbTableValid());
+        $this->assertFalse($dataTable->isDbTableValid());
         
-        $dt = new MySqlDataTable($pdo, 'testtablebad2');
-        $this->assertFalse($dt->isDbTableValid());
+        $dataTable = new MySqlDataTable($pdo, 'testtablebad2');
+        $this->assertFalse($dataTable->isDbTableValid());
         
-        $dt = new MySqlDataTable($pdo, 'nonexistenttable');
-        $this->assertFalse($dt->isDbTableValid());
+        $dataTable = new MySqlDataTable($pdo, 'nonexistenttable');
+        $this->assertFalse($dataTable->isDbTableValid());
         
         // This should all return false right away
-        $this->assertFalse($dt->rowExistsById(1));
-        $this->assertFalse($dt->createRow(['id' => 1, 'somekey' => 'test']));
-        $this->assertFalse($dt->getAllRows());
-        $this->assertFalse($dt->getRow(1));
-        $this->assertFalse($dt->getMaxId());
-        $this->assertFalse($dt->findRows(['id' => 1, 'somekey' => 'test2']));
-        
+        $this->assertFalse($dataTable->rowExistsById(1));
+        $this->assertFalse($dataTable->createRow(['id' => 1,
+            'somekey' => 'test']));
+        $this->assertFalse($dataTable->getAllRows());
+        $this->assertFalse($dataTable->getRow(1));
+        $this->assertFalse($dataTable->getMaxId());
+        $this->assertFalse($dataTable->findRows(['id' => 1,
+            'somekey' => 'test2']));
     }
     
-    public function testUpdateRow() {
+    public function testUpdateRow()
+    {
         parent::testUpdateRow();
         
         $pdo = $this->getPdo();
-        $dt = new MySqlDataTable($pdo, 'testtable');
+        $dataTable = new MySqlDataTable($pdo, 'testtable');
         
         // Somekey should be an int
-        $this->assertFalse($dt->updateRow(['id' => 1, 'somekey' => 'bad']));
+        $this->assertFalse($dataTable->updateRow(['id' => 1,
+            'somekey' => 'bad']));
         
         // Null values are fine (because the table schema allows them)
-        $this->assertNotFalse($dt->updateRow(['id' => 1, 'value' => NULL]));
+        $this->assertNotFalse($dataTable->updateRow(['id' => 1,
+            'value' => null]));
     }
-    
-
 }
