@@ -30,22 +30,30 @@ use \PDO;
 
 /**
  * Implements a MySql data table that keeps different versions
- * of its rows.
+ * of its rows. The term 'unitemporal' is taken from
+ * Johnston and Weis, 'Managing Time in Relational Databases", 2010, but
+ * this this implementation does not necessarily follow the techniques
+ * described in that book.
  * 
  * The normal DataTable methods for creating, updating and deleting
- * rows do not delete any previous data but just marks it as 
- * not valid any more. There are new methods to retrieve data
- * at previous points in time.
+ * rows do not delete any previous data but just mark that data as 
+ * not valid any more. Data retrieval methods (getRow and findRows) get
+ * the latest versions of the data and strip out the time information, so, 
+ * if used with the normal methods the class behaves as any other DataTable. 
+ * There are, however, new methods to retrieve data at previous points in time.
  *
  * The actual MySql table should have and integer id and two datetime 
  * columns with precision up to the microsecond:
- *   id INT
- *   valid_from DATETIME(6)
- *   valid_until DATETIME(6)
+ *   id INT NOT NULL
+ *   valid_from DATETIME(6) NOT NULL
+ *   valid_until DATETIME(6) NOT NULL
+ * 
+ * The id column cannot be a primary key because it is not unique. The
+ * primary key should be (id, valid_from, valid_until)
  * 
  * The class should work for any sistem that implements microtime(),
  * see http://php.net/manual/en/function.microtime.php
- *  
+ * 
  * @author Rafael Nájera <rafael@najera.ca>
  */
 class MySqlUnitemporalDataTable extends MySqlDataTable
@@ -73,8 +81,10 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     
     
     /**
-     * Returns true if the table in the DB has 
-     * at least an id column of type int
+     * Checks the actual MySql table's data schema 
+     * 
+     * This function will be called by MySqlData at construction time
+     * 
      */
     protected function realIsDbTableValid()
     {
@@ -104,11 +114,24 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return true;
     }
     
+    /**
+     * Creates a row valid from the current time.
+     * 
+     * @param type $theRow
+     * @return int
+     */
     public function realCreateRow($theRow) {
         return $this->realCreateRowWithTime($theRow, self::now());
     }
     
-    public function createRowWithTime($theRow, $time){
+    /**
+     * Creates a row valid from the given time
+     * 
+     * @param type $theRow
+     * @param string $time  in MySql format, e.g., '2010-09-20 18:25:25'
+     * @return boolean
+     */
+    public function createRowWithTime($theRow, string $time){
         if (!isset($theRow['id']) || $theRow['id']===0){
             $theRow['id'] = $this->getOneUnusedId();
             if ($theRow['id'] === false){
@@ -126,7 +149,14 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->realCreateRowWithTime($theRow, $time);
     }
     
-    public function realCreateRowWithTime($theRow, $time)
+    /**
+     * Actual creation of a row
+     *  
+     * @param type $theRow
+     * @param type $time
+     * @return boolean
+     */
+    protected function realCreateRowWithTime($theRow, $time)
     {
         if (!$this->isDbTableValid()) {
             return false;
@@ -135,18 +165,16 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $theRow['valid_from'] = $time;
         $theRow['valid_until'] = self::END_OF_TIMES;
         
-        //print "Ready to real create row now\n";
-        //var_dump($theRow);
-        
         return parent::realCreateRow($theRow);
     }
 
     /**
+     * Makes a row invalid from the given time
      * 
      * @param type $theRow
-     * @param type $time
+     * @param string $time
      */
-    public function makeRowInvalid($theRow, $time)
+    public function makeRowInvalid($theRow, string $time)
     {
         $sql = 'UPDATE ' . $this->tableName . ' SET ' . 
                 ' valid_until=' . $this->quote($time). 
@@ -160,11 +188,22 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $theRow['id'];
     }
     
+    /**
+     * Updates a row keeping the current version
+     * @param type $theRow
+     * @return type
+     */
     public function realUpdateRow($theRow) {
         return $this->realUpdateRowWithTime($theRow, self::now());
     }
     
-    public function realUpdateRowWithTime($theRow, $time)
+    /**
+     * Updates a row at the given time
+     * @param type $theRow
+     * @param type $time
+     * @return type
+     */
+    public function realUpdateRowWithTime($theRow, string $time)
     {
         $oldRow = $this->realGetRow($theRow['id']);
         $this->makeRowInvalid($oldRow, $time);
@@ -179,11 +218,22 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->realCreateRowWithTime($theRow, $time);
     }
     
+    /**
+     * Returns all rows that are valid at the present moment
+     * 
+     * @return array
+     */
     public function getAllRows() 
     {
         return $this->getAllRowsWithTime(self::now());
     }
     
+    /**
+     * Returns all row that are/were valid that the given time
+     * 
+     * @param type $time
+     * @return array
+     */
     public function getAllRowsWithTime($time) 
     {
         if (!$this->isDbTableValid()) {
@@ -200,12 +250,29 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
-    
+    /**
+     * Returns the version of the row with the given ID that is
+     * valid at the current time. 
+     * 
+     * For compatibility with DataTable, it strips time information
+     * 
+     * @param type $rowId
+     * @return array
+     */
     public function getRow($rowId)
     {
         return $this->realGetRow($rowId, true);
     }
     
+    /**
+     * Returns the version of the row with the given ID that is
+     * valid at the current time, optionally stripping time
+     * information from the resulting array.
+     * 
+     * @param type $rowId
+     * @param type $stripTimeInfo
+     * @return boolean
+     */
     public function realGetRow($rowId, $stripTimeInfo=false)
     {
         $theRow = $this->getRowWithTime($rowId, self::now());
@@ -219,9 +286,18 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $theRow;
     }
     
+    /**
+     * Gets the version of the row with the given ID that is/was
+     * valid at the given time. 
+     * 
+     * The resulting array will include time information
+     * 
+     * @param type $rowId
+     * @param type $time
+     * @return boolean
+     */
     public function getRowWithTime($rowId, $time)
     {
-        
         if (!$this->isDbTableValid()) {
             return false;
         }
@@ -245,12 +321,21 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         
     }
     
+    /**
+     * Finds rows that are valid at the current moment. 
+     * The rows in the resulting array will contain time information.
+     * 
+     * @param type $theRow
+     * @param type $maxResults
+     * @return type
+     */
     public function realfindRows($theRow, $maxResults)
     {
         return $this->realfindRowsWithTime($theRow, $maxResults, self::now());
     }
     
     /**
+     * Finds rows that are/were valid at the given time
      * 
      * @param array $theRow
      * @param int $maxResults  
@@ -291,13 +376,24 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
-    
+    /**
+     * 'Deletes' a row by making its current version invalid
+     * as of the current moment
+     * 
+     * @param type $rowId
+     * @return type
+     */
     public function realDeleteRow($rowId)
     {
         $oldRow = $this->realGetRow($rowId);
         return $this->makeRowInvalid($oldRow, self::now()) !== false ;
     }
     
+    /**
+     * Returns the current time in MySQL format with microsecond precision
+     * 
+     * @return string
+     */
     public static function now()
     {
         $timeNow = microtime(true);
