@@ -211,7 +211,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $oldRow = $this->realGetRow($theRow['id']);
         $this->makeRowInvalid($oldRow, $time);
         foreach (array_keys($oldRow) as $key) {
-            if ($key === 'valid_from' or $key==='valid_until') {
+            if ($key === 'valid_from' or $key ==='valid_until') {
                 continue;
             }
             if (!array_key_exists($key, $theRow)) {
@@ -353,6 +353,10 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key) {
+            if ($key === 'valid_from' or $key ==='valid_until') {
+                // Ignore time info keys
+                continue;
+            }
             $c = $key . '=';
             if (is_string($theRow[$key])) {
                 $c .= $this->dbConn->quote($theRow[$key]);

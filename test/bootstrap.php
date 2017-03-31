@@ -30,3 +30,5 @@
 
 require '../vendor/autoload.php';
 require 'config.php';
+require_once 'DataTableTest.php';
+require_once 'MySqlDataTableTest.php';

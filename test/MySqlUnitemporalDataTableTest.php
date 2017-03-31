@@ -137,9 +137,13 @@ EOD;
         $nEntries = 10;
         $theKey = 1000;
         
+        // Create different versions of $nEntries
         $ids = [];
         for ($i = 0; $i < $nEntries; $i++) {
-            $rowId = $dataTable->createRowWithTime(['somekey' => $theKey], $timeZero);
+            $rowId = $dataTable->createRowWithTime(
+                    ['somekey' => $theKey], 
+                    $timeZero
+            );
             $this->assertNotFalse($rowId);
             $ids[] = $rowId;
             $timesCount = 1;
@@ -151,6 +155,8 @@ EOD;
             }
         }
         
+        
+        // Check latest versions
         foreach ($ids as $rowId) {
             $row = $dataTable->getRow($rowId);
             $this->assertNotFalse($row);
@@ -158,6 +164,7 @@ EOD;
             $this->assertEquals('Value3', $row['someotherkey']);
         }
         
+        // Only the last versions should show up in these searches
         $foundsRows1 = $dataTable->findRows(['someotherkey' => 'Value1']);
         $this->assertEquals([], $foundsRows1);
         
@@ -167,6 +174,21 @@ EOD;
         $foundsRows3 = $dataTable->findRows(['someotherkey' => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
+        // Time info should be irrelevant for the search:
+        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero, 
+            'someotherkey' => 'Value3']);
+        $this->assertCount($nEntries, $foundsRows3);
+        
+        $foundsRows3 = $dataTable->findRows(['valid_until'=> $timeZero, 
+            'someotherkey' => 'Value3']);
+        $this->assertCount($nEntries, $foundsRows3);
+        
+        $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero, 
+            'valid_until' => $timeZero,
+            'someotherkey' => 'Value3']);
+        $this->assertCount($nEntries, $foundsRows3);
+        
+        // Search the keys in the times they are valid
         $foundRows4 = $dataTable->realfindRowsWithTime(
             ['someotherkey' => 'Value3'],
             false,
@@ -188,9 +210,15 @@ EOD;
         );
         $this->assertCount(10, $foundRows6);
         
+        // Search the common key, only the latest version should 
+        // be returned
         $foundRows7 = $dataTable->findRows(['somekey' => $theKey]);
         $this->assertCount(10, $foundRows7);
+        foreach ($foundRows7 as $row) {
+            $this->assertEquals('Value3', $row['someotherkey']);
+        }
         
+        // Search the common key at other times
         $foundRows8 = $dataTable->realfindRowsWithTime(
             ['somekey' => $theKey],
             false,
