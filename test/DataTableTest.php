@@ -100,6 +100,12 @@ abstract class DataTableTest extends TestCase
             $theRow2 = $dataTable->findRow(['someotherkey' => $someTextvalue]);
             $this->assertNotFalse($theRow, $testMsg);
             $this->assertEquals($theRow['id'], $theRow2['id'], $testMsg);
+            $rowId = $dataTable->getIdForKeyValue(
+                'someotherkey',
+                $someTextvalue
+            );
+            $this->assertNotFalse($rowId);
+            $this->assertEquals($theRow['id'], $rowId);
             $theRow3 = $dataTable->findRow(['somekey' => $someInt,
                 'someotherkey' => $someTextvalue]);
             $this->assertNotFalse($theRow3, $testMsg);

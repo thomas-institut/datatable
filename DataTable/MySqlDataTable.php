@@ -221,7 +221,11 @@ class MySqlDataTable extends DataTable
     
     public function getIdForKeyValue($key, $value)
     {
-        return $this->findRow([$key => $value]);
+        $row = $this->findRow([$key => $value]);
+        if ($row === false) {
+            return false;
+        }
+        return $row['id'];
     }
     
     /**
