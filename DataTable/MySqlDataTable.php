@@ -124,8 +124,8 @@ class MySqlDataTable extends DataTable
         $sql .= '(' . implode(',', $values) . ');';
         //print "About to do MySQL dt realCreateRow: $sql\n";
         if ($this->dbConn->query($sql) === FALSE) {
-//            error_log("Can't create, query:  $sql; error info: " . 
-//                    $this->db->errorInfo()[2]);
+            //print("Can't create, query:  $sql; error info: " . 
+            //        $this->dbConn->errorInfo()[2]);
             return false;
         }
         return (int) $theRow['id'];
