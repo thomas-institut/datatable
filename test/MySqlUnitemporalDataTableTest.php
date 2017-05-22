@@ -28,6 +28,7 @@ class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
               `someotherkey` varchar(100) DEFAULT NULL,
               `value` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+            ALTER TABLE `testtable` ADD PRIMARY KEY( `id`, `valid_from`, `valid_until`);
 EOD;
         $pdo->query($tableSetupSQL);
     }

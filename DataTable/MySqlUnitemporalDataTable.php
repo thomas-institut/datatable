@@ -405,6 +405,15 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->forceIntIds($res->fetchAll(PDO::FETCH_ASSOC));
     }
     
+    public function deleteRowWithTime($rowId, $time)
+    {
+//        if (!$this->rowExistsById($rowId)) {
+//            return true;
+//        }
+        $oldRow = $this->realGetRow($rowId);
+        return $this->makeRowInvalid($oldRow, $time) !== false ;
+    }
+    
     /**
      * 'Deletes' a row by making its current version invalid
      * as of the current moment
