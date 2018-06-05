@@ -24,6 +24,9 @@
  * THE SOFTWARE.
  */
 namespace DataTable;
+require '../vendor/autoload.php';
+
+require_once 'DataTableTest.php';
 
 /**
  * Description of DataTableTest

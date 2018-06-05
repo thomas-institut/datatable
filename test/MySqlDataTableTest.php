@@ -26,7 +26,11 @@
 
 namespace DataTable;
 
-use PHPUnit\Framework\TestCase;
+require '../vendor/autoload.php';
+require_once 'config.php';
+require_once 'DataTableTest.php';
+
+
 use \PDO;
 
 /**
@@ -109,22 +113,49 @@ EOD;
         $dataTable = new MySqlDataTable($pdo, 'testtablebad1');
 
         $this->assertFalse($dataTable->isDbTableValid());
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_ID_COLUMN_NOT_INT, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         
         $dataTable = new MySqlDataTable($pdo, 'testtablebad2');
         $this->assertFalse($dataTable->isDbTableValid());
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_ID_COLUMN_NOT_FOUND, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         
         $dataTable = new MySqlDataTable($pdo, 'nonexistenttable');
         $this->assertFalse($dataTable->isDbTableValid());
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_TABLE_NOT_FOUND, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         
         // This should all return false right away
         $this->assertFalse($dataTable->rowExistsById(1));
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->createRow(['id' => 1,
             'somekey' => 'test']));
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->getAllRows());
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->getRow(1));
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->getMaxId());
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->findRows(['id' => 1,
             'somekey' => 'test2']));
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_INVALID_TABLE, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
     }
     
     public function testUpdateRow()
@@ -137,9 +168,27 @@ EOD;
         // Somekey should be an int
         $this->assertFalse($dataTable->updateRow(['id' => 1,
             'somekey' => 'bad']));
+        $this->assertEquals(MySqlDataTable::MYSQL_DATATABLE_QUERY_ERROR, 
+                $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         
         // Null values are fine (because the table schema allows them)
         $this->assertNotFalse($dataTable->updateRow(['id' => 1,
             'value' => null]));
+    }
+    
+    public function testNonExistentRows() 
+    {
+        parent::testNonExistentRows();
+        
+        $dataTable = $this->createEmptyDt();
+        
+        for ($i = 1; $i < 100; $i++) {
+            $this->assertFalse($dataTable->getRow($i));
+            $this->assertEquals(MySqlDataTable::DATATABLE_ROW_DOES_NOT_EXIST, 
+                $dataTable->getErrorCode());
+            $this->assertNotEquals('', $dataTable->getErrorMessage());
+        }
+        
     }
 }

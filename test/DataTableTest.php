@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 namespace DataTable;
+require '../vendor/autoload.php';
 
 use PHPUnit\Framework\TestCase;
 
@@ -74,6 +75,8 @@ abstract class DataTableTest extends TestCase
             $this->assertTrue($dataTable->rowExistsById($theId), $testMsg);
             $this->assertTrue($dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExistsById($theId), $testMsg);
+            $this->assertEquals(DataTable::DATATABLE_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+            $this->assertNotEquals('', $dataTable->getErrorMessage());
             $newId = $dataTable->createRow([ 'id' => $theId,
                 'somekey' => $theId, 'someotherkey' => "textvalue$theId" ]);
             $this->assertNotFalse($newId, $testMsg);
@@ -163,8 +166,14 @@ abstract class DataTableTest extends TestCase
     {
         $dataTable = $this->createEmptyDt();
         $this->assertFalse($dataTable->rowExistsById(1));
+        $this->assertEquals(DataTable::DATATABLE_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->getRow(1));
+        $this->assertEquals(DataTable::DATATABLE_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->findRow(['key' => 'somevalue']));
+        $this->assertEquals(DataTable::DATATABLE_EMPTY_RESULT_SET, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->getIdForKeyValue('key', 'somevalue'));
         $this->assertEquals([], $dataTable->getAllRows());
         $this->assertTrue($dataTable->deleteRow(1));
@@ -176,6 +185,8 @@ abstract class DataTableTest extends TestCase
         // Id not integer
         $res = $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
         $this->assertFalse($res);
+        $this->assertEquals(DataTable::DATATABLE_ID_NOT_INTEGER, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         
         
         $res = $dataTable->createRow(['id' => 1, 'value' => 'test']);
@@ -183,6 +194,8 @@ abstract class DataTableTest extends TestCase
         // Trying to create an existing row
         $res = $dataTable->createRow(['id' => 1, 'value' => 'anothervalue']);
         $this->assertFalse($res);
+        $this->assertEquals(DataTable::DATATABLE_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
     }
@@ -199,27 +212,39 @@ abstract class DataTableTest extends TestCase
         $res = $dataTable->createRow($theRow);
         $this->assertEquals(1, $res);
         
-        $this->assertFalse($dataTable->updateRow([]));
         // No Id in row
+        $this->assertFalse($dataTable->updateRow([]));
+        $this->assertEquals(DataTable::DATATABLE_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $this->assertFalse($dataTable->updateRow(['value' => 'testUpdate']));
+        $this->assertEquals(DataTable::DATATABLE_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        // Check that not updates were made!
         $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Id 0, which is invalid
         $res = $dataTable->updateRow(['id'=> 0, 'value' => 'testUpdate']);
         $this->assertFalse($res);
+        $this->assertEquals(DataTable::DATATABLE_ID_IS_ZERO, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        // Check that not updates were made!
         $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Id not integer
         $res = $dataTable->updateRow(['id'=> '1', 'value' => 'testUpdate']);
         $this->assertFalse($res);
+        $this->assertEquals(DataTable::DATATABLE_ID_NOT_INTEGER, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
         // Row doesn't exist
         $res = $dataTable->updateRow(['id'=> 2, 'value' => 'testUpdate']);
         $this->assertFalse($res);
+        $this->assertEquals(DataTable::DATATABLE_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
         $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
     }
@@ -233,9 +258,9 @@ abstract class DataTableTest extends TestCase
         $this->assertEquals(1, $res);
         
         $this->assertTrue($dataTable->rowExistsById(1));
-        $this->assertTrue($dataTable->rowExistsById('1'));
-        $this->assertFalse($dataTable->rowExistsById('b'));
         $this->assertFalse($dataTable->rowExistsById(0));
+        $this->assertEquals(DataTable::DATATABLE_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotEquals('', $dataTable->getErrorMessage());
     }
     
     

@@ -25,9 +25,9 @@
  */
 
 namespace DataTable;
+require '../vendor/autoload.php';
 
-use PHPUnit\Framework\TestCase;
-use \PDO;
+require_once 'MySqlDataTableTest.php';
 
 /**
  * Description of SQLDataTableTest

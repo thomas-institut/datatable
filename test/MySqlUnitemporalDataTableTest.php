@@ -8,6 +8,8 @@
 
 namespace DataTable;
 
+require '../vendor/autoload.php';
+
 /**
  * Description of MySqlUnitemporalDataTableTest
  *

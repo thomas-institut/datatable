@@ -26,7 +26,6 @@
 
 namespace DataTable;
 
-use \PDO as PDO;
 
 class InMemoryDataTable extends DataTable
 {
@@ -38,9 +37,16 @@ class InMemoryDataTable extends DataTable
         return $this->theData;
     }
     
-    public function rowExistsById($rowId)
+    public function rowExistsById(int $rowId)
     {
-        return isset($this->theData[$rowId]);
+        $this->resetError();
+        if (isset($this->theData[$rowId])) {
+            return true;
+        }
+            
+        $this->setErrorCode(parent::DATATABLE_ROW_DOES_NOT_EXIST);
+        $this->setErrorMessage('Row with id ' . $rowId . ' does not exist');
+        return false;
     }
     
     public function realCreateRow($theRow)
@@ -81,16 +87,24 @@ class InMemoryDataTable extends DataTable
         if ($this->rowExistsById($rowId)) {
             return $this->theData[$rowId];
         }
+        $this->setErrorCode(parent::DATATABLE_ROW_DOES_NOT_EXIST);
+        $this->setErrorMessage('Row ' . $rowId . ' does not exist');
         return false;
     }
     
     public function getIdForKeyValue($key, $value)
     {
-        return array_search(
+        $id = array_search(
             $value,
             array_column($this->theData, $key, 'id'),
             true
         );
+        if ($id === false) {
+            $this->setErrorCode(parent::DATATABLE_KEY_VALUE_NOT_FOUND);
+            $this->setErrorMessage('Value ' . $value . ' for key ' . $key .  'not found');
+            return false;
+        }
+        return $id;
     }
     
     public function realFindRows($givenRow, $maxResults)

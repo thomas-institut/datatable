@@ -25,8 +25,10 @@
  */
 
 namespace DataTable;
+require '../vendor/autoload.php';
 
 use \PDO;
+use \PDOException;
 
 /**
  * Implements a data table with MySQL
@@ -34,6 +36,15 @@ use \PDO;
  */
 class MySqlDataTable extends DataTable
 {
+    
+    // CONSTANTS
+    
+    const MYSQL_DATATABLE_QUERY_ERROR = 1010;
+    const MYSQL_DATATABLE_ID_COLUMN_NOT_FOUND = 1020;
+    const MYSQL_DATATABLE_ID_COLUMN_NOT_INT = 1030;
+    const MYSQL_DATATABLE_TABLE_NOT_FOUND = 1040;
+    const MYSQL_DATATABLE_INVALID_TABLE = 1050;
+    
     /** @var PDO */
     protected $dbConn;
     
@@ -58,6 +69,9 @@ class MySqlDataTable extends DataTable
      */
     public function __construct($theDb, $tableName)
     {
+        
+        parent::__construct();
+        
         $this->dbConn = $theDb;
         $this->tableName = $tableName;
         
@@ -65,8 +79,11 @@ class MySqlDataTable extends DataTable
         if (!$this->validDbTable) {
             return;
         }
+        
+        $this->dbConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
        
         // Pre-prepare common statements
+        // TODO: check and test for errors in preparing these statements
         $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
                         ' WHERE id= :id');
@@ -86,41 +103,75 @@ class MySqlDataTable extends DataTable
      */
     protected function realIsDbTableValid()
     {
-        $result = $this->dbConn->query(
-            'SHOW COLUMNS FROM ' . $this->tableName . ' LIKE \'id\''
-        );
-        if ($result === false) {
-            // This means that the table does not exist!
+        try {
+            $r = $this->dbConn->query(
+                'SHOW COLUMNS FROM ' . $this->tableName . ' LIKE \'id\''
+            );
+        } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error: ' . $e->getMessage());
             return false;
         }
-        if ($result->rowCount() != 1) {
+        if ($r === false) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_TABLE_NOT_FOUND);
+            $this->setErrorMessage('Table ' . $this->tableName . ' not found');
+            return false;
+        }
+        
+        if ($r->rowCount() != 1) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_ID_COLUMN_NOT_FOUND);
+            $this->setErrorMessage('No id column in MySQL table ' . $this->tableName);
             return false;
         }
          
-        $columnInfo = $result->fetch(PDO::FETCH_ASSOC);
+        $columnInfo = $r->fetch(PDO::FETCH_ASSOC);
          
         if (preg_match('/^int/', $columnInfo['Type'])) {
             return true;
         }
 
+        $this->setErrorCode(self::MYSQL_DATATABLE_ID_COLUMN_NOT_INT);
+        $this->setErrorMessage('id column not integer in MySQL table ' . $this->tableName . '. Actual type: ' .$columnInfo['Type'] );
         return false;
     }
     
     public function rowExistsById($rowId)
     {
+        $this->resetError();
+        
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting rowExistsById');
             return false;
         }
-        if ($this->statements['rowExistsById']->execute(['id' => $rowId])) {
-            return $this->statements['rowExistsById']->rowCount() === 1;
+        try {
+            $r = $this->statements['rowExistsById']->execute(['id' => $rowId]);
+        } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('MySQL error when executing rowExistById prepared statement: ' . $e->getMessage());
+            return false;
         }
-        // can't get here in testing
-        return false; // @codeCoverageIgnore
+        
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error when executing rowExistById prepared statement');
+            return false;
+        }
+        
+        if ($this->statements['rowExistsById']->rowCount() === 1) {
+            return true;
+        }
+        
+        $this->setErrorCode(self::DATATABLE_ROW_DOES_NOT_EXIST);
+        $this->setErrorMessage('Row with id ' . $rowId . ' does not exist');
+        return false;
     }
     
     public function realCreateRow($theRow)
     {
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting realCreateRow');
             return false;
         }
         $keys = array_keys($theRow);
@@ -131,9 +182,16 @@ class MySqlDataTable extends DataTable
             array_push($values, $this->quote($theRow[$key]));
         }
         $sql .= '(' . implode(',', $values) . ');';
-        if ($this->dbConn->query($sql) === false) {
-            //print("Can't create, query:  $sql; error info: " .
-            //        $this->dbConn->errorInfo()[2]);
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error in realCreateRow: ' . $e->getMessage() . ' :: query = ' . $sql);
+            return false;
+        }
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error in realCreateRow when executing query: ' . $sql);
             return false;
         }
         return (int) $theRow['id'];
@@ -151,10 +209,20 @@ class MySqlDataTable extends DataTable
         }
         $sql = 'UPDATE ' . $this->tableName . ' SET ' .
                 implode(',', $sets) . ' WHERE id=' . $theRow['id'];
-        //error_log("Executing query: $sql");
-        if ($this->dbConn->query($sql) === false) {
+        
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error in realUpdateRow: ' . $e->getMessage() . ' :: query = ' . $sql);
             return false;
         }
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error in realUpdate row when executing query: ' . $sql);
+            return false;
+        }
+
         return $theRow['id'];
     }
     
@@ -172,29 +240,55 @@ class MySqlDataTable extends DataTable
     public function getAllRows()
     {
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting getAllRows');
             return false;
         }
-        $res = $this->dbConn->query('SELECT * FROM ' . $this->tableName);
-        if ($res === false) {
-            // Can't get here in testing: query only fails on MySQL failure
-            return false; // @codeCoverageIgnore
+        
+        $sql  = 'SELECT * FROM ' . $this->tableName;
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error in getAllRows: ' . $e->getMessage() . ' :: query = ' . $sql);
+            return false;
         }
-        return $this->forceIntIds($res->fetchAll(PDO::FETCH_ASSOC));
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error in getAllRows when executing query: ' . $sql);
+            return false;
+        }
+        
+        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
     public function getRow($rowId)
     {
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting getRow');
             return false;
         }
         
-        $res = $this->dbConn
-                ->query('SELECT * FROM ' . $this->tableName .
-                        ' WHERE `id`=' . $rowId . ' LIMIT 1')
-                ->fetch(PDO::FETCH_ASSOC);
+        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE `id`=' . $rowId . ' LIMIT 1';
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error in getAllRows: ' . $e->getMessage() . ' :: query = ' . $sql);
+            return false;
+        }
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error in getAllRows when executing query: ' . $sql);
+            return false;
+        }
+        
+        $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
-            // Can't get here in testing: query only fails on MySQL failure
-            return false; // @codeCoverageIgnore
+            $this->setErrorMessage('The row with id ' . $rowId . ' does not exist');
+            $this->setErrorCode(self::DATATABLE_ROW_DOES_NOT_EXIST);
+            return false;
         }
         $res['id'] = (int) $res['id'];
         return $res;
@@ -203,16 +297,25 @@ class MySqlDataTable extends DataTable
     public function getMaxId()
     {
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting getMaxId');
             return false;
         }
-        $query = 'SELECT MAX(id) FROM ' . $this->tableName;
-        $res = $this->dbConn->query($query);
-        if ($res === false) {
-            //print("Query returned false: $query\n");
-            // Can't get here in testing: query only fails on MySQL failure
-            return false; // @codeCoverageIgnore
+        $sql = 'SELECT MAX(id) FROM ' . $this->tableName;
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error: ' . $e->getMessage() . ' :: query = ' . $sql);
+            return false;
         }
-        $maxId = $res->fetchColumn();
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error when executing query: ' . $sql);
+            return false;
+        }
+      
+        $maxId = $r->fetchColumn();
         if ($maxId === null) {
             return 0;
         }
@@ -239,6 +342,8 @@ class MySqlDataTable extends DataTable
     public function realfindRows($theRow, $maxResults)
     {
         if (!$this->isDbTableValid()) {
+            $this->setErrorCode(self::MYSQL_DATATABLE_INVALID_TABLE);
+            $this->setErrorMessage('Table was found to be invalid at creation time, aborting realfindRows');
             return false;
         }
         $keys = array_keys($theRow);
@@ -257,12 +362,35 @@ class MySqlDataTable extends DataTable
         if ($maxResults) {
             $sql .= ' LIMIT ' . $maxResults;
         }
-        $res = $this->dbConn->query($sql);
-        if ($res === false) {
+        
+        try {
+            $r = $this->dbConn->query($sql);
+         } catch (PDOException $e) {
+             if ( $e->getCode() === '42000') {
+                 // The exception was thrown because of an SQL syntax error but
+                 // this should only happen when one of the keys does not exist or
+                 // is of the wrong type. This just means that the search
+                 // did not have any results, so let's set the error code
+                 // to be 'empty result set'
+                 $this->setErrorCode(self::DATATABLE_EMPTY_RESULT_SET);
+                 // However, just in case this may be hiding something else, 
+                 // let's report everything in the error message
+                 $this->setErrorMessage('Query error in realFindRows (reported as no results) : ' . 
+                         $e->getMessage() . ' :: query = ' . $sql);
+                 return false;
+             }
+             
+            $this->setErrorCode(self::MYSQL_DATATABLE_QUERY_ERROR);
+            $this->setErrorMessage('Query error in realFindRows: ' . $e->getMessage() . ' :: query = ' . $sql);
+            return false;
+        }
+        if ($r === false) {
+            $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error when executing query: ' . $sql);
             return false;
         }
 
-        return $this->forceIntIds($res->fetchAll(PDO::FETCH_ASSOC));
+        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
     
     public function realDeleteRow($rowId)

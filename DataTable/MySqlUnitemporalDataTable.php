@@ -27,6 +27,7 @@
 namespace DataTable;
 
 use \PDO;
+use \PDOException;
 
 /**
  * Implements a MySql data table that keeps different versions
