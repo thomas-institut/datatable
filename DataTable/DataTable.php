@@ -125,6 +125,23 @@ abstract class DataTable
     public function createRow($theRow)
     {
         $this->resetError();
+        $preparedRow = $this->prepareRowForRealCreation($theRow);
+        if ($preparedRow === false) {
+            return false;
+        }
+        return $this->realCreateRow($preparedRow);
+    }
+    
+    /**
+     * 
+     * Returns true if $theRow passes all general checks
+     * before actual row creation
+     * 
+     * @param array $theRow
+     * @return boolean
+     */
+    protected function prepareRowForRealCreation($theRow) 
+    {
         if (!isset($theRow['id']) || $theRow['id']===0) {
             $theRow['id'] = $this->getOneUnusedId();
             if ($theRow['id'] === false) {
@@ -148,7 +165,7 @@ abstract class DataTable
                 return false;
             }
         }
-        return $this->realCreateRow($theRow);
+        return $theRow;
     }
     
     /**
