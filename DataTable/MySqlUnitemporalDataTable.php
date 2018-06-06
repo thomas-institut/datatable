@@ -79,10 +79,19 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         parent::__construct($theDb, $tableName);
         
         // Override rowExistsById statement
-        $this->statements['rowExistsById'] =
+        try {
+            $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
                         ' WHERE id= :id AND valid_until=' .
                         $this->quote(self::END_OF_TIMES));
+        } catch (PDOException $e) { // @codeCoverageIgnore
+            // @codeCoverageIgnoreStart
+            $this->validDataTable = false;
+            $this->setErrorCode(self::MYSQLDATATABLE_ERROR_PREPARING_STATEMENTS);
+            $this->setErrorMessage("Could not prepare statements "
+                    . "in constructor, " . $e->getMessage());
+            // @codeCoverageIgnoreEnd
+        }
     }
     
     

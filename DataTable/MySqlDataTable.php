@@ -45,6 +45,7 @@ class MySqlDataTable extends DataTable
     const MYSQLDATATABLE_TABLE_NOT_FOUND = 1040;
     const MYSQLDATATABLE_INVALID_TABLE = 1050;
     const MYSQLDATATABLE_INVALID_DB_CONNECTION = 1060;
+    const MYSQLDATATABLE_ERROR_PREPARING_STATEMENTS = 1070;
     
     /** @var PDO */
     protected $dbConn;
@@ -61,7 +62,7 @@ class MySqlDataTable extends DataTable
      *
      * @var boolean
      */
-    private $validDbTable;
+    private $validDataTable;
     
     /**
      *
@@ -76,34 +77,43 @@ class MySqlDataTable extends DataTable
         $this->tableName = $tableName;
         
         if (! ($theDb instanceof PDO )) {
-            $this->validDbTable = false;
+            $this->validDataTable = false;
             $this->setErrorCode(self::MYSQLDATATABLE_INVALID_DB_CONNECTION);
-            $this->setErrorMessage("DB connection given in constructor is not a PDO object");
+            $this->setErrorMessage("DB connection given in constructor "
+                    . "is not a PDO object");
             return;
         }
         $this->dbConn = $theDb;
         
         
-        $this->validDbTable = $this->realIsDbTableValid();
-        if (!$this->validDbTable) {
+        $this->validDataTable = $this->realIsDbTableValid();
+        if (!$this->validDataTable) {
             return;
         }
         
         $this->dbConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
        
         // Pre-prepare common statements
-        // TODO: check and test for errors in preparing these statements
-        $this->statements['rowExistsById'] =
+        try {
+            $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName 
                         . ' WHERE id= :id');
-        $this->statements['deleteRow'] =
+            $this->statements['deleteRow'] =
                 $this->dbConn->prepare('DELETE FROM `' . $this->tableName 
                         . '` WHERE `id`= :id');
+        } catch (PDOException $e) { // @codeCoverageIgnore
+            // @codeCoverageIgnoreStart
+            $this->validDataTable = false;
+            $this->setErrorCode(self::MYSQLDATATABLE_ERROR_PREPARING_STATEMENTS);
+            $this->setErrorMessage("Could not prepare statements "
+                    . "in constructor, " . $e->getMessage());
+            // @codeCoverageIgnoreEnd
+        }
     }
     
     public function isDbTableValid()
     {
-        return $this->validDbTable;
+        return $this->validDataTable;
     }
     
     /**
