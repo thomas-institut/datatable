@@ -44,10 +44,11 @@ namespace DataTable;
 abstract class DataTable
 {
     
-    // ERROR CODE CONSTANTS
+    /**
+     * Error code constants
+     */
     const DATATABLE_NOERROR = 0;
     const DATATABLE_UNKNOWN_ERROR = 1;
-    
     const DATATABLE_CANNOT_GET_UNUSED_ID = 10;
     const DATATABLE_ROW_DOES_NOT_EXIST = 20;
     const DATATABLE_ROW_ALREADY_EXISTS = 30;
@@ -58,26 +59,9 @@ abstract class DataTable
     const DATATABLE_EMPTY_RESULT_SET = 80;
     const DATATABLE_KEY_VALUE_NOT_FOUND = 90;
     
-    
-
-    
-    // PROTECTED MEMBERS
-    
-    /**
-     *
-     * @var string 
-     */
-    protected $errorMessage;
-    
-    /**
-     *
-     * @var int
-     */
-    protected $errorCode;
-    
-    //
-    // PUBLIC METHODS
-    //
+    /** *********************************************************************
+     * PUBLIC METHODS
+     ************************************************************************/
     
     /**
      * Constructor
@@ -113,11 +97,13 @@ abstract class DataTable
     
     /**
      * Attempts to create a new row.
+     * 
      * If the given row does not have a value for 'id' or if the value
      * is equal to 0 a new id will be assigned.
+     * 
      * Otherwise, if the given Id is not an int or if the id
      * already exists in the table the function will return
-     * false (updateRow must be used in this latter case)
+     * false (updateRow must be used in this case)
      *
      * @return int the Id of the new created row, or false if the row could
      *             not be created
@@ -132,42 +118,7 @@ abstract class DataTable
         return $this->realCreateRow($preparedRow);
     }
     
-    /**
-     * 
-     * Returns true if $theRow passes all general checks
-     * before actual row creation
-     * 
-     * @param array $theRow
-     * @return boolean
-     */
-    protected function prepareRowForRealCreation($theRow) 
-    {
-        if (!isset($theRow['id']) || $theRow['id']===0) {
-            $theRow['id'] = $this->getOneUnusedId();
-            if ($theRow['id'] === false) {
-                if ($this->getErrorCode() === self::DATATABLE_NOERROR) {
-                    // Give generic error information if a child class did not
-                    // provide any
-                    $this->setErrorMessage('Could not generate a new id when trying to create a new row');
-                    $this->setErrorCode(self::DATATABLE_CANNOT_GET_UNUSED_ID);
-                }
-                return false;
-            }
-        } else {
-            if (!is_int($theRow['id'])) {
-                $this->setErrorMessage('Id field is present but is not a integer, cannot create row');
-                $this->setErrorCode(self::DATATABLE_ID_NOT_INTEGER);
-                return false;
-            }
-            if ($this->rowExistsById($theRow['id'])) {
-                $this->setErrorMessage('The row with given id (' . $theRow['id'] . ') already exists, cannot create');
-                $this->setErrorCode(self::DATATABLE_ROW_ALREADY_EXISTS);
-                return false;
-            }
-        }
-        return $theRow;
-    }
-    
+   
     /**
      * @return bool true if the row was deleted (or if the row did not
      *              exist in the first place;
@@ -176,7 +127,8 @@ abstract class DataTable
     {
         $this->resetError();
         if (!$this->rowExistsById($rowId)) {
-            $this->setErrorMessage('The row with id ' . $rowId . ' does not exist, cannot delete');
+            $this->setErrorMessage('The row with id ' . $rowId 
+                    . ' does not exist, cannot delete');
             $this->setErrorCode(self::DATATABLE_ROW_DOES_NOT_EXIST);
             return true;
         }
@@ -202,19 +154,23 @@ abstract class DataTable
     {
         $this->resetError();
         if ($maxResults !== false && $maxResults <= 0) {
-            $this->setErrorMessage('Asked to limit number of results, but the given maxResults is less than 1');
+            $this->setErrorMessage('Asked to limit number of results, '
+                    . 'but the given maxResults is less than 1');
             $this->setErrorCode(self::DATATABLE_MAX_RESULTS_LESS_THAN_ONE);
             return false;
         }
         return $this->realFindRows($theRow, $maxResults);
     }
     
+
     /**
-     * Returns false on error, or an array with results (which could be
-     * empty
+     * Searches the table for one row with the same data as the given row
+     * 
+     * Equivalent to calling findRows($theRow, 1)
+     * 
+     * @param array $theRow
+     * @return boolean
      */
-    abstract public function realFindRows($theRow, $maxResults);
-    
     public function findRow($theRow)
     {
         $this->resetError();
@@ -236,7 +192,10 @@ abstract class DataTable
      * Updates the table with the given row, which must contain an 'id'
      * field specifying the row to update
      *
-     * Only the keys given in $theRow are updated
+     * Only the keys given in $theRow are updated. The user must make sure
+     * that not updating the non-given keys does not cause any problem
+     *  (e.g., if in an SQL implementation the underlying SQL table does not
+     *  have default values for the non-given keys)
      *
      * @return boolean
      */
@@ -268,40 +227,48 @@ abstract class DataTable
     }
     
     /**
-     * Get all rows
+     * Gets all rows in the table 
+     * 
      * @return array
      */
     abstract public function getAllRows();
     
     /**
-     * Gets the row with the given row Id
+     * Gets the row with the given row Id or false if the rows
+     * does not exist.
      *
      * @return array The row
      */
     abstract public function getRow($rowId);
     
+   
+    /** *********************************************************************
+     * PROTECTED VARIABLES AND METHODS
+     ************************************************************************/
+    
     /**
-     * @return int a unique id that does not exist in the table
-     *             (descendants may want to override the function
-     *             and return false if
-     *             a unique id can't be determined (which normally should
-     *             not happen!)
      *
+     * @var string 
      */
-    public function getOneUnusedId()
-    {
-        return $this->getMaxId()+1;
-    }
-
-    //
-    // PROTECTED METHODS
-    //
+    protected $errorMessage;
+    
+    /**
+     *
+     * @var int
+     */
+    protected $errorCode;
     
     /**
      * @return int the max id in the table
      */
     abstract protected function getMaxId();
     
+    
+    /**
+     * Returns false on error, or an array with results (which could be
+     * empty
+     */
+    abstract protected function realFindRows($theRow, $maxResults);
     
     /**
      * Returns the id of one row in which $row[$key] === $value
@@ -331,6 +298,58 @@ abstract class DataTable
     protected function setErrorCode(int $c) 
     {
         $this->errorCode = $c;
+    }
+    
+     /**
+     * 
+     * Returns true if $theRow passes all general checks
+     * before actual row creation
+     * 
+     * @param array $theRow
+     * @return boolean
+     */
+    protected function prepareRowForRealCreation($theRow) 
+    {
+        if (!isset($theRow['id']) || $theRow['id']===0) {
+            $theRow['id'] = $this->getOneUnusedId();
+            if ($theRow['id'] === false) {
+                if ($this->getErrorCode() === self::DATATABLE_NOERROR) {
+                    // Give generic error information if a child class did not
+                    // provide any
+                    $this->setErrorMessage('Could not generate a new id '
+                            . 'when trying to create a new row');
+                    $this->setErrorCode(self::DATATABLE_CANNOT_GET_UNUSED_ID);
+                }
+                return false;
+            }
+        } else {
+            if (!is_int($theRow['id'])) {
+                $this->setErrorMessage('Id field is present but is not a '
+                        . 'integer, cannot create row');
+                $this->setErrorCode(self::DATATABLE_ID_NOT_INTEGER);
+                return false;
+            }
+            if ($this->rowExistsById($theRow['id'])) {
+                $this->setErrorMessage('The row with given id (' 
+                        . $theRow['id'] . ') already exists, cannot create');
+                $this->setErrorCode(self::DATATABLE_ROW_ALREADY_EXISTS);
+                return false;
+            }
+        }
+        return $theRow;
+    }
+    
+     /**
+     * @return int a unique id that does not exist in the table
+     *             (descendants may want to override the function
+     *             and return false if
+     *             a unique id can't be determined (which normally should
+     *             not happen!)
+     *
+     */
+    protected function getOneUnusedId()
+    {
+        return $this->getMaxId()+1;
     }
     
     
