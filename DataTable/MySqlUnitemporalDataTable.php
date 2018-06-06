@@ -179,7 +179,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         
         $r = $this->doQuery($sql, 'makeRowInvalid');
         if ($r === false) {
-            return false;
+            return false; //@codeCoverageIgnore
         }
 
         return $theRow['id'];
@@ -262,7 +262,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         
         $r = $this->doQuery($sql, 'getAllRowsWithTime');
         if ($r === false) {
-            return false;
+            return false; //@codeCoverageIgnore
         }
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
@@ -341,7 +341,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         
         $r = $this->doQuery($sql, 'getRowWithTime');
         if ($r === false) {
-            return false;
+            return false; // @codeCoverageIgnore
         }
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
@@ -421,29 +421,32 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         
         try {
             $r = $this->dbConn->query($sql);
-         } catch (PDOException $e) {
-             if ( $e->getCode() === '42000') {
-                 // The exception was thrown because of an SQL syntax error but
-                 // this should only happen when one of the keys does not exist or
-                 // is of the wrong type. This just means that the search
-                 // did not have any results, so let's set the error code
-                 // to be 'empty result set'
-                 $this->setErrorCode(self::DATATABLE_EMPTY_RESULT_SET);
-                 // However, just in case this may be hiding something else, 
-                 // let's report everything in the error message
-                 $this->setErrorMessage('Query error in realFindRowsWithTime (reported as no results) : ' . 
-                         $e->getMessage() . ' :: query = ' . $sql);
-                 return false;
-             }
-             
+        } catch (PDOException $e) {
+            if ( $e->getCode() === '42000') {
+                // The exception was thrown because of an SQL syntax error but
+                // this should only happen when one of the keys does not exist or
+                // is of the wrong type. This just means that the search
+                // did not have any results, so let's set the error code
+                // to be 'empty result set'
+                $this->setErrorCode(self::DATATABLE_EMPTY_RESULT_SET);
+                // However, just in case this may be hiding something else, 
+                // let's report everything in the error message
+                $this->setErrorMessage('Query error in realFindRowsWithTime (reported as no results) : ' . 
+                        $e->getMessage() . ' :: query = ' . $sql);
+                return false;
+            }
+            // @codeCoverageIgnoreStart
             $this->setErrorCode(self::MYSQLDATATABLE_QUERY_ERROR);
             $this->setErrorMessage('Query error in realFindRowsWithTime: ' . $e->getMessage() . ' :: query = ' . $sql);
             return false;
+            // @codeCoverageIgnoreEnd
         }
         if ($r === false) {
+            // @codeCoverageIgnoreStart
             $this->setErrorCode(self::DATATABLE_UNKNOWN_ERROR);
             $this->setErrorMessage('Unknown error in realFindRowsWithTime when executing query: ' . $sql);
             return false;
+            // @codeCoverageIgnoreEnd
         }
         
         

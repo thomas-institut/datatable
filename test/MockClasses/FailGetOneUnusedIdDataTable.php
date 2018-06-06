@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2018 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,59 @@
  * THE SOFTWARE.
  */
 
-/**
- * Requirements for all tests
- */
 
-require '../vendor/autoload.php';
-require 'config.php';
-require_once 'DataTableTest.php';
-require_once 'MySqlDataTableTest.php';
+namespace DataTable\Test;
+
+include '../DataTable/DataTable.php';
+
+use DataTable\DataTable;
+
+/**
+ * Mockup class that fails to return new Ids for rows
+ *
+ * @author Rafael Nájera <rafael.najera@uni-koeln.de>
+ */
+class FailGetOneUnusedIdDataTable extends DataTable {
+    
+    public function getOneUnusedId() {
+        return false;
+    }
+    
+    
+    public function rowExistsById(int $rowId) {
+        return false;
+    }
+    
+    public function realFindRows($theRow, $maxResults) {
+        return false;
+    }
+    
+    public function getAllRows() {
+        return false;
+    }
+    
+    public function getRow($rowId) {
+        return false;
+    }
+    
+    
+    public function getMaxId() {
+        return 1;
+    }
+    
+    public function getIdForKeyValue($key, $value) {
+        return false;
+    }
+    
+    public function realCreateRow($theRow) {
+        return false;
+    }
+    
+    public function realDeleteRow($rowId) {
+        return false;
+    }
+    
+    public function realUpdateRow($theRow) {
+        return false;
+    }
+}

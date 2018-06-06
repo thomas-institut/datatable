@@ -9,6 +9,7 @@
 namespace DataTable;
 
 require '../vendor/autoload.php';
+require_once 'MySqlDataTableTest.php';
 
 /**
  * Description of MySqlUnitemporalDataTableTest
@@ -291,6 +292,19 @@ EOD;
         $this->assertFalse($res);
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
+    }
+    
+    public function testDeleteRowWithTime()
+    {
+        $dataTable = $this->createEmptyDt();
+        
+        $newId = $dataTable->createRow(['value' => 'test']);
+        $this->assertNotFalse($newId);
+        $time = MySqlUnitemporalDataTable::now();
+        
+        $result = $dataTable->deleteRowWithTime($newId, $time);
+        $this->assertEquals($newId, $result);
+        
     }
     
     public function testWrongTimes()
