@@ -44,6 +44,7 @@ class MySqlDataTable extends DataTable
     const MYSQL_DATATABLE_WRONG_COLUMN_TYPE = 1030;
     const MYSQLDATATABLE_TABLE_NOT_FOUND = 1040;
     const MYSQLDATATABLE_INVALID_TABLE = 1050;
+    const MYSQLDATATABLE_INVALID_DB_CONNECTION = 1060;
     
     /** @var PDO */
     protected $dbConn;
@@ -67,13 +68,21 @@ class MySqlDataTable extends DataTable
      * @param \PDO $theDb  initialized PDO connection
      * @param string $tableName  SQL table name
      */
-    public function __construct($theDb, $tableName)
+    public function __construct($theDb, string $tableName)
     {
         
         parent::__construct();
         
-        $this->dbConn = $theDb;
         $this->tableName = $tableName;
+        
+        if (! ($theDb instanceof PDO )) {
+            $this->validDbTable = false;
+            $this->setErrorCode(self::MYSQLDATATABLE_INVALID_DB_CONNECTION);
+            $this->setErrorMessage("DB connection given in constructor is not a PDO object");
+            return;
+        }
+        $this->dbConn = $theDb;
+        
         
         $this->validDbTable = $this->realIsDbTableValid();
         if (!$this->validDbTable) {
@@ -383,8 +392,7 @@ class MySqlDataTable extends DataTable
     
     public function realDeleteRow($rowId)
     {
-        return $this->statements['deleteRow']
-                ->execute([':id' => $rowId]) !== false;
+        return $this->executeStatement('deleteRow', [':id' => $rowId])!== false;
     }
     
     protected function forceIntIds($theRows)
@@ -424,14 +432,12 @@ class MySqlDataTable extends DataTable
     {
         try {
             $r = $this->statements[$statement]->execute($param);
-        } catch (PDOException $e) { // @codeCoverageIgnore
-            // @codeCoverageIgnoreStart
+        } catch (PDOException $e) {
             $this->setErrorCode(self::MYSQLDATATABLE_QUERY_ERROR);
             $this->setErrorMessage('MySQL error when executing ' 
                 . 'prepared statement "' . $statement . '": ' 
                 . $e->getMessage());
             return false;
-            // @codeCoverageIgnoreEnd
         }
         
         if ($r === false) {

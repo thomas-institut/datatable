@@ -46,7 +46,18 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         $this->resetTestDb($pdo);
         return new MySqlDataTableWithRandomIds(
             $pdo,
-            'testtable',
+            self::TABLE_NAME,
+            $this->minId,
+            $this->maxId
+        );
+    }
+    
+    public function getRestrictedDt()
+    {
+        $restrictedPdo = $this->getRestrictedPdo();
+        return new MySqlDataTableWithRandomIds(
+            $restrictedPdo,
+            self::TABLE_NAME,
             $this->minId,
             $this->maxId
         );

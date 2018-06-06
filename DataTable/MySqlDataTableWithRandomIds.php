@@ -55,6 +55,9 @@ class MySqlDataTableWithRandomIds extends MySqlDataTable
         for ($i = 0; $i < $this->maxTries; $i++) {
             $theId = random_int($this->minId, $this->maxId);
             if (!$this->rowExistsById($theId)) {
+                // rowExistsById set the error to DATATABLE_ROW_DOES_NOT_EXIST
+                // but this is not really an error, so let's reset it
+                $this->resetError();
                 return $theId;
             }
         }

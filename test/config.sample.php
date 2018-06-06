@@ -1,10 +1,20 @@
 <?php
 /**
- * Sample configuration file
+ * Sample configuration file for test environment
  *
- * Edit with your database environment
+ * 
  */
 $config['host'] = "localhost";
+$config['db'] = "<DATABASE>";
+
+// User with all privileges in <DATABASE>
+
 $config['user'] = "<DB user>";
 $config['pwd'] = "<DB PASSWORD";
-$config['db'] = "<DATABASE>";
+
+
+
+// User with only select and execute privileges in <DATABASE>
+
+$config['restricteduser'] = "<DB user>";
+$config['restricteduserpwd'] = "<DB PASSWORD";

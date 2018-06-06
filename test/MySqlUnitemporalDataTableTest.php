@@ -89,7 +89,13 @@ EOD;
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlUnitemporalDataTable($pdo, 'testtable');
+        return new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME);
+    }
+    
+      public function getRestrictedDt()
+    {
+        $restrictedPdo = $this->getRestrictedPdo();
+        return new MySqlUnitemporalDataTable($restrictedPdo, self::TABLE_NAME);
     }
     
     public function testBadTables()

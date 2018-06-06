@@ -43,11 +43,19 @@ class MySqlDataTableTest extends DataTableTest
     
     public $numRows = 100;
     
+    const TABLE_NAME  = 'testtable';
+    
     public function createEmptyDt()
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlDataTable($pdo, 'testtable');
+        return new MySqlDataTable($pdo, self::TABLE_NAME);
+    }
+    
+    public function getRestrictedDt()
+    {
+        $restrictedPdo = $this->getRestrictedPdo();
+        return new MySqlDataTable($restrictedPdo, self::TABLE_NAME);
     }
     
     public function getPdo()
@@ -58,6 +66,17 @@ class MySqlDataTableTest extends DataTableTest
             'mysql:dbname=' . $config['db'] . ';host=' . $config['host'],
             $config['user'],
             $config['pwd']
+        );
+    }
+    
+    public function getRestrictedPdo()
+    {
+        global $config;
+        
+        return new PDO(
+            'mysql:dbname=' . $config['db'] . ';host=' . $config['host'],
+            $config['restricteduser'],
+            $config['restricteduserpwd']
         );
     }
 
@@ -93,6 +112,39 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
+    }
+    
+    public function testBadPdo()
+    {
+        $dt = new MySqlDataTable(false, 'somename');
+        $this->assertEquals(MySqlDataTable::MYSQLDATATABLE_INVALID_DB_CONNECTION, $dt->getErrorCode());
+    }
+    
+    public function testRestrictedPdo()
+    {
+        $dataTable = $this->createEmptyDt();
+        $restrictedDataTable = $this->getRestrictedDt();
+        
+        $rowId = $restrictedDataTable->createRow(['somekey' => 25]);
+        $this->assertFalse($rowId);
+        $this->assertEquals(MySqlDataTable::MYSQLDATATABLE_QUERY_ERROR, $restrictedDataTable->getErrorCode());
+        
+        $rowId = $dataTable->createRow(['somekey' => 25]);
+        $this->assertNotFalse($rowId);
+        $this->assertEquals(MySqlDataTable::DATATABLE_NOERROR, $dataTable->getErrorCode());
+        
+        $result = $restrictedDataTable->deleteRow($rowId);
+        $this->assertFalse($result);
+        $this->assertEquals(MySqlDataTable::MYSQLDATATABLE_QUERY_ERROR, $restrictedDataTable->getErrorCode());
+        
+        
+        $rows = $restrictedDataTable->getAllRows();
+        $this->assertCount(1, $rows);
+        $this->assertEquals($rowId, $rows[0]['id']);
+        
+        $result = $restrictedDataTable->rowExistsById($rowId);
+        $this->assertTrue($result);
+        
     }
     
     public function testEscaping()
