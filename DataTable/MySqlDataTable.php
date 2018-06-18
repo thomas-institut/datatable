@@ -170,7 +170,7 @@ class MySqlDataTable extends DataTable
         return true;
     }
     
-    public function rowExistsById($rowId)
+    public function rowExistsById(int $rowId)
     {
         $this->resetError();
         
