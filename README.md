@@ -14,7 +14,7 @@ Install the latest version with
 $ composer require rafaelnajera/datatable
 ```
 
-##Usage
+## Usage
 
 The main interface is the DataTable class, which captures de basic functionality
 of an SQL table with unique ids. Implementations take care of creating new
