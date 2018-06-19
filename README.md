@@ -56,13 +56,18 @@ if ($newId === false) {   // there was an error
 #### Get, seach, update and delete
 ``` 
 // Get row(s)
-$row = $dt->getRow($newRow);   // $row should be equal $newRow with an added id field
+$row = $dt->getRow($newId);   // $row should be equal to $newRow with an added id field
 
-$rows = $dt->getAllRows();  // returns an array of rows, no guarantees on order
+$rows = $dt->getAllRows();  // returns an array of rows (not necessary ordered by id)
 
 // Search
 $foundRows = $dt->findRows(['fieldtoSearch' => 'valueToMatch', 
-        'anotherFieldToSearch' => 'anotherValuetoMatch']); 
+        'anotherFieldToSearch' => 'anotherValuetoMatch']);  // returns an array of rows
+
+$rowExists = $dt->findRow(['fieldtoSearch' => 'valueToMatch', 
+        'anotherFieldToSearch' => 'anotherValuetoMatch']);  // returns a boolean
+// $dt->findRow can return false because there were no matches or because there
+// was an error. Check the error code if needed.
 
 // Update a row
 $row['field1'] = 'new value';   // $row must have a valid id
