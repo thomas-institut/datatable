@@ -44,6 +44,8 @@ namespace DataTable;
 abstract class DataTable
 {
     
+    const VERSION = '0.5';
+    
     /**
      * Error code constants
      */
