@@ -25,7 +25,6 @@
  */
 
 namespace DataTable;
-require '../vendor/autoload.php';
 
 use \PDO;
 use \PDOException;
