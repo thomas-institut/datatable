@@ -85,14 +85,14 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
     
-    public function createEmptyDt()
+    public function createEmptyDt() :DataTable
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
         return new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME);
     }
     
-      public function getRestrictedDt()
+      public function getRestrictedDt() : MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlUnitemporalDataTable($restrictedPdo, self::TABLE_NAME);
@@ -125,7 +125,7 @@ EOD;
         $this->assertFalse($dataTable->isDbTableValid());
         
         // This should all return false right away
-        $this->assertFalse($dataTable->rowExistsById(1));
+        $this->assertFalse($dataTable->rowExists(1));
         $this->assertFalse($dataTable->createRow(['id' => 1,
             'somekey' => 'test']));
         $this->assertFalse($dataTable->getAllRows());
@@ -200,7 +200,7 @@ EOD;
         
                 
         // Search the keys in the times they are valid
-        $foundRows4 = $dataTable->realfindRowsWithTime(
+        $foundRows4 = $dataTable->findRowsWithTime(
             ['someotherkey' => 'Value3'],
             false,
             '2016-01-01 12:00:00'
@@ -208,21 +208,21 @@ EOD;
         $this->assertCount(10, $foundRows4);
         
         // timestamps should be fine as well
-        $foundRows4 = $dataTable->realfindRowsWithTime(
+        $foundRows4 = $dataTable->findRowsWithTime(
             ['someotherkey' => 'Value3'],
             false,
             time()-86400 // a day ago
         );
         $this->assertCount(10, $foundRows4);
         
-        $foundRows5 = $dataTable->realfindRowsWithTime(
+        $foundRows5 = $dataTable->findRowsWithTime(
             ['someotherkey' => 'Value2'],
             false,
             '2015-01-01 12:00:00'
         );
         $this->assertCount(10, $foundRows5);
         
-        $foundRows6 = $dataTable->realfindRowsWithTime(
+        $foundRows6 = $dataTable->findRowsWithTime(
             ['someotherkey' => 'Value1'],
             false,
             '2014-01-01 12:00:00'
@@ -238,7 +238,7 @@ EOD;
         }
         
         // Search the common key at other times
-        $foundRows8 = $dataTable->realfindRowsWithTime(
+        $foundRows8 = $dataTable->findRowsWithTime(
             ['somekey' => $theKey],
             false,
             '2015-01-01 12:00:00'
@@ -248,7 +248,7 @@ EOD;
             $this->assertEquals('Value2', $row['someotherkey']);
         }
         
-        $foundRows9 = $dataTable->realfindRowsWithTime(
+        $foundRows9 = $dataTable->findRowsWithTime(
             ['somekey' => $theKey],
             false,
             '2014-01-01 12:00:00'
@@ -258,7 +258,7 @@ EOD;
             $this->assertEquals('Value1', $row['someotherkey']);
         }
         
-        $foundRows10 = $dataTable->realfindRowsWithTime(
+        $foundRows10 = $dataTable->findRowsWithTime(
             ['somekey' => $theKey],
             false,
             '2013-01-01'
@@ -268,7 +268,7 @@ EOD;
             $this->assertTrue(is_null($row['someotherkey']));
         }
         
-        $foundRows11 = $dataTable->realfindRowsWithTime(
+        $foundRows11 = $dataTable->findRowsWithTime(
             ['somekey' => $theKey],
             false,
             '2000-01-01 12:00:00'
@@ -365,19 +365,19 @@ EOD;
             new \ArrayObject()
         ));
         
-        $this->assertFalse($dataTable->realfindRowsWithTime(
+        $this->assertFalse($dataTable->findRowsWithTime(
             ['somekey' => 5],
             false,
             []
         ));
         
-        $this->assertFalse($dataTable->realfindRowsWithTime(
+        $this->assertFalse($dataTable->findRowsWithTime(
             ['somekey' => 5],
             false,
             true
         ));
         
-        $this->assertFalse($dataTable->realfindRowsWithTime(
+        $this->assertFalse($dataTable->findRowsWithTime(
             ['somekey' => 5],
             false,
             new \ArrayObject()

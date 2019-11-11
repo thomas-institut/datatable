@@ -2,3 +2,5 @@ nbproject/
 vendor/
 /test/config.php
 /test/coverage/
+.idea/
+test/.phpunit.result.cache

@@ -40,7 +40,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     public $minId = 100000;
     public $maxId = 200000;
     
-    public function createEmptyDt()
+    public function createEmptyDt() : DataTable
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
@@ -52,7 +52,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         );
     }
     
-    public function getRestrictedDt()
+    public function getRestrictedDt() : MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlDataTableWithRandomIds(

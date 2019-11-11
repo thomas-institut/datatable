@@ -43,7 +43,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
     }
     
     
-    public function rowExistsById(int $rowId) {
+    public function rowExists(int $rowId) {
         return false;
     }
     
@@ -78,5 +78,38 @@ class FailGetOneUnusedIdDataTable extends DataTable {
     
     public function realUpdateRow($theRow) {
         return false;
+    }
+
+    /**
+     * Searches the table for rows with the same data as the given row
+     *
+     * Only the keys given in $theRow are checked; so, for example,
+     * if $theRow is missing a key that exists in the actual rows
+     * in the table, those missing keys are ignored and the method
+     * will return any row that matches exactly the given keys independently
+     * of the missing ones.
+     *
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, all results will be returned
+     *
+     * @param array $theRow
+     * @param int $numResults
+     * @return array the results
+     */
+    public function findRows(array $theRow, int $numResults = 0): array
+    {
+        // TODO: Implement findRows() method.
+    }
+
+    /**
+     * Deletes the row with the given Id.
+     * If there's no row with the given Id it must return false
+     *
+     * @param int $rowId
+     * @return bool
+     */
+    public function deleteRow(int $rowId): bool
+    {
+        // TODO: Implement deleteRow() method.
     }
 }

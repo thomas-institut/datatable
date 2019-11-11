@@ -45,7 +45,7 @@ class DataTableAdditionalTest extends TestCase
         
         $r = $dt->createRow([]);
         $this->assertFalse($r);
-        $this->assertEquals(DataTable::DATATABLE_CANNOT_GET_UNUSED_ID, $dt->getErrorCode());
+        $this->assertEquals(DataTable::ERROR_CANNOT_GET_UNUSED_ID, $dt->getErrorCode());
         
     }
     
