@@ -24,39 +24,20 @@
  * THE SOFTWARE.
  */
 namespace DataTable;
-require '../vendor/autoload.php';
-
-require 'MockClasses/FailGetOneUnusedIdDataTable.php';
-
-use DataTable\Test\FailGetOneUnusedIdDataTable;
-use PHPUnit\Framework\TestCase;
 
 /**
- * Additional test for DataTable
+ * Interface IdGenerator
  *
- * @author Rafael Nájera <rafael@najera.ca>
+ * Simple interface that provides a function to get one unused Id out of a DataTable
+ *
+ * @package DataTable
  */
-class DataTableAdditionalTest extends TestCase
+interface iIdGenerator
 {
-    
-    public function testFailGetOneUnusedId()
-    {
-
-
-        $dt = new Test\FailGetOneUnusedIdDataTable();
-
-        $exceptionCaught = false;
-
-        try {
-            $r = $dt->createRow([]);
-        } catch (\RuntimeException $e){
-            $exceptionCaught = true;
-        }
-        
-
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
-        
-    }
-    
+    /**
+     * Generates an unused Id for the given DataTable
+     * @param DataTable $dataTable
+     * @return int
+     */
+    public function getOneUnusedId(DataTable $dataTable) : int;
 }

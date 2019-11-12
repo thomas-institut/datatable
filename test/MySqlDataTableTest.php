@@ -115,12 +115,7 @@ EOD;
 EOD;
         $pdo->query($tableSetupSQL);
     }
-    
-//    public function testBadPdo()
-//    {
-//        $dt = new MySqlDataTable(false, 'somename');
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_DB_CONNECTION, $dt->getErrorCode());
-//    }
+
     
     public function testRestrictedPdo()
     {
@@ -213,34 +208,6 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_FOUND, $errorCode);
-
-        // This should all return false right away
-//        $this->assertFalse($dataTable->rowExistsById(1));
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
-//        $this->assertFalse($dataTable->createRow(['id' => 1,
-//            'somekey' => 'test']));
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
-//        $this->assertFalse($dataTable->getAllRows());
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
-//        $this->assertFalse($dataTable->getRow(1));
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
-//        $this->assertFalse($dataTable->getMaxId());
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
-//        $this->assertFalse($dataTable->findRows(['id' => 1,
-//            'somekey' => 'test2']));
-//        $this->assertEquals(MySqlDataTable::ERROR_INVALID_TABLE,
-//                $dataTable->getErrorCode());
-//        $this->assertNotEquals('', $dataTable->getErrorMessage());
     }
     
     public function testUpdateRow()

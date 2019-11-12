@@ -8,6 +8,8 @@
 
 namespace DataTable;
 
+use PDO;
+
 require '../vendor/autoload.php';
 require_once 'MySqlDataTableTest.php';
 
@@ -19,7 +21,7 @@ require_once 'MySqlDataTableTest.php';
 class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
 {
 
-    public function resetTestDb($pdo)
+    public function resetTestDb(PDO $pdo)
     {
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtable`;
@@ -36,7 +38,7 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
     
-    public function resetTestDbWithBadTables($pdo)
+    public function resetTestDbWithBadTables(PDO $pdo)
     {
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtablebad1`;
@@ -85,7 +87,7 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
     
-    public function createEmptyDt() :DataTable
+    public function createEmptyDt() : DataTable
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
@@ -100,46 +102,88 @@ EOD;
     
     public function testBadTables()
     {
+
         $pdo = $this->getPdo();
         $this->resetTestDbWithBadTables($pdo);
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad1');
 
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad2');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad3');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad4');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad5');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad6');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        $dataTable = new MySqlUnitemporalDataTable($pdo, 'nonexistenttable');
-        $this->assertFalse($dataTable->isDbTableValid());
-        
-        // This should all return false right away
-        $this->assertFalse($dataTable->rowExists(1));
-        $this->assertFalse($dataTable->createRow(['id' => 1,
-            'somekey' => 'test']));
-        $this->assertFalse($dataTable->getAllRows());
-        $this->assertFalse($dataTable->getRow(1));
-        $this->assertFalse($dataTable->getMaxId());
-        $this->assertFalse($dataTable->findRows(['id' => 1,
-            'somekey' => 'test2']));
+        $exceptionCaught = false;
+        try {
+            $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad1');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+
+        $exceptionCaught = false;
+        try {
+            $dataTable2 = new MySqlUnitemporalDataTable($pdo, 'testtablebad2');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable3 = new MySqlUnitemporalDataTable($pdo, 'testtablebad3');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable4 = new MySqlUnitemporalDataTable($pdo, 'testtablebad4');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable5 = new MySqlUnitemporalDataTable($pdo, 'testtablebad5');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable6 = new MySqlUnitemporalDataTable($pdo, 'testtablebad6');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable7 = new MySqlUnitemporalDataTable($pdo, 'nonexistenttable');
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+    }
+
+    public function testGetTimeStringFromVariable() {
+
+        $badVars = [ '', [], '2019-01-01.', '2019-01-01.123123', '2019-23-12', '2019-01-01 35:00:00'];
+
+        foreach($badVars as $var) {
+            $this->assertEquals('', MySqlUnitemporalDataTable::getTimeStringFromVariable($var), 'Testing ' . print_r($var, true));
+        }
+
+        $goodVars = [ -1, '2010-11-11', '2020-10-10 13:05:24',  '2010-11-11 21:10:11.123456', '2016-01-01 12:00:00'];
+        foreach($goodVars as $var) {
+            $this->assertNotEquals('', MySqlUnitemporalDataTable::getTimeStringFromVariable($var), 'Testing ' . print_r($var, true));
+        }
+
     }
 
     public function testFindRowsWithTime()
     {
         $dataTable = $this->createEmptyDt();
         
-        $timeZero = '2010-01-01';
+        $timeZero = MySqlUnitemporalDataTable::getTimeStringFromVariable('2010-01-01');
         $times = [ '2014-01-01',
             '2015-01-01',
             '2016-01-01'];
@@ -158,6 +202,7 @@ EOD;
             $ids[] = $rowId;
             $timesCount = 1;
             foreach ($times as $t) {
+                $t = MySqlUnitemporalDataTable::getTimeStringFromVariable($t);
                 $r2 = $dataTable->realUpdateRowWithTime(['id' => $rowId,
                     'someotherkey' => 'Value' .
                     $timesCount++], $t);
@@ -211,7 +256,8 @@ EOD;
         $foundRows4 = $dataTable->findRowsWithTime(
             ['someotherkey' => 'Value3'],
             false,
-            time()-86400 // a day ago
+            // a day ago
+            MySqlUnitemporalDataTable::getTimeStringFromVariable(time()-86400)
         );
         $this->assertCount(10, $foundRows4);
         
@@ -280,12 +326,19 @@ EOD;
     {
         $dataTable = $this->createEmptyDt();
         $time = MySqlUnitemporalDataTable::now();
+
+        $exceptionCaught = false;
         // Id not integer
-        $res = $dataTable->createRowWithTime(
-            ['id' => 'notanumber','value' => 'test'],
-            $time
-        );
-        $this->assertFalse($res);
+        try {
+            $res = $dataTable->createRowWithTime(
+                ['id' => 'notanumber','value' => 'test'],
+                $time
+            );
+        } catch (\InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+
+        $this->assertTrue($exceptionCaught);
         
         $res = $dataTable->createRowWithTime(
             ['id' => 1, 'value' => 'test'],
@@ -293,9 +346,15 @@ EOD;
         );
         $this->assertEquals(1, $res);
         // Trying to create an existing row
-        $res = $dataTable->createRowWithTime(['id' => 1,
-            'value' => 'anothervalue'], $time);
-        $this->assertFalse($res);
+
+        $exceptionCaught = false;
+        try {
+            $res = $dataTable->createRowWithTime(['id' => 1,
+                'value' => 'anothervalue'], $time);
+        } catch(\RuntimeException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
     }
@@ -312,75 +371,5 @@ EOD;
         $this->assertEquals($newId, $result);
         
     }
-    
-    public function testWrongTimes()
-    {
-        $dataTable = $this->createEmptyDt();
-        
-        $nEntries = 10;
-        // create some rows
-        for ($i=0; $i<$nEntries; $i++) {
-            $rowId = $dataTable->createRow(['somekey' => $i+1]);
-        }
-        
-        // These should all return false
-        $this->assertFalse($dataTable->createRowWithTime(
-            ['somekey' => 100],
-            []  // array for time
-        ));
-        
-        $this->assertFalse($dataTable->createRowWithTime(
-            ['somekey' => 100],
-            true  // boolean for time
-        ));
-        
-        $this->assertFalse($dataTable->createRowWithTime(
-            ['somekey' => 100],
-            new \ArrayObject()  // object for time
-        ));
-        
-        $this->assertFalse($dataTable->realUpdateRowWithTime(
-            ['id' => $rowId, 'somekey' => 100],
-            []  // array for time
-        ));
-        
-        $this->assertFalse($dataTable->realUpdateRowWithTime(
-            ['id' => $rowId, 'somekey' => 100],
-            true  // boolean for time
-        ));
-        
-        $this->assertFalse($dataTable->realUpdateRowWithTime(
-            ['id' => $rowId, 'somekey' => 100],
-            new \ArrayObject()  // object for time
-        ));
-        
-        $this->assertFalse($dataTable->getAllRowsWithTime([]));
-        $this->assertFalse($dataTable->getAllRowsWithTime(true));
-        $this->assertFalse($dataTable->getAllRowsWithTime(new \ArrayObject()));
-        
-        $this->assertFalse($dataTable->getRowWithTime($rowId, []));
-        $this->assertFalse($dataTable->getRowWithTime($rowId, true));
-        $this->assertFalse($dataTable->getRowWithTime(
-            $rowId,
-            new \ArrayObject()
-        ));
-        
-        $this->assertFalse($dataTable->findRowsWithTime(
-            ['somekey' => 5],
-            false,
-            []
-        ));
-        
-        $this->assertFalse($dataTable->findRowsWithTime(
-            ['somekey' => 5],
-            false,
-            true
-        ));
-        
-        $this->assertFalse($dataTable->findRowsWithTime(
-            ['somekey' => 5],
-            false,
-            new \ArrayObject()
-        ));
-    }
+
 }

@@ -25,6 +25,7 @@
  */
 namespace DataTable;
 
+use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -44,7 +45,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-abstract class DataTable
+abstract class DataTable implements iErrorReporter
 {
     
     const NULL_ROW_ID = -1;
@@ -62,7 +63,7 @@ abstract class DataTable
     const ERROR_ID_IS_ZERO = 106;
     const ERROR_EMPTY_RESULT_SET = 107;
     const ERROR_KEY_VALUE_NOT_FOUND = 108;
-    
+
     /** *********************************************************************
      * PUBLIC METHODS
      ************************************************************************/
@@ -71,34 +72,58 @@ abstract class DataTable
      * Constructor
      */
     public function __construct() {
-        $this->resetError();
-        $this->warnings = [];
+        $this->setIdGenerator(new SequentialIdGenerator());
+        $this->setErrorReporter(new SimpleErrorReporter());
     }
-    
+
+    public function setIdGenerator(iIdGenerator $ig) : void {
+        $this->idGenerator = $ig;
+    }
+
+    public function setErrorReporter(iErrorReporter $er) : void {
+        $this->errorReporter = $er;
+    }
+
     /**
-     * Returns a string describing the last error
-     * 
-     * @return string
+     *  Error Reporter methods
      */
+
     public function getErrorMessage() : string
     {
-        return $this->errorMessage;
+        return $this->errorReporter->getErrorMessage();
     }
-    
-    /**
-     * Returns an integer code number identifying the last error
-     * 
-     * @return int
-     */
+
     public function getErrorCode() : int
     {
-        return $this->errorCode;
+        return $this->errorReporter->getErrorCode();
     }
 
     public function getWarnings() : array {
-        return $this->warnings;
+        return $this->errorReporter->getWarnings();
     }
 
+    public function resetError() : void
+    {
+        $this->setError('', self::ERROR_NO_ERROR);
+    }
+
+    public function setErrorMessage(string $msg) : void
+    {
+        $this->errorReporter->setErrorMessage($msg);
+    }
+
+    public function setErrorCode(int $c) : void
+    {
+        $this->errorReporter->setErrorCode($c);
+    }
+
+    public  function setError(string $msg, int $code) : void {
+        $this->errorReporter->setError($msg, $code);
+    }
+
+    public function addWarning(string $warning) : void {
+        $this->errorReporter->addWarning($warning);
+    }
 
 
     /**
@@ -227,7 +252,7 @@ abstract class DataTable
     /**
      * @return int the max id in the table
      */
-    abstract protected function getMaxId() : int;
+    abstract public function getMaxId() : int;
 
 
     /**
@@ -255,7 +280,7 @@ abstract class DataTable
      * Must throw a Runtime Exception if the row was not updated
      *
      * @param array $theRow
-     * @return bool
+     * @return void
      * @throws RuntimeException
      * @throws InvalidArgumentException
      */
@@ -264,29 +289,7 @@ abstract class DataTable
 
 
 
-    protected function resetError() : void
-    {
-        $this->setError('', self::ERROR_NO_ERROR);
-    }
-    
-    protected function setErrorMessage(string $msg) : void
-    {
-        $this->errorMessage = $msg;
-    }
-    
-    protected function setErrorCode(int $c) : void
-    {
-        $this->errorCode = $c;
-    }
 
-    protected  function setError(string $msg, int $code) : void {
-        $this->setErrorMessage($msg);
-        $this->setErrorCode($code);
-    }
-
-    protected function setWarning(string $warning) {
-        $this->warnings[] = $warning;
-    }
 
     /**
      * Checks for errors in a row that is meant to be created in the table
@@ -332,16 +335,20 @@ abstract class DataTable
     }
     
      /**
-     * @return int a unique id that does not exist in the table
-     *             (descendants may want to override the function
-     *             and return false if
-     *             a unique id can't be determined (which normally should
-     *             not happen!)
+      * Returns a unique Id that does not exist in the table
+     * @return int
      *
      */
     protected function getOneUnusedId() : int
     {
-        return $this->getMaxId()+1;
+        try{
+            $unusedId = $this->idGenerator->getOneUnusedId($this);
+        } catch (Exception $e) {
+            $this->addWarning('Id generator error: ' . $e->getMessage() . ' code ' .
+                $e->getCode() . ', defaulting to SequentialIdGenerator');
+            $unusedId = (new SequentialIdGenerator())->getOneUnusedId($this);
+        }
+        return $unusedId;
     }
 
 
@@ -350,22 +357,13 @@ abstract class DataTable
      ************************************************************************/
 
     /**
-     *
-     * @var string
+     * @var iIdGenerator
      */
-    private $errorMessage;
+    private $idGenerator;
 
     /**
-     *
-     * @var int
+     * @var iErrorReporter
      */
-    private $errorCode;
-
-
-    /**
-     * @var array
-     */
-    private $warnings;
-
+    private $errorReporter;
 
 }

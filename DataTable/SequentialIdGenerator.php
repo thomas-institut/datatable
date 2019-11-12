@@ -1,5 +1,4 @@
 <?php
-
 /*
  * The MIT License
  *
@@ -23,40 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace DataTable;
-require '../vendor/autoload.php';
 
-require 'MockClasses/FailGetOneUnusedIdDataTable.php';
 
-use DataTable\Test\FailGetOneUnusedIdDataTable;
-use PHPUnit\Framework\TestCase;
-
-/**
- * Additional test for DataTable
- *
- * @author Rafael Nájera <rafael@najera.ca>
- */
-class DataTableAdditionalTest extends TestCase
+class SequentialIdGenerator implements iIdGenerator
 {
-    
-    public function testFailGetOneUnusedId()
+
+    public function getOneUnusedId(DataTable $dataTable): int
     {
-
-
-        $dt = new Test\FailGetOneUnusedIdDataTable();
-
-        $exceptionCaught = false;
-
-        try {
-            $r = $dt->createRow([]);
-        } catch (\RuntimeException $e){
-            $exceptionCaught = true;
-        }
-        
-
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
-        
+        return $dataTable->getMaxId() + 1;
     }
-    
 }

@@ -1,5 +1,4 @@
 <?php
-
 /*
  * The MIT License
  *
@@ -23,30 +22,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace DataTable;
 
+
 use Exception;
-use PDO;
 use RuntimeException;
 
-class MySqlDataTableWithRandomIds extends MySqlDataTable
+class RandomIdGenerator implements iIdGenerator
 {
 
-    const MAX_ATTEMPTS = 1000;
+    const ERROR_RANDOM_NUMBER_GENERATOR_ERROR = 1001;
+    const ERROR_MAX_ATTEMPTS_REACHED = 1002;
+
     /**
-     *
-     * $min and $max should be carefully chosen so that
-     * the method to get new unused id doesn't take too
-     * long.
-     * @param PDO $dbConnection
-     * @param string $tableName
-     * @param int $min
-     * @param int $max
+     * @var int
      */
-    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX)
+    private $minId;
+
+    /**
+     * @var int
+     */
+    private $maxId;
+
+    /**
+     * @var int
+     */
+    private $maxAttempts;
+
+    public function __construct(int $min = 1, int $max = PHP_INT_MAX, int $maxAttempts = 1000)
     {
-        parent::__construct($dbConnection, $tableName);
-        $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
+        $this->minId = $min;
+        $this->maxId = $max;
+        $this->maxAttempts = $maxAttempts;
     }
 
+    public function getOneUnusedId(DataTable $dataTable): int
+    {
+        for ($i = 0; $i < $this->maxAttempts; $i++) {
+            try {
+                $theId = random_int($this->minId, $this->maxId);
+            } catch (Exception $e) {
+                throw new RuntimeException($e->getMessage(), self::ERROR_RANDOM_NUMBER_GENERATOR_ERROR);
+            }
+            if (!$dataTable->rowExists($theId)) {
+                return $theId;
+            }
+        }
+        // No unused Id found, let the client know via an Exception
+        throw new RuntimeException("Could not generate an unused Id after $this->maxAttempts attempts", self::ERROR_MAX_ATTEMPTS_REACHED);
+    }
 }

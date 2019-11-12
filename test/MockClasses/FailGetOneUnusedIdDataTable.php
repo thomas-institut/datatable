@@ -30,6 +30,8 @@ namespace DataTable\Test;
 include '../DataTable/DataTable.php';
 
 use DataTable\DataTable;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * Mockup class that fails to return new Ids for rows
@@ -37,48 +39,11 @@ use DataTable\DataTable;
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
 class FailGetOneUnusedIdDataTable extends DataTable {
+
+
+    const ERROR_CANNOT_GET_MAX_ID = 2001;
     
-    public function getOneUnusedId() {
-        return false;
-    }
-    
-    
-    public function rowExists(int $rowId) {
-        return false;
-    }
-    
-    public function realFindRows($theRow, $maxResults) {
-        return false;
-    }
-    
-    public function getAllRows() {
-        return false;
-    }
-    
-    public function getRow($rowId) {
-        return false;
-    }
-    
-    
-    public function getMaxId() {
-        return 1;
-    }
-    
-    public function getIdForKeyValue($key, $value) {
-        return false;
-    }
-    
-    public function realCreateRow($theRow) {
-        return false;
-    }
-    
-    public function realDeleteRow($rowId) {
-        return false;
-    }
-    
-    public function realUpdateRow($theRow) {
-        return false;
-    }
+
 
     /**
      * Searches the table for rows with the same data as the given row
@@ -98,7 +63,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      */
     public function findRows(array $theRow, int $numResults = 0): array
     {
-        // TODO: Implement findRows() method.
+        return [];
     }
 
     /**
@@ -110,6 +75,90 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      */
     public function deleteRow(int $rowId): bool
     {
-        // TODO: Implement deleteRow() method.
+       return false;
+    }
+
+    /**
+     * @param int $rowId
+     * @return bool true if the row with the given Id exists
+     */
+    public function rowExists(int $rowId): bool
+    {
+       return false;
+    }
+
+    /**
+     * Gets all rows in the table
+     *
+     * @return array
+     */
+    public function getAllRows(): array
+    {
+        return [];
+    }
+
+    /**
+     * Gets the row with the given row Id.
+     * If the row does not exist throws an InvalidArgument exception
+     *
+     * @param int $rowId
+     * @return array The row
+     * @throws InvalidArgumentException
+     */
+    public function getRow(int $rowId): array
+    {
+        return [];
+    }
+
+    /**
+     * Returns the id of one row in which $row[$key] === $value
+     * or false if such a row cannot be found or an error occurred whilst
+     * trying to find it.
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return int
+     */
+    public function getIdForKeyValue(string $key, $value): int
+    {
+        return 0;
+    }
+
+    /**
+     * @return int the max id in the table
+     */
+    protected function getMaxId(): int
+    {
+        $this->setErrorCode(self::ERROR_CANNOT_GET_MAX_ID);
+        $this->setErrorMessage('Cannot get a max Id');
+        throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+    }
+
+    /**
+     * Creates a row in the table, returns the id of the newly created
+     * row.
+     *
+     * @param array $theRow
+     * @return int
+     */
+    protected function realCreateRow(array $theRow): int
+    {
+        return 0;
+    }
+
+    /**
+     * Updates the given row, which must have a valid Id.
+     * If there's not row with that id, it throw an InvalidArgument exception.
+     *
+     * Must throw a Runtime Exception if the row was not updated
+     *
+     * @param array $theRow
+     * @return bool
+     * @throws RuntimeException
+     * @throws InvalidArgumentException
+     */
+    protected function realUpdateRow(array $theRow): void
+    {
+
     }
 }

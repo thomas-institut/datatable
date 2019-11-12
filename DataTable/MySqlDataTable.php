@@ -76,7 +76,7 @@ class MySqlDataTable extends DataTable
         $this->tableName = $tableName;
         $this->dbConn = $dbConnection;
         
-        if (!$this->realIsDbTableValid()) {
+        if (!$this->isMySqlTableColumnValid('id', 'int')) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         
@@ -100,15 +100,6 @@ class MySqlDataTable extends DataTable
         }
     }
 
-    /**
-     * Returns true if the table in the DB has
-     * at least an id column of type int
-     */
-    protected function realIsDbTableValid() : bool
-    {
-        return $this->isMySqlTableColumnValid('id', 'int');
-    }
-    
     protected function isMySqlTableColumnValid(string $columnName, string $type) : bool
     {
         try {
