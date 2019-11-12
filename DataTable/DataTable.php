@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -73,15 +73,15 @@ abstract class DataTable implements iErrorReporter
      */
     public function __construct() {
         $this->setIdGenerator(new SequentialIdGenerator());
-        $this->setErrorReporter(new SimpleErrorReporter());
+        $this->setErrorLogger(new SimpleErrorLogger());
     }
 
     public function setIdGenerator(iIdGenerator $ig) : void {
         $this->idGenerator = $ig;
     }
 
-    public function setErrorReporter(iErrorReporter $er) : void {
-        $this->errorReporter = $er;
+    public function setErrorLogger(ErrorLogger $er) : void {
+        $this->errorLogger = $er;
     }
 
     /**
@@ -90,41 +90,17 @@ abstract class DataTable implements iErrorReporter
 
     public function getErrorMessage() : string
     {
-        return $this->errorReporter->getErrorMessage();
+        return $this->errorLogger->getErrorMessage();
     }
 
     public function getErrorCode() : int
     {
-        return $this->errorReporter->getErrorCode();
+        return $this->errorLogger->getErrorCode();
     }
 
     public function getWarnings() : array {
-        return $this->errorReporter->getWarnings();
+        return $this->errorLogger->getWarnings();
     }
-
-    public function resetError() : void
-    {
-        $this->setError('', self::ERROR_NO_ERROR);
-    }
-
-    public function setErrorMessage(string $msg) : void
-    {
-        $this->errorReporter->setErrorMessage($msg);
-    }
-
-    public function setErrorCode(int $c) : void
-    {
-        $this->errorReporter->setErrorCode($c);
-    }
-
-    public  function setError(string $msg, int $code) : void {
-        $this->errorReporter->setError($msg, $code);
-    }
-
-    public function addWarning(string $warning) : void {
-        $this->errorReporter->addWarning($warning);
-    }
-
 
     /**
      * @param int $rowId
@@ -153,6 +129,32 @@ abstract class DataTable implements iErrorReporter
         return $this->realCreateRow($preparedRow);
     }
 
+    /**
+     * Gets the row with the given row Id.
+     * If the row does not exist throws an InvalidArgument exception
+     *
+     * @param int $rowId
+     * @return array The row
+     * @throws InvalidArgumentException
+     */
+    abstract public function getRow(int $rowId) : array;
+
+    /**
+     * Gets all rows in the table
+     *
+     * @return array
+     */
+    abstract public function getAllRows() : array;
+
+
+    /**
+     * Deletes the row with the given Id.
+     * If there's no row with the given Id it must return false
+     *
+     * @param int $rowId
+     * @return bool
+     */
+    abstract public function deleteRow(int $rowId) : bool;
 
     /**
      * Searches the table for rows with the same data as the given row
@@ -214,22 +216,7 @@ abstract class DataTable implements iErrorReporter
         $this->realUpdateRow($theRow);
     }
     
-    /**
-     * Gets all rows in the table 
-     * 
-     * @return array
-     */
-    abstract public function getAllRows() : array;
 
-    /**
-     * Gets the row with the given row Id.
-     * If the row does not exist throws an InvalidArgument exception
-     *
-     * @param int $rowId
-     * @return array The row
-     * @throws InvalidArgumentException
-     */
-    abstract public function getRow(int $rowId) : array;
 
     /**
      * Returns the id of one row in which $row[$key] === $value
@@ -246,9 +233,7 @@ abstract class DataTable implements iErrorReporter
     /** *********************************************************************
      * ABSTRACT PROTECTED METHODS
      ************************************************************************/
-    
 
-    
     /**
      * @return int the max id in the table
      */
@@ -265,15 +250,6 @@ abstract class DataTable implements iErrorReporter
     abstract protected function realCreateRow(array $theRow) : int;
 
     /**
-     * Deletes the row with the given Id.
-     * If there's no row with the given Id it must return false
-     *
-     * @param int $rowId
-     * @return bool
-     */
-    abstract public function deleteRow(int $rowId) : bool;
-
-    /**
      * Updates the given row, which must have a valid Id.
      * If there's not row with that id, it throw an InvalidArgument exception.
      *
@@ -287,9 +263,11 @@ abstract class DataTable implements iErrorReporter
     abstract protected function realUpdateRow(array $theRow) : void;
 
 
-
-
-
+    /**
+     *
+     * PROTECTED METHODS
+     *
+     */
 
     /**
      * Checks for errors in a row that is meant to be created in the table
@@ -335,7 +313,10 @@ abstract class DataTable implements iErrorReporter
     }
     
      /**
-      * Returns a unique Id that does not exist in the table
+      * Returns a unique Id that does not exist in the table,
+      * defaults to a sequential id if the idGenerator cannot
+      * come up with one
+      *
      * @return int
      *
      */
@@ -352,6 +333,33 @@ abstract class DataTable implements iErrorReporter
     }
 
 
+    /**
+     * Convenience protected methods for error logging
+     */
+
+    protected function resetError() : void
+    {
+        $this->setError('', self::ERROR_NO_ERROR);
+    }
+
+    protected function setErrorMessage(string $msg) : void
+    {
+        $this->errorLogger->setErrorMessage($msg);
+    }
+
+    protected function setErrorCode(int $c) : void
+    {
+        $this->errorLogger->setErrorCode($c);
+    }
+
+    protected function setError(string $msg, int $code) : void {
+        $this->errorLogger->setError($msg, $code);
+    }
+
+    protected function addWarning(string $warning) : void {
+        $this->errorLogger->addWarning($warning);
+    }
+
     /**********************************************************************
      * PRIVATE AREA
      ************************************************************************/
@@ -362,8 +370,8 @@ abstract class DataTable implements iErrorReporter
     private $idGenerator;
 
     /**
-     * @var iErrorReporter
+     * @var ErrorLogger
      */
-    private $errorReporter;
+    private $errorLogger;
 
 }

@@ -4,7 +4,7 @@
 namespace DataTable;
 
 
-class SimpleErrorReporter implements iErrorReporter
+class SimpleErrorLogger extends ErrorLogger
 {
 
     /**
