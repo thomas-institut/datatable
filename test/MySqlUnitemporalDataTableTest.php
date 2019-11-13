@@ -8,6 +8,7 @@
 
 namespace DataTable;
 
+use InvalidArgumentException;
 use PDO;
 
 require '../vendor/autoload.php';
@@ -328,34 +329,28 @@ EOD;
         $time = MySqlUnitemporalDataTable::now();
 
         $exceptionCaught = false;
-        // Id not integer
-        try {
-            $res = $dataTable->createRowWithTime(
-                ['id' => 'notanumber','value' => 'test'],
-                $time
-            );
-        } catch (\InvalidArgumentException $e) {
-            $exceptionCaught = true;
-        }
 
-        $this->assertTrue($exceptionCaught);
-        
-        $res = $dataTable->createRowWithTime(
+        $id1 = $dataTable->createRowWithTime(
             ['id' => 1, 'value' => 'test'],
             $time
         );
-        $this->assertEquals(1, $res);
-        // Trying to create an existing row
+        $this->assertEquals(1, $id1);
 
+        // Id not integer : a new Id must be generated
+
+        $id2 = $dataTable->createRowWithTime(['id' => 'notanumber','value' => 'test2'],$time);
+        $this->assertNotEquals($id1, $id2);
+
+        // Trying to create an existing row
         $exceptionCaught = false;
         try {
             $res = $dataTable->createRowWithTime(['id' => 1,
                 'value' => 'anothervalue'], $time);
-        } catch(\RuntimeException $e) {
+        } catch(InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $row = $dataTable->getRow(1);
+        $row = $dataTable->getRow($id1);
         $this->assertEquals('test', $row['value']);
     }
     

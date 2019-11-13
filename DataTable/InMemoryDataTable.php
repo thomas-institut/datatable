@@ -55,13 +55,13 @@ class InMemoryDataTable extends DataTable
         return $theRow['id'];
     }
     
-    public function deleteRow(int $rowId) : bool
+    public function deleteRow(int $rowId) : int
     {
         if (!$this->rowExists($rowId)) {
-            return false;
+            return 0;
         }
         unset($this->theData[$rowId]);
-        return true;
+        return 1;
     }
     
     public function realUpdateRow(array $theRow) : void
@@ -78,14 +78,25 @@ class InMemoryDataTable extends DataTable
             $this->theData[$rowId][$k] = $theRow[$k];
         }
     }
-    
-    public function getMaxId() : int
+
+
+    public function getMaxValueInColumn(string $columnName): int
     {
         if (count($this->theData) !== 0) {
-            return max(array_column($this->theData, 'id'));
+            return max(array_column($this->theData, $columnName));
         } else {
             return 0;
         }
+    }
+
+    public function getMaxId() : int
+    {
+        return $this->getMaxValueInColumn('id');
+//        if (count($this->theData) !== 0) {
+//            return max(array_column($this->theData, 'id'));
+//        } else {
+//            return 0;
+//        }
     }
     
     public function getRow(int $rowId) : array
@@ -114,25 +125,189 @@ class InMemoryDataTable extends DataTable
         return $id;
     }
     
-    public function findRows(array $givenRow, int $numResults = 0) : array
+//    public function findRows(array $rowToMatch, int $maxResults = 0) : array
+//    {
+//
+//        $searchSpec = [];
+//
+//        $givenRowKeys = array_keys($rowToMatch);
+//        foreach ($givenRowKeys as $key) {
+//            $searchSpec[] = [
+//                'column' => $key,
+//                'condition' => self::COND_EQUAL_TO,
+//                'value' => $rowToMatch[$key]
+//                ];
+//        }
+//        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
+//
+////        $this->resetError();
+////        $results = [];
+////        $givenRowKeys = array_keys($givenRow);
+////        foreach ($this->theData as $dataRow) {
+////            $match = true;
+////            foreach ($givenRowKeys as $key) {
+////                if ($dataRow[$key] !== $givenRow[$key]) {
+////                    $match = false;
+////                }
+////            }
+////            if ($match) {
+////                $results[] = $dataRow;
+////                if ($maxResults > 0 && count($results) === $maxResults) {
+////                    return $results;
+////                }
+////            }
+////        }
+////        return $results;
+//    }
+
+    /**
+     * Searches the datatable according to the given $searchSpec
+     *
+     * $searchSpec is an array of conditions.
+     *
+     * If $searchType is SEARCH_AND, the row must satisfy:
+     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
+     *
+     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     *
+     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
+     *
+     *
+     * A condition is an array of the form:
+     *
+     *  $condition = [
+     *      'column' => 'columnName',
+     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
+     *      'value' => someValue
+     * ]
+     *
+     * Notice that each condition type has a negation:
+     *      EQUAL_TO  <==> NOT_EQUAL_TO
+     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
+     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
+     *
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, all results will be returned
+     *
+     * @param array $searchSpec
+     * @param int $searchType
+     * @param int $maxResults
+     * @return array
+     */
+    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
         $this->resetError();
         $results = [];
-        $givenRowKeys = array_keys($givenRow);
         foreach ($this->theData as $dataRow) {
-            $match = true;
-            foreach ($givenRowKeys as $key) {
-                if ($dataRow[$key] !== $givenRow[$key]) {
-                    $match = false;
-                }
-            }
-            if ($match) {
+            if ($this->matchSearchSpec($dataRow, $searchSpec, $searchType)) {
                 $results[] = $dataRow;
-                if ($numResults > 0 && count($results) === $numResults) {
+                if ($maxResults > 0 && count($results) === $maxResults) {
                     return $results;
                 }
             }
         }
         return $results;
+    }
+
+    /**
+     * Returns true is the given $dataRow matches the given $searchSpec and $searchType
+     *
+     * @param array $dataRow
+     * @param array $searchSpec
+     * @param int $searchType
+     * @return bool
+     */
+    private function matchSearchSpec(array $dataRow, array $searchSpec, int $searchType) : bool {
+
+        switch($searchType) {
+            case self::SEARCH_AND:
+                foreach ($searchSpec as $spec) {
+                    if (!$this->match($dataRow, $spec)) {
+                        return false;
+                    }
+                }
+                return true;
+                break;
+
+            case self::SEARCH_OR:
+                foreach ($searchSpec as $spec) {
+                    if ($this->match($dataRow, $spec)) {
+                        return true;
+                    }
+                }
+                return false;
+                break;
+
+            default:
+                $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+
+        }
+
+    }
+
+    private function match(array $dataRow, array $spec) : bool {
+        if (!isset($spec['column']) || !is_string($spec['column'])) {
+            $this->setError('Invalid condition, column not found or not string', self::ERROR_INVALID_SEARCH_CONDITION);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        if (!isset($spec['value'])) {
+            $this->setError('Invalid condition, value to match not found', self::ERROR_INVALID_SEARCH_CONDITION);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $column = $spec['column'];
+        $value = $spec['value'];
+
+        if (is_string($value)) {
+            switch ($spec['condition']) {
+                case self::COND_EQUAL_TO:
+                    return strcmp($dataRow[$column], $value) === 0;
+
+                case self::COND_NOT_EQUAL_TO:
+                    return strcmp($dataRow[$column], $value) !== 0;
+
+                case self::COND_LESS_THAN:
+                    return strcmp($dataRow[$column], $value) < 0;
+
+                case self::COND_LESS_OR_EQUAL_TO:
+                    return strcmp($dataRow[$column], $value) <= 0;
+
+                case self::COND_GREATER_THAN:
+                    return strcmp($dataRow[$column], $value) > 0;
+
+                case self::COND_GREATER_OR_EQUAL_TO:
+                    return strcmp($dataRow[$column], $value) >= 0;
+
+                default:
+                    $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
+                    throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            }
+        } else {
+            switch ($spec['condition']) {
+                case self::COND_EQUAL_TO:
+                    return $dataRow[$column] === $value;
+
+                case self::COND_NOT_EQUAL_TO:
+                    return $dataRow[$column] !== $value;
+
+                case self::COND_LESS_THAN:
+                    return $dataRow[$column] < $value;
+
+                case self::COND_LESS_OR_EQUAL_TO:
+                    return $dataRow[$column] <= $value;
+
+                case self::COND_GREATER_THAN:
+                    return $dataRow[$column] > $value;
+
+                case self::COND_GREATER_OR_EQUAL_TO:
+                    return $dataRow[$column] >= $value;
+
+                default:
+                    $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
+                    throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            }
+        }
     }
 }

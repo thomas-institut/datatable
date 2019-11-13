@@ -78,7 +78,7 @@ abstract class DataTableTest extends TestCase
             $testMsg = "Random deletions and additions,  iteration $i, "
                     . "id=$theId";
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
-            $this->assertTrue($dataTable->deleteRow($theId), $testMsg);
+            $this->assertEquals(1, $dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExists($theId), $testMsg);
             $newId = $dataTable->createRow([ 'id' => $theId,
                 'somekey' => $theId, 'someotherkey' => "textvalue$theId" ]);
@@ -123,7 +123,7 @@ abstract class DataTableTest extends TestCase
         $dataTable = $this->createEmptyDt();
         
         for ($i = 0; $i < $this->numRows; $i++) {
-            $this->assertNotFalse($dataTable->createRow(['somekey' => 100]));
+            $dataTable->createRow(['somekey' => 100]);
         }
         
         for ($i = 1; $i <= $this->numRows; $i++) {
@@ -137,6 +137,82 @@ abstract class DataTableTest extends TestCase
                 $dataTable->findRows(['somekey' => 100], $i)
             );
         }
+    }
+
+    private function getStringValue(string $prefix, int $value) : string {
+        return  $prefix . sprintf("%03d",$value);
+    }
+    public function testComplexSearches() {
+        $dataTable = $this->createEmptyDt();
+        $stringKeyName  = 'someotherkey';
+        $intKeyName = 'somekey';
+        $stringValuePrefix = 'value';
+
+        for ($i = 1; $i < $this->numRows+1; $i++) {
+            $dataTable->createRow([ $stringKeyName => $this->getStringValue($stringValuePrefix, $i), $intKeyName => $i]);
+        }
+
+        $testCases = [
+            [
+                'title' => 'No matches (equal)',
+                'expectedCount' => 0,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'x' . $stringValuePrefix]
+                ]
+            ],
+            [
+                'title' => 'No matches (greater than)',
+                'expectedCount' => 0,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' =>  $this->numRows+1]
+                ]
+            ],
+            [
+                'title' => 'Greater than and less than (int)',
+                'expectedCount' => $this->numRows - 20,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => 10],
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->numRows-10],
+                ]
+            ],
+            [
+                'title' => 'Greater than and less than (string)',
+                'expectedCount' => $this->numRows - 20,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, 10) ],
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
+                ]
+            ],
+            [
+                'title' => 'Less than or greater than (int)',
+                'expectedCount' => 20,
+                'searchType' => DataTable::SEARCH_OR,
+                'specArray' => [
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_LESS_THAN, 'value' => 11 ],
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' =>  $this->numRows-10 ],
+                ]
+            ],
+            [
+                'title' => 'Less than or greater than (string)',
+                'expectedCount' => 20,
+                'searchType' => DataTable::SEARCH_OR,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_LESS_THAN, 'value' => $this->getStringValue($stringValuePrefix, 11) ],
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
+                ]
+            ]
+        ];
+
+        foreach($testCases as $testCase) {
+            $resultingRows = $dataTable->search($testCase['specArray'], $testCase['searchType']);
+            $this->assertCount($testCase['expectedCount'], $resultingRows, $testCase['title']);
+        }
+
+
     }
     
     public function testUpdate()
@@ -181,33 +257,23 @@ abstract class DataTableTest extends TestCase
 
         $this->assertEquals(DataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'somevalue'));
         $this->assertEquals([], $dataTable->getAllRows());
-        $this->assertFalse($dataTable->deleteRow(1));
+        $this->assertEquals(0,$dataTable->deleteRow(1));
     }
     
     public function testCreateRow()
     {
         $dataTable = $this->createEmptyDt();
-        // Id not integer
-        $exceptionCaught = false;
-        try{
-            $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
-        }
-        catch (InvalidArgumentException $e) {
-            $exceptionCaught = true;
-        }
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_INTEGER, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
-        
+
         
         $res = $dataTable->createRow(['id' => 1, 'value' => 'test']);
         $this->assertEquals(1, $res);
+
         // Trying to create an existing row
         $exceptionCaught = false;
         try{
             $dataTable->createRow(['id' => 1, 'value' => 'anothervalue']);
         }
-        catch (RuntimeException $e) {
+        catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -215,6 +281,16 @@ abstract class DataTableTest extends TestCase
         $this->assertNotEquals('', $dataTable->getErrorMessage());
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
+
+        // invalid Id: a new one must be generated
+        $newId = $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
+        $this->assertNotEquals(1, $newId);
+
+        // no Id: a new one must be generated
+        $newId2 = $dataTable->createRow(['value' => 'test2']);
+        $this->assertNotEquals(1, $newId2);
+        $this->assertNotEquals($newId, $newId2);
+
     }
     
     public function testUpdateRow()

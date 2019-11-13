@@ -242,11 +242,11 @@ class MySqlDataTable extends DataTable
         $res['id'] = (int) $res['id'];
         return $res;
     }
-    
-    public function getMaxId() : int
+
+    public function getMaxValueInColumn(string $columnName): int
     {
-        $sql = 'SELECT MAX(id) FROM ' . $this->tableName;
-        
+        $sql = 'SELECT MAX('. $columnName . ') FROM ' . $this->tableName;
+
         $r = $this->doQuery($sql, 'get MaxId');
 
         $maxId = $r->fetchColumn();
@@ -254,6 +254,20 @@ class MySqlDataTable extends DataTable
             return 0;
         }
         return (int) $maxId;
+    }
+
+    public function getMaxId() : int
+    {
+        return $this->getMaxValueInColumn('id');
+//        $sql = 'SELECT MAX(id) FROM ' . $this->tableName;
+//
+//        $r = $this->doQuery($sql, 'get MaxId');
+//
+//        $maxId = $r->fetchColumn();
+//        if ($maxId === null) {
+//            return 0;
+//        }
+//        return (int) $maxId;
     }
     
     public function getIdForKeyValue(string $key, $value) : int
@@ -267,79 +281,36 @@ class MySqlDataTable extends DataTable
         return intval($rows[0]['id']);
     }
 
-    /**
-     *
-     * @param array $theRow
-     * @param int $numResults
-     * @return array
-     */
-    public function findRows(array $theRow, int $numResults = 0) : array
-    {
-        $keys = array_keys($theRow);
-        $conditions = [];
-        foreach ($keys as $key) {
-            $c = $key . '=';
-            if (is_string($theRow[$key])) {
-                $c .= $this->dbConn->quote($theRow[$key]);
-            } else {
-                $c .= $theRow[$key];
-            }
-            $conditions[] = $c;
-        }
-        $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE ' 
-                .  implode(' AND ', $conditions);
-        if ($numResults > 0) {
-            $sql .= ' LIMIT ' . $numResults;
-        }
-        
-        try {
-            $r = $this->dbConn->query($sql);
-        } catch (PDOException $e) {
-            if ( $e->getCode() === '42000') {
-                // The exception was thrown because of an SQL syntax error but
-                // this should only happen when one of the keys does not exist
-                // or is of the wrong type. This just means that the search
-                // did not have any results, so let's set the error code
-                // to be 'empty result set'
-                // TODO: add an optional full table schema check in order avoid ambiguities here
-                $this->setErrorCode(self::ERROR_EMPTY_RESULT_SET);
-                // However, just in case this may be hiding something else, 
-                // let's report everything in the error message
-                $this->setErrorMessage('Query error in realFindRows (reported '
-                        . 'as no results) : ' 
-                        . $e->getMessage() . ' :: query = ' . $sql);
-                return [];
-            }
-            // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('Query error in realFindRows: ' 
-                    . $e->getMessage() . ' :: query = ' . $sql);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
-            // @codeCoverageIgnoreEnd
-        }
-        
-        if ($r === false) {
-            // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_UNKNOWN_ERROR);
-            $this->setErrorMessage('Unknown error in realFindRows '
-                    . 'when executing query: ' . $sql);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
-            // @codeCoverageIgnoreEnd
-        }
-        
-
-        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
-    }
+//    /**
+//     *
+//     * @param array $rowToMatch
+//     * @param int $maxResults
+//     * @return array
+//     */
+//    public function findRows(array $rowToMatch, int $maxResults = 0) : array
+//    {
+//        $searchSpec = [];
+//
+//        $givenRowKeys = array_keys($rowToMatch);
+//        foreach ($givenRowKeys as $key) {
+//            $searchSpec[] = [
+//                'column' => $key,
+//                'condition' => self::COND_EQUAL_TO,
+//                'value' => $rowToMatch[$key]
+//            ];
+//        }
+//        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
+//    }
     
-    public function deleteRow(int $rowId) : bool
+    public function deleteRow(int $rowId) : int
     {
         $this->executeStatement('deleteRow', [':id' => $rowId]);
 
         if ($this->statements['deleteRow']->rowCount() !== 1) {
-            // this can only mean that the row to delete did not exst
-            return false;
+            // this can only mean that the row to delete did not exist
+            return 0;
         }
-        return true;
+        return 1;
 
 
     }
@@ -405,5 +376,148 @@ class MySqlDataTable extends DataTable
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
+    }
+
+    /**
+     * Searches the datatable according to the given $searchSpec
+     *
+     * $searchSpec is an array of conditions.
+     *
+     * If $searchType is SEARCH_AND, the row must satisfy:
+     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
+     *
+     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     *
+     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
+     *
+     *
+     * A condition is an array of the form:
+     *
+     *  $condition = [
+     *      'column' => 'columnName',
+     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
+     *      'value' => someValue
+     * ]
+     *
+     * Notice that each condition type has a negation:
+     *      EQUAL_TO  <==> NOT_EQUAL_TO
+     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
+     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
+     *
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, all results will be returned
+     *
+     * @param array $searchSpec
+     * @param int $searchType
+     * @param int $maxResults
+     * @return array
+     */
+    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    {
+        $this->resetError();
+
+        $conditions = [];
+        foreach ($searchSpec as $spec) {
+            $conditions[] = $this->getSqlConditionFromSpec($spec);
+        }
+
+        switch($searchType) {
+            case self::SEARCH_AND:
+                $sqlLogicalOperator  = 'AND';
+                break;
+
+            case self::SEARCH_OR:
+                $sqlLogicalOperator = 'OR';
+                break;
+
+            default:
+                $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '
+            .  implode(' ' . $sqlLogicalOperator . ' ', $conditions);
+        if ($maxResults > 0) {
+            $sql .= ' LIMIT ' . $maxResults;
+        }
+
+        try {
+            $r = $this->dbConn->query($sql);
+        } catch (PDOException $e) {
+            if ( $e->getCode() === '42000' || $e->getCode() === '42S22') {
+                // The exception was thrown because of an SQL syntax error but
+                // this should only happen when one of the keys does not exist
+                // or is of the wrong type. This just means that the search
+                // did not have any results, so let's set the error code
+                // to be 'empty result set'
+                // TODO: add an optional full table schema check in order avoid ambiguities here
+                $this->setErrorCode(self::ERROR_EMPTY_RESULT_SET);
+                // However, just in case this may be hiding something else,
+                // let's report everything in the error message
+                $this->setErrorMessage('Query error in realFindRows (reported '
+                    . 'as no results) : '
+                    . $e->getMessage() . ' :: query = ' . $sql);
+                return [];
+            }
+            // @codeCoverageIgnoreStart
+            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
+            $this->setErrorMessage('Query error in realFindRows: code  ' . $e->getCode() . ' : '
+                . $e->getMessage() . ' :: query = ' . $sql);
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            // @codeCoverageIgnoreEnd
+        }
+
+        if ($r === false) {
+            // @codeCoverageIgnoreStart
+            $this->setErrorCode(self::ERROR_UNKNOWN_ERROR);
+            $this->setErrorMessage('Unknown error in realFindRows '
+                . 'when executing query: ' . $sql);
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            // @codeCoverageIgnoreEnd
+        }
+
+
+        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    private function  getSqlConditionFromSpec(array $spec) : string {
+
+        if (!isset($spec['column']) || !is_string($spec['column'])) {
+            $this->setError('Invalid condition, column not found or not string', self::ERROR_INVALID_SEARCH_CONDITION);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        if (!isset($spec['value'])) {
+            $this->setError('Invalid condition, value to match not found', self::ERROR_INVALID_SEARCH_CONDITION);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $column = $spec['column'];
+        $quotedValue = $this->quoteValue($spec['value']);
+
+        switch ($spec['condition']) {
+            case self::COND_EQUAL_TO:
+                return "`$column`=" . $quotedValue;
+
+            case self::COND_NOT_EQUAL_TO:
+                return "`$column`!=" . $quotedValue;
+
+            case self::COND_LESS_THAN:
+                return "`$column`<" . $quotedValue;
+
+            case self::COND_LESS_OR_EQUAL_TO:
+                return "`$column`<=" . $quotedValue;
+
+            case self::COND_GREATER_THAN:
+                return "`$column`>" . $quotedValue;
+
+            case self::COND_GREATER_OR_EQUAL_TO:
+                return "`$column`>=" . $quotedValue;
+
+            default:
+                $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
+                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
     }
 }

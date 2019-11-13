@@ -50,6 +50,20 @@ abstract class DataTable implements iErrorReporter
     
     const NULL_ROW_ID = -1;
 
+    const SEARCH_AND = 0;
+    const SEARCH_OR = 1;
+
+    /**
+     * Search condition types
+     */
+
+    const COND_EQUAL_TO = 0;
+    const COND_NOT_EQUAL_TO = 1;
+    const COND_LESS_THAN = 2;
+    const COND_LESS_OR_EQUAL_TO = 3;
+    const COND_GREATER_THAN = 4;
+    const COND_GREATER_OR_EQUAL_TO = 5;
+
     /**
      * Error code constants
      */
@@ -63,6 +77,9 @@ abstract class DataTable implements iErrorReporter
     const ERROR_ID_IS_ZERO = 106;
     const ERROR_EMPTY_RESULT_SET = 107;
     const ERROR_KEY_VALUE_NOT_FOUND = 108;
+    const ERROR_INVALID_SEARCH_TYPE = 109;
+    const ERROR_INVALID_SEARCH_CONDITION = 110;
+
 
     /** *********************************************************************
      * PUBLIC METHODS
@@ -125,7 +142,7 @@ abstract class DataTable implements iErrorReporter
     public function createRow(array $theRow) : int
     {
         $this->resetError();
-        $preparedRow = $this->prepareRowForRealCreation($theRow);
+        $preparedRow = $this->getRowWithGoodIdForCreation($theRow);
         return $this->realCreateRow($preparedRow);
     }
 
@@ -149,30 +166,79 @@ abstract class DataTable implements iErrorReporter
 
     /**
      * Deletes the row with the given Id.
-     * If there's no row with the given Id it must return false
+     *
+     * Returns the number of rows actually deleted without problems, which should be 1 if
+     * the row the given Id existed in the datable, or 0 if there was no such row in
+     * the first place.
      *
      * @param int $rowId
-     * @return bool
+     * @return int
      */
-    abstract public function deleteRow(int $rowId) : bool;
+    abstract public function deleteRow(int $rowId) : int;
 
     /**
-     * Searches the table for rows with the same data as the given row
+     * Finds rows in the data table that match the values in $rowToMatch
      *
-     * Only the keys given in $theRow are checked; so, for example,
-     * if $theRow is missing a key that exists in the actual rows
-     * in the table, those missing keys are ignored and the method
-     * will return any row that matches exactly the given keys independently
-     * of the missing ones.
+     * A row in the data table matches $rowToMatch if for every field
+     * in $rowToMatch the row has exactly that same value.
      *
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $theRow
-     * @param int $numResults
-     * @return array the results
+     * @param array $rowToMatch
+     * @param int $maxResults
+     * @return array
      */
-    abstract public function findRows(array $theRow, int $numResults = 0) : array;
+    public function findRows(array $rowToMatch, int $maxResults = 0) : array {
+        $searchSpec = [];
+
+        $givenRowKeys = array_keys($rowToMatch);
+        foreach ($givenRowKeys as $key) {
+            $searchSpec[] = [
+                'column' => $key,
+                'condition' => self::COND_EQUAL_TO,
+                'value' => $rowToMatch[$key]
+            ];
+        }
+        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
+    }
+
+
+    /**
+     * Searches the datatable according to the given $searchSpec
+     *
+     * $searchSpec is an array of conditions.
+     *
+     * If $searchType is SEARCH_AND, the row must satisfy:
+     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
+     *
+     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     *
+     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
+     *
+     *
+     * A condition is an array of the form:
+     *
+     *  $condition = [
+     *      'column' => 'columnName',
+     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
+     *      'value' => someValue
+     * ]
+     *
+     * Notice that each condition type has a negation:
+     *      EQUAL_TO  <==> NOT_EQUAL_TO
+     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
+     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
+     *
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, all results will be returned
+     *
+     * @param array $searchSpec
+     * @param int $searchType
+     * @param int $maxResults
+     * @return array
+     */
+    abstract public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
 
     /**
      * Updates the table with the given row, which must contain an 'id'
@@ -228,16 +294,30 @@ abstract class DataTable implements iErrorReporter
      * @return int
      */
     abstract public function getIdForKeyValue(string $key, $value) : int;
-    
-   
-    /** *********************************************************************
-     * ABSTRACT PROTECTED METHODS
-     ************************************************************************/
+
+    /**
+     * Returns the max value in the given column.
+     *
+     * The actual column must exist and be numeric for the actual value returned
+     * to be meaningful. Implementations may choose to throw a RunTime exception
+     * in this case.
+     *
+     * @param string $columnName
+     * @return int
+     */
+    abstract public function getMaxValueInColumn(string $columnName) : int;
+
 
     /**
      * @return int the max id in the table
      */
     abstract public function getMaxId() : int;
+
+
+    /** *********************************************************************
+     * ABSTRACT PROTECTED METHODS
+     ************************************************************************/
+
 
 
     /**
@@ -270,43 +350,24 @@ abstract class DataTable implements iErrorReporter
      */
 
     /**
-     * Checks for errors in a row that is meant to be created in the table
-     * and returns a version of the row with a new id if none
-     * was given.
+     * Returns theRow with a valid Id for creation: if there's no id
+     * in the given row, the given Id is 0 or not an integer, the id is set to
+     * an unused Id
      *
      * @param array $theRow
      * @throws RuntimeException
      * @throws InvalidArgumentException  if the given row has an invalid 'id' field
      * @return array
      */
-    protected function prepareRowForRealCreation($theRow) : array
+    protected function getRowWithGoodIdForCreation($theRow) : array
     {
-        if (!isset($theRow['id']) || $theRow['id']===0) {
+        if (!isset($theRow['id']) || !is_int($theRow['id']) || $theRow['id']===0) {
             $theRow['id'] = $this->getOneUnusedId();
-            if ($theRow['id'] === false) {
-                if ($this->getErrorCode() === self::ERROR_NO_ERROR) {
-                    // Give generic error information if a child class did not
-                    // provide any
-                    $msg = 'Could not generate a new id  when trying to create a new row';
-                    $errorCode = self::ERROR_CANNOT_GET_UNUSED_ID;
-                    $this->setError($msg, $errorCode);
-                    throw new RuntimeException($msg, $errorCode);
-                } else {
-                    throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
-                }
-            }
         } else {
-            if (!is_int($theRow['id'])) {
-                $msg = 'Id field is present but is not a integer, cannot create row';
-                $errorCode = self::ERROR_ID_NOT_INTEGER;
-                $this->setError($msg, $errorCode);
-                throw new InvalidArgumentException($msg, $errorCode);
-            }
             if ($this->rowExists($theRow['id'])) {
-                $msg = 'The row with given id ('. $theRow['id'] . ') already exists, cannot create';
-                $errorCode = self::ERROR_ROW_ALREADY_EXISTS;
-                $this->setError($msg, $errorCode);
-                throw new RuntimeException($msg, $errorCode);
+                $this->setError('The row with given id ('. $theRow['id'] . ') already exists, cannot create',
+                    self::ERROR_ROW_ALREADY_EXISTS);
+                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
         }
         return $theRow;

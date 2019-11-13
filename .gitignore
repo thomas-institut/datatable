@@ -4,3 +4,4 @@ vendor/
 /test/coverage/
 .idea/
 test/.phpunit.result.cache
+scratch/

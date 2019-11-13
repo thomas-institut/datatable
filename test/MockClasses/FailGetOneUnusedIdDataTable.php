@@ -57,11 +57,11 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $theRow
-     * @param int $numResults
+     * @param array $rowToMatch
+     * @param int $maxResults
      * @return array the results
      */
-    public function findRows(array $theRow, int $numResults = 0): array
+    public function findRows(array $rowToMatch, int $maxResults = 0): array
     {
         return [];
     }
@@ -73,7 +73,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      * @param int $rowId
      * @return bool
      */
-    public function deleteRow(int $rowId): bool
+    public function deleteRow(int $rowId): int
     {
        return false;
     }
@@ -127,7 +127,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
     /**
      * @return int the max id in the table
      */
-    protected function getMaxId(): int
+    public function getMaxId(): int
     {
         $this->setErrorCode(self::ERROR_CANNOT_GET_MAX_ID);
         $this->setErrorMessage('Cannot get a max Id');
@@ -160,5 +160,59 @@ class FailGetOneUnusedIdDataTable extends DataTable {
     protected function realUpdateRow(array $theRow): void
     {
 
+    }
+
+    /**
+     * Searches the datatable according to the given $searchSpec
+     *
+     * $searchSpec is an array of conditions.
+     *
+     * If $searchType is SEARCH_AND, the row must satisfy:
+     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
+     *
+     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     *
+     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
+     *
+     *
+     * A condition is an array of the form:
+     *
+     *  $condition = [
+     *      'column' => 'columnName',
+     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
+     *      'value' => someValue
+     * ]
+     *
+     * Notice that each condition type has a negation:
+     *      EQUAL_TO  <==> NOT_EQUAL_TO
+     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
+     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
+     *
+     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults <= 0, all results will be returned
+     *
+     * @param array $searchSpec
+     * @param int $searchType
+     * @param int $maxResults
+     * @return array
+     */
+    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    {
+        return [];
+    }
+
+    /**
+     * Returns the max value in the given column.
+     *
+     * The actual column must exist and be numeric for the actual value returned
+     * to be meaningful. Implementations may choose to throw a RunTime exception
+     * in this case.
+     *
+     * @param string $columnName
+     * @return int
+     */
+    public function getMaxValueInColumn(string $columnName): int
+    {
+        // TODO: Implement getMaxValueInColumn() method.
     }
 }
