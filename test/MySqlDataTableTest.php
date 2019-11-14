@@ -51,7 +51,11 @@ class MySqlDataTableTest extends DataTableTest
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlDataTable($pdo, self::TABLE_NAME);
+
+        $dt = new MySqlDataTable($pdo, self::TABLE_NAME);
+        $dt->setLogger($this->getLogger()->withName('MySqlDataTable (' . self::TABLE_NAME . ')'));
+        return $dt;
+
     }
     
     public function getRestrictedDt() : MySqlDataTable

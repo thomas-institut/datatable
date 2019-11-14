@@ -387,6 +387,11 @@ class MySqlDataTable extends DataTable
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
 
+        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
+            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
         $conditions = [];
         foreach ($searchSpec as $spec) {
             $conditions[] = $this->getSqlConditionFromSpec($spec);
@@ -400,10 +405,6 @@ class MySqlDataTable extends DataTable
             case self::SEARCH_OR:
                 $sqlLogicalOperator = 'OR';
                 break;
-
-            default:
-                $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
-                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
 
         $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '

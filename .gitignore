@@ -5,3 +5,4 @@ vendor/
 .idea/
 test/.phpunit.result.cache
 scratch/
+/test/test.log

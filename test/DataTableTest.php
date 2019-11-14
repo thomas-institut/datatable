@@ -26,7 +26,11 @@
 namespace DataTable;
 
 use InvalidArgumentException;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use RuntimeException;
 
 require '../vendor/autoload.php';
@@ -170,6 +174,22 @@ abstract class DataTableTest extends TestCase
                 ]
             ],
             [
+                'title' => 'Not equal to (int)',
+                'expectedCount' => 99,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_NOT_EQUAL_TO, 'value' =>  1]
+                ]
+            ],
+            [
+                'title' => 'Not equal to (string)',
+                'expectedCount' => 99,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_NOT_EQUAL_TO, 'value' =>  $this->getStringValue($stringValuePrefix, 1)]
+                ]
+            ],
+            [
                 'title' => 'Greater than and less than (int)',
                 'expectedCount' => $this->numRows - 20,
                 'searchType' => DataTable::SEARCH_AND,
@@ -204,6 +224,22 @@ abstract class DataTableTest extends TestCase
                     [ 'column' => $stringKeyName, 'condition' => DataTable::COND_LESS_THAN, 'value' => $this->getStringValue($stringValuePrefix, 11) ],
                     [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
                 ]
+            ],
+            [
+                'title' => 'Greater than or equal to (int)',
+                'expectedCount' => 10,
+                'searchType' => DataTable::SEARCH_OR,
+                'specArray' => [
+                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->numRows-9],
+                ]
+            ],
+            [
+                'title' => 'Greater than or equal to (string)',
+                'expectedCount' => 10,
+                'searchType' => DataTable::SEARCH_OR,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-9)],
+                ]
             ]
         ];
 
@@ -211,7 +247,79 @@ abstract class DataTableTest extends TestCase
             $resultingRows = $dataTable->search($testCase['specArray'], $testCase['searchType']);
             $this->assertCount($testCase['expectedCount'], $resultingRows, $testCase['title']);
         }
+    }
 
+    public function testBadlyFormedSearches() {
+        $dataTable = $this->createEmptyDt();
+        $stringKeyName  = 'someotherkey';
+
+        $testCases = [
+            [
+                'title' => 'Empty Spec Array',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => []
+            ],
+            [
+                'title' => 'No Column',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                ]
+            ],
+            [
+                'title' => 'Wrong Column (int)',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => 32, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                ]
+            ],
+            [
+                'title' => 'Bad Search Type',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SEARCH_TYPE,
+                'searchType' => 100,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                ]
+            ],
+            [
+                'title' => 'Bad condition (wrong int)',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO + 1000, 'value' => 'anyValue']
+                ]
+            ],
+            [
+                'title' => 'Bad condition (string)',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => '1', 'value' => 'anyValue']
+                ]
+            ],
+            [
+                'title' => 'No value',
+                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => DataTable::SEARCH_AND,
+                'specArray' => [
+                    [ 'column' => $stringKeyName, 'condition' => '1']
+                ]
+            ]
+        ];
+
+        foreach($testCases as $testCase) {
+            $exceptionCaught = false;
+            try {
+                $dataTable->search($testCase['specArray'], $testCase['searchType']);
+            } catch (InvalidArgumentException $e) {
+                $exceptionCaught = true;
+            }
+            $this->assertTrue($exceptionCaught, $testCase['title']);
+            $this->assertEquals($testCase['expectedErrorCode'], $dataTable->getErrorCode(), $testCase['title']);
+        }
 
     }
     
@@ -406,5 +514,14 @@ abstract class DataTableTest extends TestCase
         $this->assertTrue(is_null($theRow2['somekey']));
         $this->assertEquals('Some string', $theRow2['someotherkey']);
 
+    }
+
+
+    protected function getLogger() : Logger {
+        $logger = new Logger('Test');
+
+        $logStream = new StreamHandler('test.log', LogLevel::DEBUG);
+        $logger->pushHandler($logStream);
+        return $logger;
     }
 }

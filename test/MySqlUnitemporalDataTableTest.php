@@ -10,6 +10,7 @@ namespace DataTable;
 
 use InvalidArgumentException;
 use PDO;
+use RuntimeException;
 
 require '../vendor/autoload.php';
 require_once 'MySqlDataTableTest.php';
@@ -92,7 +93,9 @@ EOD;
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME);
+        $dt = new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME);
+        $dt->setLogger($this->getLogger()->withName('MySqlUnitemporalDT (' . self::TABLE_NAME . ')'));
+        return $dt;
     }
     
       public function getRestrictedDt() : MySqlDataTable
@@ -109,8 +112,8 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            $dataTable = new MySqlUnitemporalDataTable($pdo, 'testtablebad1');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad1');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -118,48 +121,48 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            $dataTable2 = new MySqlUnitemporalDataTable($pdo, 'testtablebad2');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad2');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
         $exceptionCaught = false;
         try {
-            $dataTable3 = new MySqlUnitemporalDataTable($pdo, 'testtablebad3');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad3');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
         $exceptionCaught = false;
         try {
-            $dataTable4 = new MySqlUnitemporalDataTable($pdo, 'testtablebad4');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad4');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
         $exceptionCaught = false;
         try {
-            $dataTable5 = new MySqlUnitemporalDataTable($pdo, 'testtablebad5');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad5');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
         $exceptionCaught = false;
         try {
-            $dataTable6 = new MySqlUnitemporalDataTable($pdo, 'testtablebad6');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'testtablebad6');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
         $exceptionCaught = false;
         try {
-            $dataTable7 = new MySqlUnitemporalDataTable($pdo, 'nonexistenttable');
-        } catch(\RuntimeException $e) {
+            new MySqlUnitemporalDataTable($pdo, 'nonexistenttable');
+        } catch(RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -167,7 +170,8 @@ EOD;
 
     public function testGetTimeStringFromVariable() {
 
-        $badVars = [ '', [], '2019-01-01.', '2019-01-01.123123', '2019-23-12', '2019-01-01 35:00:00'];
+        $badVars = [ '', [], '2019-01-01.', '2019-01-01.123123', '2019-23-12', '2019-12-40',
+            '2019-01-01 35:00:00', '2019-01-01 12:65:00', '2019-01-01 12:00:65'];
 
         foreach($badVars as $var) {
             $this->assertEquals('', MySqlUnitemporalDataTable::getTimeStringFromVariable($var), 'Testing ' . print_r($var, true));
@@ -328,7 +332,18 @@ EOD;
         $dataTable = $this->createEmptyDt();
         $time = MySqlUnitemporalDataTable::now();
 
+
+        // Bad time
         $exceptionCaught = false;
+        try{
+            $dataTable->createRowWithTime(
+                ['id' => 1, 'value' => 'test'],
+                'badtime');
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
         $id1 = $dataTable->createRowWithTime(
             ['id' => 1, 'value' => 'test'],
@@ -360,13 +375,42 @@ EOD;
         
         $newId = $dataTable->createRow(['value' => 'test']);
         $this->assertNotFalse($newId);
+
+        // Bad time
+        $exceptionCaught = false;
+        try{
+            $dataTable->deleteRowWithTime($newId, 'badtime');
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
+
+
         $time = MySqlUnitemporalDataTable::now();
         
         $result = $dataTable->deleteRowWithTime($newId, $time);
         $this->assertEquals($newId, $result);
 
+    }
 
-        
+    public function testGetAllRowsWithTime() {
+
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+
+        $this->assertEquals([], $dataTable->getAllRowsWithTime('2019-01-01'));
+
+        $exceptionCaught = false;
+        try {
+            $dataTable->getAllRowsWithTime('badtime');
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
     }
 
 }

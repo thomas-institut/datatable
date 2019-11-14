@@ -471,7 +471,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
             if ($e->getCode() === self::ERROR_ROW_DOES_NOT_EXIST) {
                 return 0;
             } else {
-                throw $e;
+                throw $e; // @codeCoverageIgnore
             }
         }
         $this->makeRowInvalid($oldRow, $timeString);

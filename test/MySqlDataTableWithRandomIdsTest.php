@@ -44,12 +44,14 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
-        return new MySqlDataTableWithRandomIds(
+        $dt = new MySqlDataTableWithRandomIds(
             $pdo,
             self::TABLE_NAME,
             $this->minId,
             $this->maxId
         );
+        $dt->setLogger($this->getLogger()->withName('MySqlDTWithRandomIds (' . self::TABLE_NAME . ')'));
+        return $dt;
     }
     
     public function getRestrictedDt() : MySqlDataTable

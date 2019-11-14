@@ -102,7 +102,7 @@ class InMemoryDataTable extends DataTable
         }
         $msg = 'Row ' . $rowId . ' does not exist';
         $errorCode = self::ERROR_ROW_DOES_NOT_EXIST;
-        $this->setError($msg, $errorCode);
+        $this->setError($msg, $errorCode, [ 'method' => __METHOD__]);
         throw new InvalidArgumentException($msg, $errorCode);
     }
     
@@ -114,7 +114,7 @@ class InMemoryDataTable extends DataTable
             true
         );
         if ($id === false) {
-            $this->logWarning('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
+            $this->logWarning('Value ' . $value . ' for key \'' . $key .  '\' not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
         return $id;
@@ -162,6 +162,10 @@ class InMemoryDataTable extends DataTable
             $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
+        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
+            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
 
         $results = [];
         foreach ($this->theData as $dataRow) {
@@ -193,7 +197,6 @@ class InMemoryDataTable extends DataTable
                     }
                 }
                 return true;
-                break;
 
             case self::SEARCH_OR:
                 foreach ($searchSpec as $spec) {
@@ -202,13 +205,12 @@ class InMemoryDataTable extends DataTable
                     }
                 }
                 return false;
-                break;
-
-            default:
-                $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
-                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-
         }
+        // @codeCoverageIgnoreStart
+        // This should never happen, if it does there's a programming mistake!
+        $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
+        throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
+        // @codeCoverageIgnoreEnd
 
     }
 
@@ -258,7 +260,7 @@ class InMemoryDataTable extends DataTable
             }
         }
         // @codeCoverageIgnoreStart
-        // This should never happen, if it does there's programming mistake!
+        // This should never happen, if it does there's a programming mistake!
         $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
         throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
         // @codeCoverageIgnoreEnd
