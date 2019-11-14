@@ -27,6 +27,9 @@ namespace DataTable;
 
 use Exception;
 use InvalidArgumentException;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use RuntimeException;
 
 /**
@@ -45,7 +48,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-abstract class DataTable implements iErrorReporter
+abstract class DataTable implements LoggerAwareInterface, iErrorReporter
 {
     
     const NULL_ROW_ID = -1;
@@ -69,7 +72,6 @@ abstract class DataTable implements iErrorReporter
      */
     const ERROR_NO_ERROR = 0;
     const ERROR_UNKNOWN_ERROR = 1;
-    const ERROR_CANNOT_GET_UNUSED_ID = 101;
     const ERROR_ROW_DOES_NOT_EXIST = 102;
     const ERROR_ROW_ALREADY_EXISTS = 103;
     const ERROR_ID_NOT_INTEGER = 104;
@@ -78,7 +80,12 @@ abstract class DataTable implements iErrorReporter
     const ERROR_EMPTY_RESULT_SET = 107;
     const ERROR_KEY_VALUE_NOT_FOUND = 108;
     const ERROR_INVALID_SEARCH_TYPE = 109;
-    const ERROR_INVALID_SEARCH_CONDITION = 110;
+
+    const ERROR_INVALID_SPEC_ARRAY = 110;
+    const ERROR_SPEC_ARRAY_IS_EMPTY = 111;
+    const ERROR_SPEC_INVALID_COLUMN = 112;
+    const ERROR_SPEC_NO_VALUE = 113;
+    const ERROR_SPEC_INVALID_CONDITION = 114;
 
 
     /** *********************************************************************
@@ -90,33 +97,41 @@ abstract class DataTable implements iErrorReporter
      */
     public function __construct() {
         $this->setIdGenerator(new SequentialIdGenerator());
-        $this->setErrorLogger(new SimpleErrorLogger());
+        $this->resetError();
+        $this->setLogger(new NullLogger());
     }
 
     public function setIdGenerator(iIdGenerator $ig) : void {
         $this->idGenerator = $ig;
     }
 
-    public function setErrorLogger(ErrorLogger $er) : void {
-        $this->errorLogger = $er;
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
     }
+
 
     /**
-     *  Error Reporter methods
+     *  Error reporting methods
      */
 
+    /**
+     * Returns a string describing the last error
+     *
+     * @return string
+     */
     public function getErrorMessage() : string
     {
-        return $this->errorLogger->getErrorMessage();
+        return $this->errorMessage;
     }
 
+
+    /**
+     * @return int
+     */
     public function getErrorCode() : int
     {
-        return $this->errorLogger->getErrorCode();
-    }
-
-    public function getWarnings() : array {
-        return $this->errorLogger->getWarnings();
+        return $this->errorCode;
     }
 
     /**
@@ -264,19 +279,16 @@ abstract class DataTable implements iErrorReporter
     {
         $this->resetError();
         if (!isset($theRow['id']))  {
-            $this->setErrorMessage('Id not set in given row, cannot update');
-            $this->setErrorCode(self::ERROR_ID_NOT_SET);
+            $this->setError('Id not set in given row, cannot update', self::ERROR_ID_NOT_SET);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
             
         if ($theRow['id']===0) {
-            $this->setErrorMessage('Id is equal to zero in given row, cannot update');
-            $this->setErrorCode(self::ERROR_ID_IS_ZERO);
+            $this->setError('Id is equal to zero in given row, cannot update', self::ERROR_ID_IS_ZERO);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         if (!is_int($theRow['id'])) {
-            $this->setErrorMessage('Id in given row is not an integer, cannot update');
-            $this->setErrorCode(self::ERROR_ID_NOT_INTEGER);
+            $this->setError('Id in given row is not an integer, cannot update', self::ERROR_ID_NOT_INTEGER);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $this->realUpdateRow($theRow);
@@ -386,39 +398,103 @@ abstract class DataTable implements iErrorReporter
         try{
             $unusedId = $this->idGenerator->getOneUnusedId($this);
         } catch (Exception $e) {
-            $this->addWarning('Id generator error: ' . $e->getMessage() . ' code ' .
-                $e->getCode() . ', defaulting to SequentialIdGenerator');
+            $this->logWarning('Id generator error: ' . $e->getMessage() .
+                ', defaulting to SequentialIdGenerator', $e->getCode());
             $unusedId = (new SequentialIdGenerator())->getOneUnusedId($this);
         }
         return $unusedId;
     }
 
+    /**
+     * Checks the validity of a specArray and returns an array of problems.
+     *
+     * Each problem is an array containing three fields:
+     *  'specIndex' : the index of the element in the specArray that exhibits the problem
+     *  'msg' :  a string describing the problem
+     *  'code' : an error code associated with the problem
+     *
+     * @param array $specArray
+     * @return array
+     */
+    protected function checkSearchSpecArrayValidity(array $specArray) : array  {
+
+        $problems = [];
+
+        if (count($specArray) === 0) {
+            $problems[] = ['specIndex' => -1, 'msg' => 'specArray is empty', 'code' => self::ERROR_SPEC_ARRAY_IS_EMPTY];
+            return $problems;
+        }
+
+        for($i=0; $i < count($specArray); $i++) {
+            $spec = $specArray[$i];
+            if (!isset($spec['column']) || !is_string($spec['column'])) {
+                $problems[] = [
+                    'specIndex' => $i,
+                    'msg' => 'Invalid search condition, column field not found or not string',
+                    'code' => self::ERROR_SPEC_INVALID_COLUMN
+                ];
+            }
+
+            if (!isset($spec['value'])) {
+                $problems[] = [
+                    'specIndex' => $i,
+                    'msg' =>'Invalid search condition, value to match not found' ,
+                    'code' => self::ERROR_SPEC_NO_VALUE
+                ];
+            }
+
+            if (!isset($spec['condition']) || !is_int($spec['condition'])) {
+                $problems[] = [
+                    'specIndex' => $i,
+                    'msg' =>'Invalid search condition, no actual condition found' ,
+                    'code' => self::ERROR_SPEC_INVALID_CONDITION
+                ];
+            } else {
+                switch ($spec['condition']) {
+                    case self::COND_EQUAL_TO:
+                    case self::COND_NOT_EQUAL_TO:
+                    case self::COND_LESS_THAN:
+                    case self::COND_LESS_OR_EQUAL_TO:
+                    case self::COND_GREATER_THAN:
+                    case self::COND_GREATER_OR_EQUAL_TO:
+                        break;
+
+                    default:
+                        $problems[] = [
+                            'specIndex' => $i,
+                            'msg' => 'Invalid condition type : ' . $spec['condition'],
+                            'code' => self::ERROR_SPEC_INVALID_CONDITION
+                            ];
+                }
+            }
+        }
+        return $problems;
+    }
 
     /**
-     * Convenience protected methods for error logging
+     * @param string $msg
+     * @param int $code
+     * @param array $otherContext
      */
-
-    protected function resetError() : void
+    protected function setError(string $msg, int $code, array $otherContext = []): void
     {
-        $this->setError('', self::ERROR_NO_ERROR);
+        $this->setErrorMessage($msg);
+        $this->setErrorCode($code);
+        $this->log(LogLevel::ERROR, $msg, $code, $otherContext);
     }
 
-    protected function setErrorMessage(string $msg) : void
+    protected function resetError(): void
     {
-        $this->errorLogger->setErrorMessage($msg);
+        $this->setErrorCode(0);
+        $this->setErrorMessage('');
     }
 
-    protected function setErrorCode(int $c) : void
-    {
-        $this->errorLogger->setErrorCode($c);
+    protected function log(string $logLevel, string $msg, int $code, array $otherContext) {
+        $this->logger->log($logLevel, $msg, array_merge([ 'code' => $code], $otherContext));
     }
 
-    protected function setError(string $msg, int $code) : void {
-        $this->errorLogger->setError($msg, $code);
-    }
-
-    protected function addWarning(string $warning) : void {
-        $this->errorLogger->addWarning($warning);
+    protected function logWarning(string $msg, int $code, array $otherContext = []) {
+        $this->log(LogLevel::WARNING, $msg, $code, $otherContext);
     }
 
     /**********************************************************************
@@ -430,9 +506,39 @@ abstract class DataTable implements iErrorReporter
      */
     private $idGenerator;
 
+
     /**
-     * @var ErrorLogger
+     * @var LoggerInterface
      */
-    private $errorLogger;
+    protected $logger;
+
+    /**
+     *
+     * @var string
+     */
+    private $errorMessage;
+
+    /**
+     *
+     * @var int
+     */
+    private $errorCode;
+
+    /**
+     * @param string $message
+     */
+    private function setErrorMessage(string $message) : void
+    {
+        $this->errorMessage = $message;
+    }
+
+    /**
+     * @param int $code
+     */
+    private function setErrorCode(int $code) : void
+    {
+        $this->errorCode = $code;
+    }
+
 
 }

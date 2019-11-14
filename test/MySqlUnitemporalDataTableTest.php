@@ -199,7 +199,7 @@ EOD;
                 ['somekey' => $theKey],
                 $timeZero
             );
-            $this->assertNotFalse($rowId);
+            //$this->assertNotFalse($rowId);
             $ids[] = $rowId;
             $timesCount = 1;
             foreach ($times as $t) {
@@ -364,6 +364,8 @@ EOD;
         
         $result = $dataTable->deleteRowWithTime($newId, $time);
         $this->assertEquals($newId, $result);
+
+
         
     }
 

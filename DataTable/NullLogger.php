@@ -1,5 +1,4 @@
 <?php
-
 /*
  * The MIT License
  *
@@ -26,13 +25,31 @@
 
 namespace DataTable;
 
+
+use Psr\Log\AbstractLogger;
+use Psr\Log\InvalidArgumentException;
+
 /**
- * Describes a class that reports the last error that occurred during its operations
-  *
+ * Class NullLogger : PSR Logger that does nothing!
+ *
  * @package DataTable
  */
-interface iErrorReporter
+class NullLogger extends AbstractLogger
 {
-    public function getErrorMessage() : string;
-    public function getErrorCode() : int;
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException
+     */
+    public function log($level, $message, array $context = array())
+    {
+        // do nothing
+    }
 }

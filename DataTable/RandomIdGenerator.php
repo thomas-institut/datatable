@@ -62,8 +62,8 @@ class RandomIdGenerator implements iIdGenerator
         for ($i = 0; $i < $this->maxAttempts; $i++) {
             try {
                 $theId = random_int($this->minId, $this->maxId);
-            } catch (Exception $e) {
-                throw new RuntimeException($e->getMessage(), self::ERROR_RANDOM_NUMBER_GENERATOR_ERROR);
+            } catch (Exception $e) {  // @codeCoverageIgnore
+                throw new RuntimeException($e->getMessage(), self::ERROR_RANDOM_NUMBER_GENERATOR_ERROR); // @codeCoverageIgnore
             }
             if (!$dataTable->rowExists($theId)) {
                 return $theId;

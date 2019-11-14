@@ -71,7 +71,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      * If there's no row with the given Id it must return false
      *
      * @param int $rowId
-     * @return bool
+     * @return int
      */
     public function deleteRow(int $rowId): int
     {
@@ -129,8 +129,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      */
     public function getMaxId(): int
     {
-        $this->setErrorCode(self::ERROR_CANNOT_GET_MAX_ID);
-        $this->setErrorMessage('Cannot get a max Id');
+        $this->setError('Cannot get a max Id',self::ERROR_CANNOT_GET_MAX_ID );
         throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
     }
 
@@ -153,9 +152,7 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      * Must throw a Runtime Exception if the row was not updated
      *
      * @param array $theRow
-     * @return bool
-     * @throws RuntimeException
-     * @throws InvalidArgumentException
+     * @return void
      */
     protected function realUpdateRow(array $theRow): void
     {
@@ -214,5 +211,6 @@ class FailGetOneUnusedIdDataTable extends DataTable {
     public function getMaxValueInColumn(string $columnName): int
     {
         // TODO: Implement getMaxValueInColumn() method.
+        return 0;
     }
 }

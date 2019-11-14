@@ -27,6 +27,7 @@
 namespace DataTable;
 
 use InvalidArgumentException;
+use LogicException;
 use \PDO;
 use \PDOException;
 use PDOStatement;
@@ -109,25 +110,23 @@ class MySqlDataTable extends DataTable
             );
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('Query error checking MySQL column ' 
-                    . $this->tableName . '::' . $columnName . ' : ' 
-                    . $e->getMessage());
+            $this->setError('Query error checking MySQL column '
+                    . $this->tableName . '::' . $columnName . ' : ' . $e->getMessage(),
+                self::ERROR_MYSQL_QUERY_ERROR);
             return false;
             // @codeCoverageIgnoreEnd
         }
         
         
         if ($r === false) {
-            $this->setErrorCode(self::ERROR_TABLE_NOT_FOUND);
-            $this->setErrorMessage('Table ' . $this->tableName . ' not found');
+            $this->setError('Table ' . $this->tableName . ' not found',
+                self::ERROR_TABLE_NOT_FOUND);
             return false;
         }
         
         if ($r->rowCount() != 1) {
-            $this->setErrorCode(self::ERROR_REQUIRED_COLUMN_NOT_FOUND);
-            $this->setErrorMessage('Required column ' . $columnName 
-                    . ' not found in table ' . $this->tableName);
+            $this->setError('Required column ' . $columnName  . ' not found in table ' . $this->tableName,
+                self::ERROR_REQUIRED_COLUMN_NOT_FOUND);
             return false;
         }
          
@@ -135,11 +134,11 @@ class MySqlDataTable extends DataTable
         
         $preg = '/^' . $type . '/';
         if (!preg_match($preg, $columnInfo['Type'])) {
-            $this->setErrorCode(self::ERROR_WRONG_COLUMN_TYPE);
-            $this->setErrorMessage('Wrong MySQL column type for  ' 
-                . $this->tableName . '::' . $columnName 
-                . ', required=\'' . $type 
-                . '\', actual=\'' . $columnInfo['Type'] . '\'' );
+            $this->setError('Wrong MySQL column type for  '
+                . $this->tableName . '::' . $columnName
+                . ', required=\'' . $type
+                . '\', actual=\'' . $columnInfo['Type'] . '\'',
+                self::ERROR_WRONG_COLUMN_TYPE);
             return false;
         }
         return true;
@@ -179,8 +178,8 @@ class MySqlDataTable extends DataTable
     {
 
         if (!$this->rowExists($theRow['id'])) {
-            $this->setErrorCode(self::ERROR_ROW_DOES_NOT_EXIST);
-            $this->setErrorMessage('Id ' . $theRow['id'] . ' does not exist, cannot update');
+            $this->setError('Id ' . $theRow['id'] . ' does not exist, cannot update',
+                self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
@@ -234,9 +233,7 @@ class MySqlDataTable extends DataTable
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
-            $this->setErrorMessage('The row with id ' 
-                    . $rowId . ' does not exist');
-            $this->setErrorCode(self::ERROR_ROW_DOES_NOT_EXIST);
+            $this->setError('The row with id ' . $rowId . ' does not exist',self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $res['id'] = (int) $res['id'];
@@ -259,49 +256,19 @@ class MySqlDataTable extends DataTable
     public function getMaxId() : int
     {
         return $this->getMaxValueInColumn('id');
-//        $sql = 'SELECT MAX(id) FROM ' . $this->tableName;
-//
-//        $r = $this->doQuery($sql, 'get MaxId');
-//
-//        $maxId = $r->fetchColumn();
-//        if ($maxId === null) {
-//            return 0;
-//        }
-//        return (int) $maxId;
+
     }
     
     public function getIdForKeyValue(string $key, $value) : int
     {
         $rows = $this->findRows([$key => $value], 1);
         if ($rows === []) {
-            $this->setErrorCode(parent::ERROR_KEY_VALUE_NOT_FOUND);
-            $this->setErrorMessage('Value ' . $value . ' for key ' . $key .  'not found');
+            $this->setError('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
         return intval($rows[0]['id']);
     }
 
-//    /**
-//     *
-//     * @param array $rowToMatch
-//     * @param int $maxResults
-//     * @return array
-//     */
-//    public function findRows(array $rowToMatch, int $maxResults = 0) : array
-//    {
-//        $searchSpec = [];
-//
-//        $givenRowKeys = array_keys($rowToMatch);
-//        foreach ($givenRowKeys as $key) {
-//            $searchSpec[] = [
-//                'column' => $key,
-//                'condition' => self::COND_EQUAL_TO,
-//                'value' => $rowToMatch[$key]
-//            ];
-//        }
-//        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
-//    }
-    
     public function deleteRow(int $rowId) : int
     {
         $this->executeStatement('deleteRow', [':id' => $rowId]);
@@ -331,16 +298,16 @@ class MySqlDataTable extends DataTable
         try {
             $r = $this->dbConn->query($sql);
          } catch (PDOException $e) {
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('Query error in "' . $context . '" : "' 
-                    . $e->getMessage() . '", query = "' . $sql . '"');
+            $this->setError('Query error in "' . $context . '" : "'
+                . $e->getMessage() . '", query = "' . $sql . '"',
+                self::ERROR_MYSQL_QUERY_ERROR
+                );
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_UNKNOWN_ERROR);
-            $this->setErrorMessage('Unknown error in "' . $context 
-                    . '" when executing query: ' . $sql);
+            $this->setError('Unknown error in "' . $context
+                . '" when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
@@ -361,18 +328,16 @@ class MySqlDataTable extends DataTable
         try {
             $result = $this->statements[$statement]->execute($param);
         } catch (PDOException $e) {
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('MySQL error when executing ' 
-                . 'prepared statement "' . $statement . '": ' 
-                . $e->getMessage());
+            $this->setError('MySQL error when executing '
+                . 'prepared statement "' . $statement . '": '
+                . $e->getMessage(), self::ERROR_MYSQL_QUERY_ERROR);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         
         if ($result === false) {
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_EXECUTING_STATEMENT);
-            $this->setErrorMessage('Unknown error when executing ' . 
-                    'prepared statement "' . $statement . '"');
+            $this->setError('Unknown error when executing ' .
+                'prepared statement "' . $statement . '"',self::ERROR_EXECUTING_STATEMENT );
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
@@ -416,6 +381,12 @@ class MySqlDataTable extends DataTable
     {
         $this->resetError();
 
+        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpec);
+        if ($searchSpecCheck !== []) {
+            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
         $conditions = [];
         foreach ($searchSpec as $spec) {
             $conditions[] = $this->getSqlConditionFromSpec($spec);
@@ -450,48 +421,31 @@ class MySqlDataTable extends DataTable
                 // or is of the wrong type. This just means that the search
                 // did not have any results, so let's set the error code
                 // to be 'empty result set'
-                // TODO: add an optional full table schema check in order avoid ambiguities here
-                $this->setErrorCode(self::ERROR_EMPTY_RESULT_SET);
                 // However, just in case this may be hiding something else,
-                // let's report everything in the error message
-                $this->setErrorMessage('Query error in realFindRows (reported '
-                    . 'as no results) : '
-                    . $e->getMessage() . ' :: query = ' . $sql);
+                // let's log it as info
+                // TODO: add an optional full table schema check in order avoid ambiguities here
+                $this->logger->info('Query error in realFindRows (reported as no results)',
+                    ['query' => $sql, 'message' => $e->getMessage(), 'code' => $e->getCode()]);
                 return [];
             }
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('Query error in realFindRows: code  ' . $e->getCode() . ' : '
-                . $e->getMessage() . ' :: query = ' . $sql);
+            $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
+                . $e->getMessage() . ' :: query = ' . $sql, self::ERROR_MYSQL_QUERY_ERROR);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
 
         if ($r === false) {
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_UNKNOWN_ERROR);
-            $this->setErrorMessage('Unknown error in realFindRows '
-                . 'when executing query: ' . $sql);
+            $this->setError('Unknown error in realFindRows '
+                . 'when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
-
-
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
 
     private function  getSqlConditionFromSpec(array $spec) : string {
-
-        if (!isset($spec['column']) || !is_string($spec['column'])) {
-            $this->setError('Invalid condition, column not found or not string', self::ERROR_INVALID_SEARCH_CONDITION);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
-        if (!isset($spec['value'])) {
-            $this->setError('Invalid condition, value to match not found', self::ERROR_INVALID_SEARCH_CONDITION);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
         $column = $spec['column'];
         $quotedValue = $this->quoteValue($spec['value']);
 
@@ -513,11 +467,11 @@ class MySqlDataTable extends DataTable
 
             case self::COND_GREATER_OR_EQUAL_TO:
                 return "`$column`>=" . $quotedValue;
-
-            default:
-                $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
-                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
-
+        // @codeCoverageIgnoreStart
+        // This should never happen, if it does there's programming mistake!
+        $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
+        throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
+        // @codeCoverageIgnoreEnd
     }
 }

@@ -28,6 +28,8 @@ namespace DataTable;
 
 
 use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
 
 class InMemoryDataTable extends DataTable
 {
@@ -67,8 +69,7 @@ class InMemoryDataTable extends DataTable
     public function realUpdateRow(array $theRow) : void
     {
         if (!$this->rowExists($theRow['id'])) {
-            $this->setErrorCode(self::ERROR_ROW_DOES_NOT_EXIST);
-            $this->setErrorMessage('Id ' . $theRow['id'] . ' does not exist, cannot update');
+            $this->setError('Id ' . $theRow['id'] . ' does not exist, cannot update', self::ERROR_ROW_DOES_NOT_EXIST);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
@@ -92,11 +93,6 @@ class InMemoryDataTable extends DataTable
     public function getMaxId() : int
     {
         return $this->getMaxValueInColumn('id');
-//        if (count($this->theData) !== 0) {
-//            return max(array_column($this->theData, 'id'));
-//        } else {
-//            return 0;
-//        }
     }
     
     public function getRow(int $rowId) : array
@@ -118,48 +114,12 @@ class InMemoryDataTable extends DataTable
             true
         );
         if ($id === false) {
-            $this->setErrorCode(parent::ERROR_KEY_VALUE_NOT_FOUND);
-            $this->setErrorMessage('Value ' . $value . ' for key ' . $key .  'not found');
+            $this->logWarning('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
         return $id;
     }
     
-//    public function findRows(array $rowToMatch, int $maxResults = 0) : array
-//    {
-//
-//        $searchSpec = [];
-//
-//        $givenRowKeys = array_keys($rowToMatch);
-//        foreach ($givenRowKeys as $key) {
-//            $searchSpec[] = [
-//                'column' => $key,
-//                'condition' => self::COND_EQUAL_TO,
-//                'value' => $rowToMatch[$key]
-//                ];
-//        }
-//        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
-//
-////        $this->resetError();
-////        $results = [];
-////        $givenRowKeys = array_keys($givenRow);
-////        foreach ($this->theData as $dataRow) {
-////            $match = true;
-////            foreach ($givenRowKeys as $key) {
-////                if ($dataRow[$key] !== $givenRow[$key]) {
-////                    $match = false;
-////                }
-////            }
-////            if ($match) {
-////                $results[] = $dataRow;
-////                if ($maxResults > 0 && count($results) === $maxResults) {
-////                    return $results;
-////                }
-////            }
-////        }
-////        return $results;
-//    }
-
     /**
      * Searches the datatable according to the given $searchSpec
      *
@@ -197,6 +157,12 @@ class InMemoryDataTable extends DataTable
     public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
         $this->resetError();
+        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpec);
+        if ($searchSpecCheck !== []) {
+            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
         $results = [];
         foreach ($this->theData as $dataRow) {
             if ($this->matchSearchSpec($dataRow, $searchSpec, $searchType)) {
@@ -247,16 +213,6 @@ class InMemoryDataTable extends DataTable
     }
 
     private function match(array $dataRow, array $spec) : bool {
-        if (!isset($spec['column']) || !is_string($spec['column'])) {
-            $this->setError('Invalid condition, column not found or not string', self::ERROR_INVALID_SEARCH_CONDITION);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
-        if (!isset($spec['value'])) {
-            $this->setError('Invalid condition, value to match not found', self::ERROR_INVALID_SEARCH_CONDITION);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
         $column = $spec['column'];
         $value = $spec['value'];
 
@@ -279,10 +235,6 @@ class InMemoryDataTable extends DataTable
 
                 case self::COND_GREATER_OR_EQUAL_TO:
                     return strcmp($dataRow[$column], $value) >= 0;
-
-                default:
-                    $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
-                    throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
         } else {
             switch ($spec['condition']) {
@@ -303,11 +255,12 @@ class InMemoryDataTable extends DataTable
 
                 case self::COND_GREATER_OR_EQUAL_TO:
                     return $dataRow[$column] >= $value;
-
-                default:
-                    $this->setError('Invalid condition type : ' . $spec['condition'], self::ERROR_INVALID_SEARCH_CONDITION);
-                    throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
         }
+        // @codeCoverageIgnoreStart
+        // This should never happen, if it does there's programming mistake!
+        $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
+        throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
+        // @codeCoverageIgnoreEnd
     }
 }

@@ -234,8 +234,7 @@ class UnitemporalDataTable extends DataTable
     }
 
     private function throwExceptionForInvalidTime(string $timeString, string $context) : void {
-        $this->setErrorCode(self::ERROR_INVALID_TIME);
-        $this->setErrorMessage("Invalid time given for $context : \"$timeString\"");
+        $this->setError("Invalid time given for $context : \"$timeString\"", self::ERROR_INVALID_TIME);
         throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
     }
 

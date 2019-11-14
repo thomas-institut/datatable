@@ -71,6 +71,9 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     const END_OF_TIMES = '9999-12-31 23:59:59.999999';
     const MYSQL_DATE_FORMAT  = 'Y-m-d H:i:s';
 
+
+    const FIELD_VALID_FROM = 'valid_from';
+    const FIELD_VALID_UNTIL = 'valid_until';
     /**
      *
      * @param PDO $dbConnection initialized PDO connection
@@ -82,12 +85,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         parent::__construct($dbConnection, $tableName);
 
         // Check additional columns
-        if (!$this->isMySqlTableColumnValid('valid_from', 'datetime')) {
+        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_FROM, 'datetime')) {
             // error message and code set by isMySqlTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        if (!$this->isMySqlTableColumnValid('valid_until', 'datetime')) {
+        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_UNTIL, 'datetime')) {
             // error message and code set by isMySqlTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
@@ -96,13 +99,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         try {
             $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
-                        ' WHERE id= :id AND valid_until=' .
+                        ' WHERE id= :id AND `' . self::FIELD_VALID_UNTIL . '`=' .
                         $this->quoteValue(self::END_OF_TIMES));
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_PREPARING_STATEMENTS);
-            $this->setErrorMessage("Could not prepare statements "
-                    . "in constructor, " . $e->getMessage());
+            $this->setError("Could not prepare statements "
+                    . "in constructor, " . $e->getMessage(), self::ERROR_PREPARING_STATEMENTS);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
@@ -120,7 +122,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     }
 
     /**
-     * Creates a row valid from the given time and returns the new
+     * Creates a new row that is valid from the given time and returns the new
      * row's id
      *
      * @param array $theRow
@@ -137,6 +139,9 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     /**
      * Actual creation of a row
      *
+     * Uses MySqlDataTable's realCreateRow to create a row since that method does
+     * not check for already used Ids
+     *
      * @param array $theRow
      * @param string $timeString
      * @return int
@@ -149,8 +154,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
             $this->throwExceptionForInvalidTime($timeString, 'realCreateRowWithTime');
         }
         
-        $theRow['valid_from'] = $timeString;
-        $theRow['valid_until'] = self::END_OF_TIMES;
+        $theRow[self::FIELD_VALID_FROM] = $timeString;
+        $theRow[self::FIELD_VALID_UNTIL] = self::END_OF_TIMES;
         
         return parent::realCreateRow($theRow);
     }
@@ -169,10 +174,10 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
             $this->throwExceptionForInvalidTime($timeString, 'makeRowInvalid');
         }
         $sql = 'UPDATE ' . $this->tableName . ' SET ' .
-                ' valid_until=' . $this->quoteValue($timeString).
+                 self::FIELD_VALID_UNTIL . '=' . $this->quoteValue($timeString) .
                 ' WHERE id=' . $theRow['id'] .
-                ' AND valid_from = ' . $this->quoteValue($theRow['valid_from']) .
-                ' AND valid_until= ' . $this->quoteValue($theRow['valid_until']);
+                ' AND ' . self::FIELD_VALID_FROM . ' = ' . $this->quoteValue($theRow[self::FIELD_VALID_FROM]) .
+                ' AND ' . self::FIELD_VALID_UNTIL . '= ' . $this->quoteValue($theRow[self::FIELD_VALID_UNTIL]);
         
         $this->doQuery($sql, 'makeRowInvalid');
 
@@ -188,14 +193,16 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     {
         $this->realUpdateRowWithTime($theRow, self::now());
     }
-    
+
     /**
-     * Updates a row at the given time
+     * Updates the last version of a row marking the change as
+     * occurring at the given $timeString
+     *
      * @param array $theRow
-     * @param $timeString
-     * @return bool
+     * @param string $timeString
+     * @return void
      */
-    public function realUpdateRowWithTime(array $theRow, string $timeString) : bool
+    public function realUpdateRowWithTime(array $theRow, string $timeString) : void
     {
 
         $timeString = self::getGoodTimeString($timeString);
@@ -204,22 +211,41 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         }
 
         $oldRow = $this->realGetRow($theRow['id']);
-//        if ($oldRow === []) {
-//            $this->setError('Row not found, cannot update', self::ERROR_ROW_DOES_NOT_EXIST);
-//            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-//        }
+
         $this->makeRowInvalid($oldRow, $timeString);
         foreach (array_keys($oldRow) as $key) {
-            if ($key === 'valid_from' or $key ==='valid_until') {
+            if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
                 continue;
             }
             if (!array_key_exists($key, $theRow)) {
                 $theRow[$key] = $oldRow[$key];
             }
         }
-        return $this->realCreateRowWithTime($theRow, $timeString);
+        $id = $this->realCreateRowWithTime($theRow, $timeString);
+
+        // TODO: Check if there's a real possibility the realCreateRow will return an $id that is not the one in $theRow
+
     }
-    
+
+
+    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    {
+
+        // Provisional implementation: get a full search a filter out rows not valid at the current time
+
+        $results = parent::search($searchSpec, $searchType, $maxResults);
+
+        $filteredResults = [];
+
+        foreach($results as $row) {
+            if ($row[self::FIELD_VALID_UNTIL] === self::END_OF_TIMES) {
+                $filteredResults[] = $row;
+            }
+        }
+
+        return  $filteredResults;
+    }
+
     /**
      * Returns all rows that are valid at the present moment
      *
@@ -246,8 +272,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         }
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->tableName .
-                ' WHERE valid_from <= ' . $quotedTimeString .
-                ' AND valid_until > ' . $quotedTimeString;
+                ' WHERE ' . self::FIELD_VALID_FROM . '<=' . $quotedTimeString .
+                ' AND '. self::FIELD_VALID_UNTIL .  '>' . $quotedTimeString;
         
         $r = $this->doQuery($sql, 'getAllRowsWithTime');
 
@@ -283,8 +309,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $theRow = $this->getRowWithTime($rowId, self::now());
 
         if ($stripTimeInfo) {
-            unset($theRow['valid_from']);
-            unset($theRow['valid_until']);
+            unset($theRow[self::FIELD_VALID_FROM]);
+            unset($theRow[self::FIELD_VALID_UNTIL]);
         }
         return $theRow;
     }
@@ -297,7 +323,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      *
      * @param int $rowId
      * @param string $timeString
-     * @return array|boolean
+     * @return array
      */
     public function getRowWithTime(int $rowId, string $timeString) : array
     {
@@ -312,16 +338,15 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
 
         $sql = 'SELECT * FROM ' . $this->tableName .
                         ' WHERE `id`=' . $rowId .
-                        ' AND `valid_from`<=' . $quotedTimeString .
-                        ' AND `valid_until`>' . $quotedTimeString .
+                        ' AND `'. self::FIELD_VALID_FROM . '`<=' . $quotedTimeString .
+                        ' AND `'. self::FIELD_VALID_UNTIL . '`>' . $quotedTimeString .
                         ' LIMIT 1';
         
         $r = $this->doQuery($sql, 'getRowWithTime');
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
-            $this->setErrorMessage('The row with id ' . $rowId . ' does not exist');
-            $this->setErrorCode(self::ERROR_ROW_DOES_NOT_EXIST);
+            $this->setError('The row with id ' . $rowId . ' does not exist', self::ERROR_ROW_DOES_NOT_EXIST);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $res['id'] = (int) $res['id'];
@@ -359,7 +384,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key) {
-            if ($key === 'valid_from' or $key ==='valid_until') {
+            if ($key === self::FIELD_VALID_FROM or $key ===self::FIELD_VALID_UNTIL) {
                 // Ignore time info keys
                 continue;
             }
@@ -374,8 +399,9 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->tableName . ' WHERE ' .
                 implode(' AND ', $conditions) .
-                ' AND valid_from <= ' . $quotedTimeString .
-                ' AND valid_until > ' . $quotedTimeString;
+                ' AND `'. self::FIELD_VALID_FROM . '`<=' . $quotedTimeString .
+                ' AND `'. self::FIELD_VALID_UNTIL . '`>' . $quotedTimeString;
+
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
         }
@@ -389,23 +415,22 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
                 // is of the wrong type. This just means that the search
                 // did not have any results, so let's set the error code
                 // to be 'empty result set'
-                $this->setErrorCode(self::ERROR_EMPTY_RESULT_SET);
-                // However, just in case this may be hiding something else, 
+                // However, just in case this may be hiding something else,
                 // let's report everything in the error message
-                $this->setErrorMessage('Query error in realFindRowsWithTime (reported as no results) : ' . 
-                        $e->getMessage() . ' :: query = ' . $sql);
+                $this->setError('Query error in realFindRowsWithTime (reported as no results) : ' .
+                        $e->getMessage() . ' :: query = ' . $sql, self::ERROR_EMPTY_RESULT_SET);
                 return [];
             }
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_MYSQL_QUERY_ERROR);
-            $this->setErrorMessage('Query error in realFindRowsWithTime: ' . $e->getMessage() . ' :: query = ' . $sql);
+            $this->setError('Query error in realFindRowsWithTime: ' . $e->getMessage() . ' :: query = ' . $sql,
+                self::ERROR_MYSQL_QUERY_ERROR);
             return [];
             // @codeCoverageIgnoreEnd
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
-            $this->setErrorCode(self::ERROR_UNKNOWN_ERROR);
-            $this->setErrorMessage('Unknown error in realFindRowsWithTime when executing query: ' . $sql);
+            $this->setError('Unknown error in realFindRowsWithTime when executing query: ' . $sql,
+                self::ERROR_UNKNOWN_ERROR);
             return [];
             // @codeCoverageIgnoreEnd
         }
@@ -414,6 +439,11 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
 
+    /**
+     * @param int $rowId
+     * @return int
+     * @throws Exception
+     */
     public function deleteRow(int $rowId): int
     {
         return $this->deleteRowWithTime($rowId, self::now());
@@ -423,6 +453,9 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     /**
      * 'Deletes' a row by making its current version invalid
      * as of the given time.
+     *
+     * It can only delete the latest valid version of the row, not previous ones.
+     *
      * Returns the number of actually deleted
      *
      * @param int $rowId
@@ -534,8 +567,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
     }
 
     private function throwExceptionForInvalidTime(string $timeString, string $context) : void {
-        $this->setErrorCode(self::ERROR_INVALID_TIME);
-        $this->setErrorMessage("Invalid time given for $context : \"$timeString\"");
+        $this->setError("Invalid time given for $context : \"$timeString\"", self::ERROR_INVALID_TIME);
         throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
     }
 }
