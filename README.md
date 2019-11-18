@@ -26,6 +26,24 @@ unique ids and of interfacing with the underlying storage mechanism.
 $dt = new DataTableDescendantClass(...) 
 ```
 
+The default id generation mechanism behaves exactly like auto-increment in databases.
+Use `setIdGenerator` to install an alternative generator.
+ 
+A random Id generator is provided. This generator will try to assign random Ids to 
+new rows between two given values up to a maximum number of attempts, after which it
+will default to the maximum current Id plus 1:
+```
+$dt->setIdGenerator(new RandomIdGenerator($min, $max, $maxAttempts));
+```
+If proper values of $min, $max and $maxAttempts are chosen, it can be practically
+impossible for the random Id generator to go to the default.
+
+#### Error Handling 
+
+Most methods will throw a RunTime exception if there was any problem. 
+The latest error can be inspected by calling the `getErrorCode` and `getErrorMessage` 
+methods.
+
 #### Create Rows
 ```
 $newRow = [ 'field1' => 'string value', 
@@ -40,41 +58,76 @@ sense with the implementation. An SQL implementation, for instance,
 may require that the fields agree in number and type with the underlying
 SQL table. 
 
-#### Error Handling 
+#### Read Rows
 
-Most methods return false if there was an error. In that case, implementations
-are required to also provide an integer error code and an error message. 
-
-```
-if ($newId === false) {   // there was an error
-    $errorCode = $dt->getErrorCode(); // integer code, see constants in class definition
-    $errorMessage = $dt->getErrorMessage(); // string message
-    return;
-}
-```
-
-#### Get, seach, update and delete
+Check whether a row exists
 ``` 
-// Get row(s)
-$row = $dt->getRow($newId);   // $row should be equal to $newRow with an added id field
+$result = $dt->rowExists($rowId);
+``` 
 
-$rows = $dt->getAllRows();  // returns an array of rows (not necessary ordered by id)
+Get a particular row or all rows 
+```  
+$row = $dt->getRow($newId);  
+// throws an InvalidArgument Exception if the row does not exist
 
-// Search
-$foundRows = $dt->findRows(['fieldtoSearch' => 'valueToMatch', 
-        'anotherFieldToSearch' => 'anotherValuetoMatch']);  // returns an array of rows
+$rows = $dt->getAllRows();  
+// returns an array of rows (not necessary ordered by id)
+```
 
-$rowExists = $dt->findRow(['fieldtoSearch' => 'valueToMatch', 
-        'anotherFieldToSearch' => 'anotherValuetoMatch']);  // returns a boolean
-// $dt->findRow can return false because there were no matches or because there
-// was an error. Check the error code if needed.
+The `search` method performs a general search on the DataTable based on an 
+array of search conditions and a search type according to the following rules:
+```
+public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
 
-// Update a row
-$row['field1'] = 'new value';   // $row must have a valid id
-$result = $dt->updateRow($row); 
+/**
+  * Searches the datatable according to the given $searchSpec
+  *
+  * $searchSpecArray is an array of conditions.
+  *
+  * If $searchType is SEARCH_AND, the row must satisfy:
+  *      $searchSpecArray[0] && $searchSpecArray[1] && ...  && $searchSpecArray[n]
+  *
+  * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+  *
+  *      $searchSpecArray[0] || $searchSpecArray[1] || ...  || $searchSpecArray[n]
+  *
+  *
+  * A condition is an array of the form:
+  *
+  *  $condition = [
+  *      'column' => 'columnName',
+  *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
+  *      'value' => someValue
+  * ]
+  *
+  * Notice that each condition type has a negation:
+  *      EQUAL_TO  <==> NOT_EQUAL_TO
+  *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
+  *      LESS_OR_EQUAL_TO <==> GREATER_THAN
+  *
+  * if $maxResults > 0, an array of max $maxResults will be returned
+  * if $maxResults <= 0, all results will be returned
+```
 
-// Delete a row
-$result = $dt->deleteRow($row['id');
+The utility method `findRows` can be used for simple matching of columns and values. 
+```
+public function findRows(array $rowToMatch, int $maxResults = 0) : array;
+```
+If a row matches the value for every key in `$rowToMatch`, it is returned as
+part of the result set. This is equivalent to do an AND search with EQUAL_TO conditions
+for every key in `$rowToMatch`  
+
+#### Update Rows
+```
+$result = $dt->updateRow($row);
+```
+The given row must have an id that corresponds to an row in the table. Only
+the fields in `$row` are updated. An incomplete row may produce errors if the 
+underlying database schema expects values for those columns. 
+
+#### Delete Row
+```
+$result = $dt->deleteRow($rowId);
 ```
 
 ### InMemoryDataTable
@@ -82,7 +135,6 @@ $result = $dt->deleteRow($row['id');
 A `DataTable` implementation using simple PHP arrays, no storage. This makes
 it possible to perform tests on data tables without having to set up
 a database. 
-
 
 ### MySqlDataTable
 
@@ -103,39 +155,29 @@ those out when calling `createRow`.
 
 ### MySqlDataTableWithRandomIds
 
-The same as `MySqlDatable` but ids are not sequential but random
+The same as `MySqlDatable` but using the randomId generator.
 
-```
-$dt = new MySqlDataTableWithRandomIds($pdoDatabaseConnection, $mySqlTableName);
-
-// or
-
-$dt = new MySqlDataTableWithRandomIds($pdoDatabaseConnection, $mySqlTableName, $minId, $maxId);
-
-```
-
-If for some reason it is impossible to create new random unique Ids after a few tries
-(because there are no more ids available within the desired ranges), `MySqlDataTableWithRandomIds`
-will try incremental ids outside of the given range. If the desired range is
-correctly established, this should never happen.
 
 ### MySqlUnitemporalDataTable
 
 A MySQL table with time-tagged rows. Every row not only has a unique id, but
 also a valid_from and a valid_until time. When using the normal `DataTable` methods
-`MySQLUnitemporalDataTable`n behaves exactly the same as MySqlDataTable but
+`MySQLUnitemporalDataTable` behaves exactly the same as MySqlDataTable but
 it does not delete any rows, it just makes them invalid.
 
-There is a set of time methods to access previous versions of the data:
+There is a set of time methods to create, read, update and delete
+ previous versions of the data. For example:
 
 ``` 
 $dt = new MySqlUnitemporalDataTable($pdoDatabaseConnection, $mySqlTableName);
 
 
-$oldRow = $dt->getRowWithTime($rowId, $time);
+$oldRow = $dt->getRowWithTime($rowId, $timeString);
 ```
-`$time` can be a Unix timestamp or a string with a valid MySQL time, 
-e.g. `'2018-01-01  12:00:00'`.
+`$timeString ` is a string formatted as a valid MySQL datetime with microseconds, 
+e.g. `'2018-01-01  12:00:00.123123'` Use the static methods in the `TimeString`
+to generate such strings from MySQL date and datetime strings, and from UNIX
+timestamps with or without microseconds.  
 
 The underlying MySQL table must have two datetime fields: `valid_from` and 
 `valid_until`
