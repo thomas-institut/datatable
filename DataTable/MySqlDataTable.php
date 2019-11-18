@@ -77,7 +77,7 @@ class MySqlDataTable extends DataTable
         $this->tableName = $tableName;
         $this->dbConn = $dbConnection;
         
-        if (!$this->isMySqlTableColumnValid('id', 'int')) {
+        if (!$this->isMySqlTableColumnValid(self::COLUMN_ID, 'int')) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         
@@ -86,11 +86,11 @@ class MySqlDataTable extends DataTable
         // Pre-prepare common statements
         try {
             $this->statements['rowExistsById'] =
-                $this->dbConn->prepare('SELECT id FROM ' . $this->tableName 
-                        . ' WHERE id= :id');
+                $this->dbConn->prepare('SELECT `' . self::COLUMN_ID .  '` FROM `' . $this->tableName
+                        . '` WHERE '. self::COLUMN_ID .  '= :id');
             $this->statements['deleteRow'] =
-                $this->dbConn->prepare('DELETE FROM `' . $this->tableName 
-                        . '` WHERE `id`= :id');
+                $this->dbConn->prepare('DELETE FROM `' . $this->tableName
+                    . '` WHERE `'. self::COLUMN_ID .  '`= :id');
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
             $msg = "Could not prepare statements in constructor, " . $e->getMessage();
@@ -171,27 +171,27 @@ class MySqlDataTable extends DataTable
         
         $this->doQuery($sql, 'realCreateRow');
 
-        return (int) $theRow['id'];
+        return (int) $theRow[self::COLUMN_ID];
     }
     
     public function realUpdateRow(array $theRow) : void
     {
 
-        if (!$this->rowExists($theRow['id'])) {
-            $this->setError('Id ' . $theRow['id'] . ' does not exist, cannot update',
+        if (!$this->rowExists($theRow[self::COLUMN_ID])) {
+            $this->setError('Id ' . $theRow[self::COLUMN_ID] . ' does not exist, cannot update',
                 self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
         $sets = array();
         foreach ($keys as $key) {
-            if ($key === 'id') {
+            if ($key === self::COLUMN_ID) {
                 continue;
             }
             array_push($sets, $key . '=' . $this->quoteValue($theRow[$key]));
         }
         $sql = 'UPDATE `' . $this->tableName . '` SET '
-                . implode(',', $sets) . ' WHERE `id`=' . $theRow['id'];
+                . implode(',', $sets) . ' WHERE `' . self::COLUMN_ID . '`=' . $theRow[self::COLUMN_ID];
         
         $this->doQuery($sql, 'realUpdateRow');
 
@@ -226,7 +226,7 @@ class MySqlDataTable extends DataTable
     public function getRow(int $rowId) : array
     {
         $sql = 'SELECT * FROM ' . $this->tableName
-                . ' WHERE `id`=' . $rowId . ' LIMIT 1';
+                . ' WHERE `'. self::COLUMN_ID . '`=' . $rowId . ' LIMIT 1';
         
         $r = $this->doQuery($sql, 'getRow');
 
@@ -236,7 +236,7 @@ class MySqlDataTable extends DataTable
             $this->setError('The row with id ' . $rowId . ' does not exist',self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
-        $res['id'] = (int) $res['id'];
+        $res[self::COLUMN_ID] = (int) $res[self::COLUMN_ID];
         return $res;
     }
 
@@ -244,7 +244,7 @@ class MySqlDataTable extends DataTable
     {
         $sql = 'SELECT MAX('. $columnName . ') FROM ' . $this->tableName;
 
-        $r = $this->doQuery($sql, 'get MaxId');
+        $r = $this->doQuery($sql, 'getMaxValueInColumn');
 
         $maxId = $r->fetchColumn();
         if ($maxId === null) {
@@ -255,7 +255,7 @@ class MySqlDataTable extends DataTable
 
     public function getMaxId() : int
     {
-        return $this->getMaxValueInColumn('id');
+        return $this->getMaxValueInColumn(self::COLUMN_ID);
 
     }
     
@@ -266,12 +266,12 @@ class MySqlDataTable extends DataTable
             $this->setError('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
-        return intval($rows[0]['id']);
+        return intval($rows[0][self::COLUMN_ID]);
     }
 
     public function deleteRow(int $rowId) : int
     {
-        $this->executeStatement('deleteRow', [':id' => $rowId]);
+        $this->executeStatement('deleteRow', ['id' => $rowId]);
 
         if ($this->statements['deleteRow']->rowCount() !== 1) {
             // this can only mean that the row to delete did not exist
@@ -286,8 +286,8 @@ class MySqlDataTable extends DataTable
     {
         $rows = $theRows;
         for ($i = 0; $i < count($rows); $i++) {
-            if (!is_int($rows[$i]['id'])) {
-                $rows[$i]['id'] = (int) $rows[$i]['id'];
+            if (!is_int($rows[$i][self::COLUMN_ID])) {
+                $rows[$i][self::COLUMN_ID] = (int) $rows[$i][self::COLUMN_ID];
             }
         }
         return $rows;
@@ -372,16 +372,16 @@ class MySqlDataTable extends DataTable
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $searchSpec
+     * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
      * @return array
      */
-    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
         $this->resetError();
 
-        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpec);
+        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
         if ($searchSpecCheck !== []) {
             $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
@@ -393,7 +393,7 @@ class MySqlDataTable extends DataTable
         }
 
         $conditions = [];
-        foreach ($searchSpec as $spec) {
+        foreach ($searchSpecArray as $spec) {
             $conditions[] = $this->getSqlConditionFromSpec($spec);
         }
 

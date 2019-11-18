@@ -29,7 +29,6 @@ namespace DataTable;
 
 use InvalidArgumentException;
 use LogicException;
-use RuntimeException;
 
 class InMemoryDataTable extends DataTable
 {
@@ -149,15 +148,15 @@ class InMemoryDataTable extends DataTable
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $searchSpec
+     * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
      * @return array
      */
-    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
         $this->resetError();
-        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpec);
+        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
         if ($searchSpecCheck !== []) {
             $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
@@ -169,7 +168,7 @@ class InMemoryDataTable extends DataTable
 
         $results = [];
         foreach ($this->theData as $dataRow) {
-            if ($this->matchSearchSpec($dataRow, $searchSpec, $searchType)) {
+            if ($this->matchSearchSpec($dataRow, $searchSpecArray, $searchType)) {
                 $results[] = $dataRow;
                 if ($maxResults > 0 && count($results) === $maxResults) {
                     return $results;

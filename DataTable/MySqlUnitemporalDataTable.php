@@ -222,12 +222,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     }
 
 
-    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
 
         // Provisional implementation: get a full search a filter out rows not valid at the current time
 
-        $results = parent::search($searchSpec, $searchType, $maxResults);
+        $results = parent::search($searchSpecArray, $searchType, $maxResults);
 
         $filteredResults = [];
 
@@ -494,7 +494,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         return true;
     }
 
-    public function searchWithTime(array $searchSpec, int $searchType, string $timeString, int $maxResults = 0): array
+    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): array
     {
         // TODO: implement searchWithTime
         $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
@@ -509,5 +509,29 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $this->realUpdateRowWithTime($theRow, $timeString);
+    }
+
+    /**
+     * Returns an array with all the different versions of the row with the given $rowId
+     * Each version has the same fields as any row in the datatable plus
+     *  'valid_from' and a 'valid_until' fields.
+     *
+     * @param int $rowId
+     * @return array
+     */
+    public function getRowHistory(int $rowId): array
+    {
+        $sql = 'SELECT * FROM ' . $this->tableName .
+            ' WHERE `'. self::COLUMN_ID. '`=' . $rowId . ' ORDER BY `'. self::FIELD_VALID_FROM . '` ASC' ;
+
+        $r = $this->doQuery($sql, 'getRowHistory');
+        if ($r->rowCount() === 0) {
+            $this->setError('The row with id ' . $rowId . ' has never existed', self::ERROR_ROW_DOES_NOT_EXIST);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $rows = $r->fetchAll(PDO::FETCH_ASSOC);
+
+        return $this->forceIntIds($rows);
     }
 }

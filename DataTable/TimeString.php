@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,8 @@ namespace DataTable;
 /**
  * Class TimeString
  *
- * Static methods to deal with strings that have or must have a MySql datetime format
+ * Static methods to deal with strings that  have a MySql datetime format with microseconds,
+ * e.g. 2010-10-10 18:21:23.912123
  *
  * @package DataTable
  */

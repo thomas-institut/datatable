@@ -188,12 +188,12 @@ class FailGetOneUnusedIdDataTable extends DataTable {
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $searchSpec
+     * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
      * @return array
      */
-    public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
         return [];
     }

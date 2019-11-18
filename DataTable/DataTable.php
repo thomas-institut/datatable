@@ -33,7 +33,7 @@ use Psr\Log\LogLevel;
 use RuntimeException;
 
 /**
- * An interface to a table made out of rows addressable by a unique key that
+ * An interface to a table made out of rows addressable by a unique integer id that
  * behaves mostly like a SQL table.
  *
  * It captures common functionality for this kind of table but does
@@ -52,6 +52,21 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
 {
     
     const NULL_ROW_ID = -1;
+
+    const COLUMN_ID = 'id';
+
+
+    /**
+     * Search spec fields
+     */
+
+    const SEARCH_SPEC_COLUMN = 'column';
+    const SEARCH_SPEC_CONDITION = 'condition';
+    const SEARCH_SPEC_VALUE = 'value';
+
+    /**
+     * Search types
+     */
 
     const SEARCH_AND = 0;
     const SEARCH_OR = 1;
@@ -210,9 +225,9 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
         $givenRowKeys = array_keys($rowToMatch);
         foreach ($givenRowKeys as $key) {
             $searchSpec[] = [
-                'column' => $key,
-                'condition' => self::COND_EQUAL_TO,
-                'value' => $rowToMatch[$key]
+                self::SEARCH_SPEC_COLUMN => $key,
+                self::SEARCH_SPEC_CONDITION => self::COND_EQUAL_TO,
+                self::SEARCH_SPEC_VALUE => $rowToMatch[$key]
             ];
         }
         return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
@@ -248,12 +263,12 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
      * if $maxResults > 0, an array of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $searchSpec
+     * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
      * @return array
      */
-    abstract public function search(array $searchSpec, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
+    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
 
     /**
      * Updates the table with the given row, which must contain an 'id'
@@ -358,16 +373,16 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
      *
      * @param array $theRow
      * @throws RuntimeException
-     * @throws InvalidArgumentException  if the given row has an invalid 'id' field
+     * @throws InvalidArgumentException  if the given row has an invalid self::COLUMN_ID field
      * @return array
      */
     protected function getRowWithGoodIdForCreation($theRow) : array
     {
-        if (!isset($theRow['id']) || !is_int($theRow['id']) || $theRow['id']===0) {
-            $theRow['id'] = $this->getOneUnusedId();
+        if (!isset($theRow[self::COLUMN_ID]) || !is_int($theRow[self::COLUMN_ID]) || $theRow[self::COLUMN_ID]===0) {
+            $theRow[self::COLUMN_ID] = $this->getOneUnusedId();
         } else {
-            if ($this->rowExists($theRow['id'])) {
-                $this->setError('The row with given id ('. $theRow['id'] . ') already exists, cannot create',
+            if ($this->rowExists($theRow[self::COLUMN_ID])) {
+                $this->setError('The row with given id ('. $theRow[self::COLUMN_ID] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
                 throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
@@ -540,16 +555,16 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
      * @return bool
      */
     protected function isRowIdGoodForRowUpdate($theRow, string $context) : bool {
-        if (!isset($theRow['id']))  {
+        if (!isset($theRow[self::COLUMN_ID]))  {
             $this->setError('Id not set in given row' . " ($context)", self::ERROR_ID_NOT_SET);
             return false;
         }
 
-        if ($theRow['id'] <=0) {
+        if ($theRow[self::COLUMN_ID] <=0) {
             $this->setError('Id is equal to zero in given row' . " ($context)", self::ERROR_ID_IS_ZERO);
             return false;
         }
-        if (!is_int($theRow['id'])) {
+        if (!is_int($theRow[self::COLUMN_ID])) {
             $this->setError('Id in given row is not an integer' . " ($context)", self::ERROR_ID_NOT_INTEGER);
             return false;
         }

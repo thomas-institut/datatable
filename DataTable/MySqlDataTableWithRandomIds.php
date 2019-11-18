@@ -25,10 +25,15 @@
  */
 namespace DataTable;
 
-use Exception;
 use PDO;
-use RuntimeException;
 
+/**
+ * Class MySqlDataTableWithRandomIds
+ *
+ * Utility class to that just constructs a MySqlDataTable with a RandomId generator
+ *
+ * @package DataTable
+ */
 class MySqlDataTableWithRandomIds extends MySqlDataTable
 {
 

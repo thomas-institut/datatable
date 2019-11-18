@@ -8,7 +8,6 @@
 
 namespace DataTable;
 
-use Cassandra\Time;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -33,18 +32,21 @@ class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
         $stringCol = self::STRINGCOLUMN;
         $otherStringCol = self::OTHERSTRINGCOLUMN;
         $tableName = self::TABLE_NAME;
+        $idCol = DataTable::COLUMN_ID;
+        $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
+        $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$tableName`;
             CREATE TABLE IF NOT EXISTS `$tableName` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `valid_from` datetime(6) NOT NULL,
-              `valid_until` datetime(6) NOT NULL,
+              `$idCol` int(11) UNSIGNED NOT NULL,
+              `$validFromCol` datetime(6) NOT NULL,
+              `$validUntilCol` datetime(6) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL,
               `$otherStringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            ALTER TABLE `testtable` ADD PRIMARY KEY( `id`, `valid_from`, `valid_until`);
+            ALTER TABLE `$tableName` ADD PRIMARY KEY( `$idCol`, `$validFromCol`, `$validUntilCol`);
 EOD;
         $pdo->query($tableSetupSQL);
     }
@@ -54,11 +56,14 @@ EOD;
 
         $intCol = self::INTCOLUMN;
         $stringCol = self::STRINGCOLUMN;
+        $idCol = DataTable::COLUMN_ID;
+        $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
+        $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtablebad1`;
             CREATE TABLE IF NOT EXISTS `testtablebad1` (
-              `id` varchar(100) NOT NULL,
+              `$idCol` varchar(100) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL,
               PRIMARY KEY (`id`)
@@ -70,31 +75,31 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad3`;   
             CREATE TABLE IF NOT EXISTS `testtablebad3` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `valid_from` int(11) NOT NULL,
-              `valid_until` datetime(6) NOT NULL,
+              `$idCol` int(11) UNSIGNED NOT NULL,
+              `$validFromCol` int(11) NOT NULL,
+              `$validUntilCol` datetime(6) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad4`;   
             CREATE TABLE IF NOT EXISTS `testtablebad4` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `valid_from` datetime(6) NOT NULL,
-              `valid_until` int(11) NOT NULL,
+              `$idCol` int(11) UNSIGNED NOT NULL,
+              `$validFromCol` datetime(6) NOT NULL,
+              `$validUntilCol` int(11) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;    
             DROP TABLE IF EXISTS `testtablebad5`;  
             CREATE TABLE IF NOT EXISTS `testtablebad5` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `valid_until` datetime(6) NOT NULL,
+              `$intCol` int(11) UNSIGNED NOT NULL,
+              `$validUntilCol` datetime(6) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad6`;  
             CREATE TABLE IF NOT EXISTS `testtablebad6` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `valid_from` datetime(6) NOT NULL,
+              `$idCol` int(11) UNSIGNED NOT NULL,
+              `$validFromCol` datetime(6) NOT NULL,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
@@ -221,7 +226,7 @@ EOD;
             $timesCount = 1;
             foreach ($times as $t) {
                 $t = TimeString::fromVariable($t);
-                $r2 = $dataTable->realUpdateRowWithTime(['id' => $rowId,
+                $r2 = $dataTable->realUpdateRowWithTime([DataTable::COLUMN_ID => $rowId,
                     self::STRINGCOLUMN => 'Value' .
                     $timesCount++], $t);
                 $this->assertNotFalse($r2);
@@ -349,7 +354,7 @@ EOD;
         $exceptionCaught = false;
         try{
             $dataTable->createRowWithTime(
-                ['id' => 1, self::OTHERSTRINGCOLUMN => 'test'],
+                [DataTable::COLUMN_ID => 1, self::OTHERSTRINGCOLUMN => 'test'],
                 'badtime');
         } catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
@@ -358,20 +363,20 @@ EOD;
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
         $id1 = $dataTable->createRowWithTime(
-            ['id' => 1, self::OTHERSTRINGCOLUMN => 'test'],
+            [DataTable::COLUMN_ID => 1, self::OTHERSTRINGCOLUMN => 'test'],
             $time
         );
         $this->assertEquals(1, $id1);
 
         // Id not integer : a new Id must be generated
 
-        $id2 = $dataTable->createRowWithTime(['id' => 'notanumber',self::OTHERSTRINGCOLUMN => 'test2'],$time);
+        $id2 = $dataTable->createRowWithTime([DataTable::COLUMN_ID => 'notanumber',self::OTHERSTRINGCOLUMN => 'test2'],$time);
         $this->assertNotEquals($id1, $id2);
 
         // Trying to create an existing row
         $exceptionCaught = false;
         try {
-            $dataTable->createRowWithTime(['id' => 1,
+            $dataTable->createRowWithTime([DataTable::COLUMN_ID => 1,
                 self::OTHERSTRINGCOLUMN => 'anothervalue'], $time);
         } catch(InvalidArgumentException $e) {
             $exceptionCaught = true;
@@ -454,7 +459,7 @@ EOD;
         // update row
         $exceptionCaught = false;
         try {
-            $dataTable->realUpdateRowWithTime([ 'id' => $newId, self::INTCOLUMN => 1001], 'badtime');
+            $dataTable->realUpdateRowWithTime([ DataTable::COLUMN_ID => $newId, self::INTCOLUMN => 1001], 'badtime');
         } catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
@@ -531,6 +536,48 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+
+    }
+
+    public function testRowHistory() {
+
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+
+
+        $times = [
+            '2010-01-01',
+            '2014-01-01',
+            '2015-01-01',
+            '2016-01-01'];
+
+        $initialIntValue = 1000;
+        $rowId = $dataTable->createRowWithTime([ self::INTCOLUMN => 1000], TimeString::fromString($times[0]));
+        for($i = 1; $i < count($times); $i++){
+            $dataTable->updateRowWithTime(
+                [ DataTable::COLUMN_ID => $rowId, self::INTCOLUMN => $initialIntValue+$i ],
+                TimeString::fromString($times[$i]));
+        }
+
+        $rowHistory = $dataTable->getRowHistory($rowId);
+        $this->assertCount(4, $rowHistory);
+        for($i=0; $i<count($rowHistory); $i++) {
+            $this->assertEquals($rowId, $rowHistory[$i][DataTable::COLUMN_ID]);
+            $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INTCOLUMN]);
+            $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][MySqlUnitemporalDataTable::FIELD_VALID_FROM]);
+        }
+        $this->assertEquals(MySqlUnitemporalDataTable::END_OF_TIMES,$rowHistory[count($rowHistory)-1][MySqlUnitemporalDataTable::FIELD_VALID_UNTIL]);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable->getRowHistory($rowId + 5);
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
 
     }
 

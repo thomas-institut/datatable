@@ -82,7 +82,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         // Add new rows with fixed Ids
         $nRows = $this->numRows;
         for ($i = 0; $i < $nRows; $i++) {
-            $newId = $dataTable->createRow(['id' => $i+1, 'somekey' => $i,
+            $newId = $dataTable->createRow([DataTable::COLUMN_ID => $i+1, 'somekey' => $i,
                 'someotherkey' => "textvalue$i"]);
             $this->assertEquals($i+1, $newId);
         }
@@ -104,4 +104,5 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
             $this->assertGreaterThan($this->numRows, $newID);
         }
     }
+
 }

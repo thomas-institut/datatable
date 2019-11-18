@@ -46,6 +46,9 @@ class MySqlDataTableTest extends DataTableTest
     public $numRows = 100;
     
     const TABLE_NAME  = 'testtable';
+    const INTCOLUMN = 'somekey';
+    const STRINGCOLUMN = 'someotherkey';
+    const OTHERSTRINGCOLUMN = 'value';
     
     public function createEmptyDt() : DataTable
     {
@@ -88,14 +91,20 @@ class MySqlDataTableTest extends DataTableTest
 
     public function resetTestDb(PDO $pdo)
     {
+
+        $idCol = DataTable::COLUMN_ID;
+        $intCol = self::INTCOLUMN;
+        $stringCol = self::STRINGCOLUMN;
+        $otherStringCol = self::OTHERSTRINGCOLUMN;
+
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtable`;
             CREATE TABLE IF NOT EXISTS `testtable` (
-              `id` int(11) UNSIGNED NOT NULL,
-              `somekey` int(11) DEFAULT NULL,
-              `someotherkey` varchar(100) DEFAULT NULL,
-              `value` varchar(100) DEFAULT NULL,
-              PRIMARY KEY (`id`)
+              `$idCol` int(11) UNSIGNED NOT NULL,
+              `$intCol` int(11) DEFAULT NULL,
+              `$stringCol` varchar(100) DEFAULT NULL,
+              `$otherStringCol` varchar(100) DEFAULT NULL,
+              PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
@@ -103,18 +112,23 @@ EOD;
     
     public function resetTestDbWithBadTables(PDO $pdo)
     {
+        $idCol = DataTable::COLUMN_ID;
+        $intCol = self::INTCOLUMN;
+        $stringCol = self::STRINGCOLUMN;
+
+
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtablebad1`;
             CREATE TABLE IF NOT EXISTS `testtablebad1` (
-              `id` varchar(100) NOT NULL,
-              `somekey` int(11) DEFAULT NULL,
-              `someotherkey` varchar(100) DEFAULT NULL,
-              PRIMARY KEY (`id`)
+              `$idCol` varchar(100) NOT NULL,
+              `$intCol` int(11) DEFAULT NULL,
+              `$stringCol` varchar(100) DEFAULT NULL,
+              PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad2`;                
             CREATE TABLE IF NOT EXISTS `testtablebad2` (
-              `somekey` int(11) DEFAULT NULL,
-              `someotherkey` varchar(100) DEFAULT NULL
+              `$intCol` int(11) DEFAULT NULL,
+              `$stringCol` varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
@@ -126,16 +140,18 @@ EOD;
         $dataTable = $this->createEmptyDt();
         $restrictedDataTable = $this->getRestrictedDt();
 
+        $stringCol = self::STRINGCOLUMN;
+
         $exceptionCaught = false;
         try {
-            $restrictedDataTable->createRow(['somekey' => 25]);
+            $restrictedDataTable->createRow([$stringCol => 25]);
         } catch (RuntimeException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
         
-        $rowId = $dataTable->createRow(['somekey' => 25]);
+        $rowId = $dataTable->createRow([$stringCol => 25]);
         $this->assertNotFalse($rowId);
         $this->assertEquals(MySqlDataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
 
@@ -151,7 +167,7 @@ EOD;
         
         $rows = $restrictedDataTable->getAllRows();
         $this->assertCount(1, $rows);
-        $this->assertEquals($rowId, $rows[0]['id']);
+        $this->assertEquals($rowId, $rows[0][DataTable::COLUMN_ID]);
         
         $result = $restrictedDataTable->rowExists($rowId);
         $this->assertTrue($result);
@@ -163,11 +179,11 @@ EOD;
         parent::testEscaping();
         
         $pdo = $this->getPdo();
-        $dataTable = new MySqlDataTable($pdo, 'testtable');
+        $dataTable = new MySqlDataTable($pdo, self::TABLE_NAME);
         // somekey is supposed to be an integer
         $exceptionCaught = false;
         try {
-            $dataTable->createRow(['somekey' => 'A string']);
+            $dataTable->createRow([self::INTCOLUMN => 'A string']);
         } catch (RuntimeException $e) {
             $exceptionCaught = true;
         }
@@ -219,12 +235,12 @@ EOD;
         parent::testUpdateRow();
         
         $pdo = $this->getPdo();
-        $dataTable = new MySqlDataTable($pdo, 'testtable');
+        $dataTable = new MySqlDataTable($pdo, self::TABLE_NAME);
         
-        // Somekey should be an int
+        // INTCOLUMN should be an int
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow(['id' => 1, 'somekey' => 'bad']);
+            $dataTable->updateRow([DataTable::COLUMN_ID => 1, self::INTCOLUMN => 'bad']);
         } catch (RuntimeException $e) {
             $exceptionCaught = true;
         }
@@ -236,7 +252,7 @@ EOD;
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow(['id' => 1,  'value' => null]);
+            $dataTable->updateRow([DataTable::COLUMN_ID => 1,  self::OTHERSTRINGCOLUMN => null]);
         }
         catch (RuntimeException $e) {
             $exceptionCaught = true;
