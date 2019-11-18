@@ -115,7 +115,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function realCreateRow(array $theRow) : int
     {
-        return $this->realCreateRowWithTime($theRow, self::now());
+        return $this->realCreateRowWithTime($theRow, TimeString::now());
     }
 
     /**
@@ -146,8 +146,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     protected function realCreateRowWithTime(array $theRow, string $timeString) : int
     {
 
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
             $this->throwExceptionForInvalidTime($timeString, 'realCreateRowWithTime');
         }
         
@@ -166,8 +166,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     protected function makeRowInvalid(array $theRow, string $timeString) : int
     {
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
             $this->throwExceptionForInvalidTime($timeString, 'makeRowInvalid');
         }
         $sql = 'UPDATE ' . $this->tableName . ' SET ' .
@@ -188,7 +188,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function realUpdateRow(array $theRow) : void
     {
-        $this->realUpdateRowWithTime($theRow, self::now());
+        $this->realUpdateRowWithTime($theRow, TimeString::now());
     }
 
     /**
@@ -202,8 +202,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     public function realUpdateRowWithTime(array $theRow, string $timeString) : void
     {
 
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
             $this->throwExceptionForInvalidTime($timeString, 'realUpdateRowWithTime');
         }
 
@@ -247,7 +247,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function getAllRows() : array
     {
-        return $this->getAllRowsWithTime(self::now());
+        return $this->getAllRowsWithTime(TimeString::now());
     }
 
     /**
@@ -260,8 +260,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     {
         $this->resetError();
 
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
             $this->throwExceptionForInvalidTime($timeString, 'getAllRowsWithTime');
         }
         $quotedTimeString = $this->quoteValue($timeString);
@@ -300,7 +300,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function realGetRow(int $rowId, bool $stripTimeInfo = false) : array
     {
-        $theRow = $this->getRowWithTime($rowId, self::now());
+        $theRow = $this->getRowWithTime($rowId, TimeString::now());
 
         if ($stripTimeInfo) {
             unset($theRow[self::FIELD_VALID_FROM]);
@@ -323,8 +323,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     {
         $this->resetError();
 
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
             $this->throwExceptionForInvalidTime($timeString, 'getRowWithTime');
         }
 
@@ -356,7 +356,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function findRows(array $rowToMatch, int $maxResults = 0) : array
     {
-        return $this->findRowsWithTime($rowToMatch, $maxResults, self::now());
+        return $this->findRowsWithTime($rowToMatch, $maxResults, TimeString::now());
     }
 
     /**
@@ -371,8 +371,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     {
         $this->resetError();
 
-        $timeString = self::getGoodTimeString($timeString);
-        if (!self::isTimeStringValid($timeString)) {
+        $timeString = TimeString::fromString($timeString);
+        if (!TimeString::isValid($timeString)) {
            $this->throwExceptionForInvalidTime($timeString, 'findRowsWithTime');
         }
         $keys = array_keys($theRow);
@@ -440,7 +440,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      */
     public function deleteRow(int $rowId): int
     {
-        return $this->deleteRowWithTime($rowId, self::now());
+        return $this->deleteRowWithTime($rowId, TimeString::now());
     }
 
 
@@ -472,52 +472,6 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         return 1;
     }
 
-
-    /**
-     * Returns the current time in MySQL format with microsecond precision
-     *
-     * @return string
-     */
-    public static function now() : string
-    {
-        return TimeString::now();
-    }
-
-    /**
-     * @param float $timeStamp
-     * @return string
-     */
-    public static function getTimeStringFromTimeStamp(float $timeStamp) : string
-    {
-        return TimeString::getTimeStringFromTimeStamp($timeStamp);
-    }
-
-    /**
-     * Returns a valid timeString if the variable can be converted to a time
-     * If not, returns an empty string (which will be immediately recognized as
-     * invalid by isTimeStringValid
-     *
-     * @param float|int|string $timeVar
-     * @return string
-     */
-    public static function getTimeStringFromVariable($timeVar) : string
-    {
-        return TimeString::getTimeStringFromVariable($timeVar);
-    }
-
-
-    public static function getGoodTimeString(string $str) {
-       return TimeString::getGoodTimeString($str);
-    }
-    /**
-     * Returns true if the given string is a valid timeString
-     *
-     * @param string $str
-     * @return bool
-     */
-    public static function isTimeStringValid(string $str) : bool {
-      return TimeString::isTimeStringValid($str);
-    }
 
     private function throwExceptionForInvalidTime(string $timeString, string $context) : void {
         $this->setError("Invalid time given for $context : \"$timeString\"", self::ERROR_INVALID_TIME);

@@ -46,14 +46,14 @@ class TimeString
      */
     public static function now() : string
     {
-        return self::getTimeStringFromTimeStamp(microtime(true));
+        return self::fromTimeStamp(microtime(true));
     }
 
     /**
      * @param float $timeStamp
      * @return string
      */
-    public static function getTimeStringFromTimeStamp(float $timeStamp) : string
+    public static function fromTimeStamp(float $timeStamp) : string
     {
         $intTime =  floor($timeStamp);
         $date=date(self::MYSQL_DATE_FORMAT, $intTime);
@@ -69,19 +69,19 @@ class TimeString
      * @param float|int|string $timeVar
      * @return string
      */
-    public static function getTimeStringFromVariable($timeVar) : string
+    public static function fromVariable($timeVar) : string
     {
         if (is_numeric($timeVar)) {
-            return self::getTimeStringFromTimeStamp((float) $timeVar);
+            return self::fromTimeStamp((float) $timeVar);
         }
         if (is_string($timeVar)) {
-            return  self::getGoodTimeString($timeVar);
+            return  self::fromString($timeVar);
         }
         return '';
     }
 
 
-    public static function getGoodTimeString(string $str) {
+    public static function fromString(string $str) {
         if (preg_match('/^\d\d\d\d-\d\d-\d\d$/', $str)) {
             $str .= ' 00:00:00.000000';
         } else {
@@ -89,7 +89,7 @@ class TimeString
                 $str .= '.000000';
             }
         }
-        if (!self::isTimeStringValid($str)) {
+        if (!self::isValid($str)) {
             return '';
         }
         return $str;
@@ -100,7 +100,7 @@ class TimeString
      * @param string $str
      * @return bool
      */
-    public static function isTimeStringValid(string $str) : bool {
+    public static function isValid(string $str) : bool {
         if ($str === '') {
             return false;
         }

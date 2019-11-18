@@ -8,6 +8,7 @@
 
 namespace DataTable;
 
+use Cassandra\Time;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -186,12 +187,12 @@ EOD;
             '2019-01-01 35:00:00', '2019-01-01 12:65:00', '2019-01-01 12:00:65'];
 
         foreach($badVars as $var) {
-            $this->assertEquals('', MySqlUnitemporalDataTable::getTimeStringFromVariable($var), 'Testing ' . print_r($var, true));
+            $this->assertEquals('', TimeString::fromVariable($var), 'Testing ' . print_r($var, true));
         }
 
         $goodVars = [ -1, '2010-11-11', '2020-10-10 13:05:24',  '2010-11-11 21:10:11.123456', '2016-01-01 12:00:00'];
         foreach($goodVars as $var) {
-            $this->assertNotEquals('', MySqlUnitemporalDataTable::getTimeStringFromVariable($var), 'Testing ' . print_r($var, true));
+            $this->assertNotEquals('', TimeString::fromVariable($var), 'Testing ' . print_r($var, true));
         }
 
     }
@@ -200,7 +201,7 @@ EOD;
     {
         $dataTable = $this->createEmptyDt();
         
-        $timeZero = MySqlUnitemporalDataTable::getTimeStringFromVariable('2010-01-01');
+        $timeZero = TimeString::fromVariable('2010-01-01');
         $times = [ '2014-01-01',
             '2015-01-01',
             '2016-01-01'];
@@ -219,7 +220,7 @@ EOD;
             $ids[] = $rowId;
             $timesCount = 1;
             foreach ($times as $t) {
-                $t = MySqlUnitemporalDataTable::getTimeStringFromVariable($t);
+                $t = TimeString::fromVariable($t);
                 $r2 = $dataTable->realUpdateRowWithTime(['id' => $rowId,
                     self::STRINGCOLUMN => 'Value' .
                     $timesCount++], $t);
@@ -273,7 +274,7 @@ EOD;
             [self::STRINGCOLUMN => 'Value3'],
             false,
             // a day ago
-            MySqlUnitemporalDataTable::getTimeStringFromVariable(time()-86400)
+            TimeString::fromVariable(time()-86400)
         );
         $this->assertCount(10, $foundRows4);
         
@@ -341,7 +342,7 @@ EOD;
     public function testCreateRowWithTime()
     {
         $dataTable = $this->createEmptyDt();
-        $time = MySqlUnitemporalDataTable::now();
+        $time = TimeString::now();
 
 
         // Bad time
@@ -398,7 +399,7 @@ EOD;
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
 
-        $time = MySqlUnitemporalDataTable::now();
+        $time = TimeString::now();
         
         $result = $dataTable->deleteRowWithTime($newId, $time);
         $this->assertEquals($newId, $result);
