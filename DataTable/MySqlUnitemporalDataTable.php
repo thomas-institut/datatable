@@ -60,18 +60,15 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-class MySqlUnitemporalDataTable extends MySqlDataTable
+class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDataTable
 {
     
     // Error codes
     const ERROR_INVALID_TIME = 2010;
+    const ERROR_NOT_IMPLEMENTED = 2011;
     
     
     // Other constants
-    const END_OF_TIMES = '9999-12-31 23:59:59.999999';
-    const MYSQL_DATE_FORMAT  = 'Y-m-d H:i:s';
-
-
     const FIELD_VALID_FROM = 'valid_from';
     const FIELD_VALID_UNTIL = 'valid_until';
     /**
@@ -100,7 +97,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
             $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
                         ' WHERE id= :id AND `' . self::FIELD_VALID_UNTIL . '`=' .
-                        $this->quoteValue(self::END_OF_TIMES));
+                        $this->quoteValue(UnitemporalDataTable::END_OF_TIMES));
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
             $this->setError("Could not prepare statements "
@@ -155,7 +152,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         }
         
         $theRow[self::FIELD_VALID_FROM] = $timeString;
-        $theRow[self::FIELD_VALID_UNTIL] = self::END_OF_TIMES;
+        $theRow[self::FIELD_VALID_UNTIL] = UnitemporalDataTable::END_OF_TIMES;
         
         return parent::realCreateRow($theRow);
     }
@@ -221,10 +218,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
                 $theRow[$key] = $oldRow[$key];
             }
         }
-        $id = $this->realCreateRowWithTime($theRow, $timeString);
-
-        // TODO: Check if there's a real possibility the realCreateRow will return an $id that is not the one in $theRow
-
+        $this->realCreateRowWithTime($theRow, $timeString);
     }
 
 
@@ -238,7 +232,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
         $filteredResults = [];
 
         foreach($results as $row) {
-            if ($row[self::FIELD_VALID_UNTIL] === self::END_OF_TIMES) {
+            if ($row[self::FIELD_VALID_UNTIL] === UnitemporalDataTable::END_OF_TIMES) {
                 $filteredResults[] = $row;
             }
         }
@@ -486,19 +480,16 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      */
     public static function now() : string
     {
-        return self::getTimeStringFromTimeStamp(microtime(true));
+        return TimeString::now();
     }
 
     /**
      * @param float $timeStamp
      * @return string
      */
-    private static function getTimeStringFromTimeStamp(float $timeStamp) : string
+    public static function getTimeStringFromTimeStamp(float $timeStamp) : string
     {
-        $intTime =  floor($timeStamp);
-        $date=date(self::MYSQL_DATE_FORMAT, $intTime);
-        $microSeconds = (int) floor(($timeStamp - $intTime)*1000000);
-        return sprintf("%s.%06d", $date, $microSeconds);
+        return TimeString::getTimeStringFromTimeStamp($timeStamp);
     }
 
     /**
@@ -511,28 +502,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      */
     public static function getTimeStringFromVariable($timeVar) : string
     {
-        if (is_numeric($timeVar)) {
-            return self::getTimeStringFromTimeStamp((float) $timeVar);
-        }
-        if (is_string($timeVar)) {
-            return  self::getGoodTimeString($timeVar);
-        }
-        return '';
+        return TimeString::getTimeStringFromVariable($timeVar);
     }
 
 
     public static function getGoodTimeString(string $str) {
-        if (preg_match('/^\d\d\d\d-\d\d-\d\d$/', $str)) {
-            $str .= ' 00:00:00.000000';
-        } else {
-            if (preg_match('/^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d$/', $str)){
-                $str .= '.000000';
-            }
-        }
-        if (!self::isTimeStringValid($str)) {
-            return '';
-        }
-        return $str;
+       return TimeString::getGoodTimeString($str);
     }
     /**
      * Returns true if the given string is a valid timeString
@@ -541,33 +516,55 @@ class MySqlUnitemporalDataTable extends MySqlDataTable
      * @return bool
      */
     public static function isTimeStringValid(string $str) : bool {
-        if ($str === '') {
-            return false;
-        }
-        $matches = [];
-        if (preg_match('/^\d\d\d\d-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)\.\d\d\d\d\d\d$/', $str, $matches) !== 1) {
-            return false;
-        }
-        if (intval($matches[1]) > 12) {
-            return false;
-        }
-        if (intval($matches[2]) > 31) {
-            return false;
-        }
-        if (intval($matches[3]) > 23) {
-            return false;
-        }
-        if (intval($matches[4]) > 59) {
-            return false;
-        }
-        if (intval($matches[5]) > 59) {
-            return false;
-        }
-        return true;
+      return TimeString::isTimeStringValid($str);
     }
 
     private function throwExceptionForInvalidTime(string $timeString, string $context) : void {
         $this->setError("Invalid time given for $context : \"$timeString\"", self::ERROR_INVALID_TIME);
         throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+    }
+
+    public function rowExistsWithTime(int $rowId, string $timeString): bool
+    {
+        // TODO: fix this implementation!!
+        // Very inefficient implementation using getRowWithTime
+        try {
+            $this->getRowWithTime($rowId, $timeString);
+        } catch(InvalidArgumentException $e) {
+            if ($e->getCode() === self::ERROR_ROW_DOES_NOT_EXIST) {
+                return false;
+            }
+            throw $e;
+        }
+
+        return true;
+    }
+
+    public function searchWithTime(array $searchSpec, int $searchType, string $timeString, int $maxResults = 0): array
+    {
+        // TODO: implement searchWithTime
+        $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
+        return [];
+
+    }
+
+    public function updateRowWithTime(array $theRow, string $timeString): void
+    {
+        $this->resetError();
+        if (!isset($theRow['id']))  {
+            $this->setError('Id not set in given row, cannot update', self::ERROR_ID_NOT_SET);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        if ($theRow['id']===0) {
+            $this->setError('Id is equal to zero in given row, cannot update', self::ERROR_ID_IS_ZERO);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+        if (!is_int($theRow['id'])) {
+            $this->setError('Id in given row is not an integer, cannot update', self::ERROR_ID_NOT_INTEGER);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $this->realUpdateRowWithTime($theRow, $timeString);
     }
 }
