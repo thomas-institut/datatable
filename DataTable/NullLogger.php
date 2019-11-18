@@ -1,9 +1,8 @@
 <?php
-
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,40 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace DataTable;
-require '../vendor/autoload.php';
 
-require 'MockClasses/FailGetOneUnusedIdDataTable.php';
 
-use DataTable\Test\FailGetOneUnusedIdDataTable;
-use PHPUnit\Framework\TestCase;
+use Psr\Log\AbstractLogger;
+use Psr\Log\InvalidArgumentException;
 
 /**
- * Additional test for DataTable
+ * Class NullLogger : PSR Logger that does nothing!
  *
- * @author Rafael Nájera <rafael@najera.ca>
+ * @package DataTable
  */
-class DataTableAdditionalTest extends TestCase
+class NullLogger extends AbstractLogger
 {
-    
-    public function testFailGetOneUnusedId()
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException
+     */
+    public function log($level, $message, array $context = array())
     {
-
-
-        $dt = new Test\FailGetOneUnusedIdDataTable();
-
-        $exceptionCaught = false;
-
-        try {
-            $r = $dt->createRow([]);
-        } catch (\RuntimeException $e){
-            $exceptionCaught = true;
-        }
-        
-
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
-        
+        // do nothing
     }
-    
 }

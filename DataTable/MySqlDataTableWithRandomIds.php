@@ -25,43 +25,33 @@
  */
 namespace DataTable;
 
+use PDO;
+
+/**
+ * Class MySqlDataTableWithRandomIds
+ *
+ * Utility class to that just constructs a MySqlDataTable with a RandomId generator
+ *
+ * @package DataTable
+ */
 class MySqlDataTableWithRandomIds extends MySqlDataTable
 {
-    private $minId;
-    private $maxId;
-    private $maxTries = 1000;
-    
+
+    const MAX_ATTEMPTS = 1000;
     /**
      *
      * $min and $max should be carefully chosen so that
      * the method to get new unused id doesn't take too
      * long.
-     *
-     * @param type $theDb
-     * @param type $tableName
-     * @param type $min  Minimum Id
-     * @param type $max   Max Id
+     * @param PDO $dbConnection
+     * @param string $tableName
+     * @param int $min
+     * @param int $max
      */
-    public function __construct($theDb, $tableName, $min = 1, $max = PHP_INT_MAX)
+    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX)
     {
-        $this->minId = $min;
-        $this->maxId = $max;
-        
-        parent::__construct($theDb, $tableName);
+        parent::__construct($dbConnection, $tableName);
+        $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
     }
-    
-    public function getOneUnusedId()
-    {
-        for ($i = 0; $i < $this->maxTries; $i++) {
-            $theId = random_int($this->minId, $this->maxId);
-            if (!$this->rowExistsById($theId)) {
-                // rowExistsById set the error to DATATABLE_ROW_DOES_NOT_EXIST
-                // but this is not really an error, so let's reset it
-                $this->resetError();
-                return $theId;
-            }
-        }
-        // This part of the code should almost never run in real life!
-        return $this->getMaxId()+1;
-    }
+
 }

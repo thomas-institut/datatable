@@ -36,8 +36,10 @@ require_once 'DataTableTest.php';
 class InMemoryDataTableTest extends DataTableTest
 {
     
-    public function createEmptyDt()
+    public function createEmptyDt() : DataTable
     {
-        return new InMemoryDataTable();
+        $dt = new InMemoryDataTable();
+        $dt->setLogger($this->getLogger()->withName('InMemoryDT'));
+        return $dt;
     }
 }
