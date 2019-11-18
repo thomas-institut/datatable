@@ -278,6 +278,26 @@ EOD;
                 $dataTable->getErrorCode());
             $this->assertNotEquals('', $dataTable->getErrorMessage());
         }
-        
+    }
+
+    public function testSelect() {
+
+        /**
+         * @var MySqlDataTable $dataTable
+         */
+        $dataTable= $this->createEmptyDt();
+
+        $exceptionCaught = false;
+        try {
+            $dataTable->select('', 0, '', 'testSelect');
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+
+        $r = $dataTable->select(DataTable::COLUMN_ID . '=1', 0, 'id ASC', 'testSelect2');
+
+        $this->assertEquals(0, $r->rowCount());
+
     }
 }

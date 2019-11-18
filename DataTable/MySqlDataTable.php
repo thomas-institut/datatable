@@ -49,7 +49,9 @@ class MySqlDataTable extends DataTable
     const ERROR_INVALID_TABLE = 1050;
     const ERROR_PREPARING_STATEMENTS = 1070;
     const ERROR_EXECUTING_STATEMENT = 1080;
-    
+
+    const ERROR_INVALID_WHERE_CLAUSE = 1090;
+
     /** @var PDO */
     protected $dbConn;
     
@@ -222,14 +224,47 @@ class MySqlDataTable extends DataTable
 
         return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
+
+    /**
+     * Executes a general SELECT query on the data table
+     *
+     * ATTENTION: Try not to use this method directly , prefer to use 'search' if possible,
+     * search is implemented by any DataTable not just by MySqlDataTable
+     *
+     * The method executes the following query:
+     *  SELECT * FROM tableName WHERE  $where LIMIT $limit ORDER BY $orderBy
+     *
+     * LIMIT $limit is omitted if $limit < 0
+     * ORDER BY $orderBy is omitted if $orderBy=== ''
+     *
+     * $context is used to report errors
+     *
+     * @param string $where
+     * @param int $limit
+     * @param string $orderBy
+     * @param string $context
+     * @return PDOStatement
+     */
+    public function select(string $where, int $limit, string $orderBy, string $context ) : PDOStatement {
+        if ($where ==='') {
+            $this->setError('Empty where clause', self::ERROR_INVALID_WHERE_CLAUSE);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+
+        $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE ' . $where;
+        if ($limit > 0) {
+            $sql .= ' LIMIT ' . $limit;
+        }
+        if ($orderBy !== '') {
+            $sql .= ' ORDER BY ' . $orderBy;
+        }
+
+        return $this->doQuery($sql, $context);
+    }
     
     public function getRow(int $rowId) : array
     {
-        $sql = 'SELECT * FROM ' . $this->tableName
-                . ' WHERE `'. self::COLUMN_ID . '`=' . $rowId . ' LIMIT 1';
-        
-        $r = $this->doQuery($sql, 'getRow');
-
+        $r = $this->select(self::COLUMN_ID . '=' . $rowId, 1, '', 'getRow');
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
