@@ -488,7 +488,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             if ($e->getCode() === self::ERROR_ROW_DOES_NOT_EXIST) {
                 return false;
             }
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         return true;
@@ -505,20 +505,9 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     public function updateRowWithTime(array $theRow, string $timeString): void
     {
         $this->resetError();
-        if (!isset($theRow['id']))  {
-            $this->setError('Id not set in given row, cannot update', self::ERROR_ID_NOT_SET);
+        if (!$this->isRowIdGoodForRowUpdate($theRow, 'MySqlUnitemporalDataTable updateRowWithTime')) {
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
-
-        if ($theRow['id']===0) {
-            $this->setError('Id is equal to zero in given row, cannot update', self::ERROR_ID_IS_ZERO);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-        if (!is_int($theRow['id'])) {
-            $this->setError('Id in given row is not an integer, cannot update', self::ERROR_ID_NOT_INTEGER);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
         $this->realUpdateRowWithTime($theRow, $timeString);
     }
 }

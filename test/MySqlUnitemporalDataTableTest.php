@@ -465,9 +465,74 @@ EOD;
         $this->assertEquals(1000, $theRow[self::INTCOLUMN]);
 
 
+        // find Rows
+        $foundRows = [];
+        $exceptionCaught = false;
+        try {
+            $foundRows = $dataTable->findRowsWithTime([ self::INTCOLUMN => 1000], 0, 'badtime');
+        } catch (InvalidArgumentException $e) {
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
+
+        $this->assertEquals([], $foundRows);
 
     }
 
+    public function testRowExists() {
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+
+        $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => 1000], TimeString::now());
+
+        $this->assertTrue($dataTable->rowExistsWithTime($rowId,TimeString::now()));
+        $this->assertFalse($dataTable->rowExistsWithTime($rowId + 1,TimeString::now()));
+
+        $this->assertFalse($dataTable->rowExistsWithTime($rowId, TimeString::fromString('2010-10-10')));
+
+    }
+
+    public function testSearchWithTime() {
+
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+        // search not implemented yet
+
+        $this->assertEquals([], $dataTable->searchWithTime([], MySqlUnitemporalDataTable::SEARCH_AND, TimeString::now()));
+        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_NOT_IMPLEMENTED, $dataTable->getErrorCode());
+    }
+
+    public function testUpdateRowWithTime()
+    {
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+
+        $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => 1000], TimeString::now());
+
+        $theRow = $dataTable->getRow($rowId);
+
+        $theRow[self::INTCOLUMN] = 1001;
+        $dataTable->updateRowWithTime($theRow, TimeString::now());
+        $theRow2 = $dataTable->getRow($rowId);
+        $this->assertEquals($theRow[self::INTCOLUMN], $theRow2[self::INTCOLUMN]);
+
+        $exceptionCaught = false;
+        try {
+            $dataTable->updateRowWithTime([self::INTCOLUMN => 1002], TimeString::now());
+        } catch (InvalidArgumentException $e){
+            $exceptionCaught = true;
+        }
+        $this->assertTrue($exceptionCaught);
+        $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+
+    }
 
 
 }

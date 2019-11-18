@@ -278,17 +278,7 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
     public function updateRow(array $theRow) : void
     {
         $this->resetError();
-        if (!isset($theRow['id']))  {
-            $this->setError('Id not set in given row, cannot update', self::ERROR_ID_NOT_SET);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-            
-        if ($theRow['id']===0) {
-            $this->setError('Id is equal to zero in given row, cannot update', self::ERROR_ID_IS_ZERO);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-        if (!is_int($theRow['id'])) {
-            $this->setError('Id in given row is not an integer, cannot update', self::ERROR_ID_NOT_INTEGER);
+        if (!$this->isRowIdGoodForRowUpdate($theRow, 'DataTable updateRow')) {
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $this->realUpdateRow($theRow);
@@ -540,5 +530,30 @@ abstract class DataTable implements LoggerAwareInterface, iErrorReporter
         $this->errorCode = $code;
     }
 
+
+    /**
+     * Checks that the given row has an id field that is a positive integer
+     * If not, sets an error and returns false;
+     *
+     * @param $theRow
+     * @param string $context
+     * @return bool
+     */
+    protected function isRowIdGoodForRowUpdate($theRow, string $context) : bool {
+        if (!isset($theRow['id']))  {
+            $this->setError('Id not set in given row' . " ($context)", self::ERROR_ID_NOT_SET);
+            return false;
+        }
+
+        if ($theRow['id'] <=0) {
+            $this->setError('Id is equal to zero in given row' . " ($context)", self::ERROR_ID_IS_ZERO);
+            return false;
+        }
+        if (!is_int($theRow['id'])) {
+            $this->setError('Id in given row is not an integer' . " ($context)", self::ERROR_ID_NOT_INTEGER);
+            return false;
+        }
+        return true;
+    }
 
 }
