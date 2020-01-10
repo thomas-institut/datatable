@@ -47,9 +47,9 @@ abstract class DataTableTest extends TestCase
     public $numRows = 100;
     public $numIterations = 50;
     
-    abstract public function createEmptyDt() : DataTable;
+    abstract public function createEmptyDt() : GenericDataTable;
     
-    private function fillUpTestDataTable(DataTable $dataTable) : DataTable
+    private function fillUpTestDataTable(GenericDataTable $dataTable) : GenericDataTable
     {
         for ($i = 1; $i <= $this->numRows; $i++) {
             $someRow = ['somekey' => $i, 'someotherkey' => "textvalue$i"];
@@ -110,7 +110,7 @@ abstract class DataTableTest extends TestCase
                 'someotherkey',
                 $someTextvalue
             );
-            $this->assertNotEquals(DataTable::NULL_ROW_ID, $rowId, $testMsg);
+            $this->assertNotEquals(GenericDataTable::NULL_ROW_ID, $rowId, $testMsg);
             $this->assertEquals($theRows[0]['id'], $rowId);
             $theRows3 = $dataTable->findRows(['somekey' => $someInt,
                 'someotherkey' => $someTextvalue]);
@@ -159,85 +159,85 @@ abstract class DataTableTest extends TestCase
             [
                 'title' => 'No matches (equal)',
                 'expectedCount' => 0,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'x' . $stringValuePrefix]
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'x' . $stringValuePrefix]
                 ]
             ],
             [
                 'title' => 'No matches (greater than)',
                 'expectedCount' => 0,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' =>  $this->numRows+1]
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' =>  $this->numRows+1]
                 ]
             ],
             [
                 'title' => 'Not equal to (int)',
                 'expectedCount' => 99,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_NOT_EQUAL_TO, 'value' =>  1]
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_NOT_EQUAL_TO, 'value' =>  1]
                 ]
             ],
             [
                 'title' => 'Not equal to (string)',
                 'expectedCount' => 99,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_NOT_EQUAL_TO, 'value' =>  $this->getStringValue($stringValuePrefix, 1)]
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_NOT_EQUAL_TO, 'value' =>  $this->getStringValue($stringValuePrefix, 1)]
                 ]
             ],
             [
                 'title' => 'Greater than and less than (int)',
                 'expectedCount' => $this->numRows - 20,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => 10],
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->numRows-10],
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => 10],
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->numRows-10],
                 ]
             ],
             [
                 'title' => 'Greater than and less than (string)',
                 'expectedCount' => $this->numRows - 20,
-                'searchType' => DataTable::SEARCH_AND,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, 10) ],
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, 10) ],
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
                 ]
             ],
             [
                 'title' => 'Less than or greater than (int)',
                 'expectedCount' => 20,
-                'searchType' => DataTable::SEARCH_OR,
+                'searchType' => GenericDataTable::SEARCH_OR,
                 'specArray' => [
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_LESS_THAN, 'value' => 11 ],
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' =>  $this->numRows-10 ],
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_LESS_THAN, 'value' => 11 ],
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' =>  $this->numRows-10 ],
                 ]
             ],
             [
                 'title' => 'Less than or greater than (string)',
                 'expectedCount' => 20,
-                'searchType' => DataTable::SEARCH_OR,
+                'searchType' => GenericDataTable::SEARCH_OR,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_LESS_THAN, 'value' => $this->getStringValue($stringValuePrefix, 11) ],
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_LESS_THAN, 'value' => $this->getStringValue($stringValuePrefix, 11) ],
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
                 ]
             ],
             [
                 'title' => 'Greater than or equal to (int)',
                 'expectedCount' => 10,
-                'searchType' => DataTable::SEARCH_OR,
+                'searchType' => GenericDataTable::SEARCH_OR,
                 'specArray' => [
-                    [ 'column' => $intKeyName, 'condition' => DataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->numRows-9],
+                    [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->numRows-9],
                 ]
             ],
             [
                 'title' => 'Greater than or equal to (string)',
                 'expectedCount' => 10,
-                'searchType' => DataTable::SEARCH_OR,
+                'searchType' => GenericDataTable::SEARCH_OR,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-9)],
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-9)],
                 ]
             ]
         ];
@@ -255,54 +255,54 @@ abstract class DataTableTest extends TestCase
         $testCases = [
             [
                 'title' => 'Empty Spec Array',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => []
             ],
             [
                 'title' => 'No Column',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                    [ 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'anyValue']
                 ]
             ],
             [
                 'title' => 'Wrong Column (int)',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => 32, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                    [ 'column' => 32, 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'anyValue']
                 ]
             ],
             [
                 'title' => 'Bad Search Type',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SEARCH_TYPE,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SEARCH_TYPE,
                 'searchType' => 100,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'anyValue']
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'anyValue']
                 ]
             ],
             [
                 'title' => 'Bad condition (wrong int)',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
-                    [ 'column' => $stringKeyName, 'condition' => DataTable::COND_EQUAL_TO + 1000, 'value' => 'anyValue']
+                    [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_EQUAL_TO + 1000, 'value' => 'anyValue']
                 ]
             ],
             [
                 'title' => 'Bad condition (string)',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => '1', 'value' => 'anyValue']
                 ]
             ],
             [
                 'title' => 'No value',
-                'expectedErrorCode' => DataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => DataTable::SEARCH_AND,
+                'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
+                'searchType' => GenericDataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => '1']
                 ]
@@ -357,12 +357,12 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
         $this->assertEquals([], $dataTable->findRows(['key' => 'somevalue'], 1));
 
-        $this->assertEquals(DataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'somevalue'));
+        $this->assertEquals(GenericDataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'somevalue'));
         $this->assertEquals([], $dataTable->getAllRows());
         $this->assertEquals(0,$dataTable->deleteRow(1));
     }
@@ -384,7 +384,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
@@ -420,7 +420,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
 
@@ -432,7 +432,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
         // Check that not updates were made!
@@ -447,7 +447,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_IS_ZERO, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ID_IS_ZERO, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!
@@ -462,7 +462,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_INTEGER, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ID_NOT_INTEGER, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!
@@ -477,7 +477,7 @@ abstract class DataTableTest extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!

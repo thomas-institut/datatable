@@ -30,7 +30,7 @@ namespace DataTable;
 use InvalidArgumentException;
 use LogicException;
 
-class InMemoryDataTable extends DataTable
+class InMemoryDataTable extends GenericDataTable
 {
     
     private $theData = [];

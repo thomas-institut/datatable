@@ -29,7 +29,7 @@ namespace DataTable\Test;
 
 include '../DataTable/DataTable.php';
 
-use DataTable\DataTable;
+use DataTable\GenericDataTable;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -38,7 +38,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class FailGetOneUnusedIdDataTable extends DataTable {
+class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
 
     const ERROR_CANNOT_GET_MAX_ID = 2001;

@@ -29,7 +29,7 @@ namespace DataTable;
 use Exception;
 use RuntimeException;
 
-class RandomIdGenerator implements iIdGenerator
+class RandomIdGenerator implements IdGenerator
 {
 
     const ERROR_RANDOM_NUMBER_GENERATOR_ERROR = 1001;
@@ -57,7 +57,7 @@ class RandomIdGenerator implements iIdGenerator
         $this->maxAttempts = $maxAttempts;
     }
 
-    public function getOneUnusedId(DataTable $dataTable): int
+    public function getOneUnusedId(GenericDataTable $dataTable): int
     {
         for ($i = 0; $i < $this->maxAttempts; $i++) {
             try {

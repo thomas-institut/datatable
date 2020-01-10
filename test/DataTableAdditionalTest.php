@@ -26,9 +26,9 @@
 namespace DataTable;
 require '../vendor/autoload.php';
 
-require 'MockClasses/FailGetOneUnusedIdDataTable.php';
+require 'MockClasses/FailGetOneUnusedIdGenericDataTable.php';
 
-use DataTable\Test\FailGetOneUnusedIdDataTable;
+use DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -43,7 +43,7 @@ class DataTableAdditionalTest extends TestCase
     {
 
 
-        $dt = new Test\FailGetOneUnusedIdDataTable();
+        $dt = new Test\FailGetOneUnusedIdGenericDataTable();
 
         $exceptionCaught = false;
 
@@ -55,7 +55,7 @@ class DataTableAdditionalTest extends TestCase
         
 
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
+        $this->assertEquals(FailGetOneUnusedIdGenericDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
         
     }
     

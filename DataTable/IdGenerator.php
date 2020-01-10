@@ -32,12 +32,12 @@ namespace DataTable;
  *
  * @package DataTable
  */
-interface iIdGenerator
+interface IdGenerator
 {
     /**
      * Generates an unused Id for the given DataTable
-     * @param DataTable $dataTable
+     * @param GenericDataTable $dataTable
      * @return int
      */
-    public function getOneUnusedId(DataTable $dataTable) : int;
+    public function getOneUnusedId(GenericDataTable $dataTable) : int;
 }

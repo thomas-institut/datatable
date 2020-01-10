@@ -37,7 +37,7 @@ use RuntimeException;
  * Implements a data table with MySQL
  *
  */
-class MySqlDataTable extends DataTable
+class MySqlDataTable extends GenericDataTable
 {
     
     // CONSTANTS

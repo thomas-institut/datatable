@@ -50,7 +50,7 @@ class MySqlDataTableTest extends DataTableTest
     const STRINGCOLUMN = 'someotherkey';
     const OTHERSTRINGCOLUMN = 'value';
     
-    public function createEmptyDt() : DataTable
+    public function createEmptyDt() : GenericDataTable
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
@@ -92,7 +92,7 @@ class MySqlDataTableTest extends DataTableTest
     public function resetTestDb(PDO $pdo)
     {
 
-        $idCol = DataTable::COLUMN_ID;
+        $idCol = GenericDataTable::COLUMN_ID;
         $intCol = self::INTCOLUMN;
         $stringCol = self::STRINGCOLUMN;
         $otherStringCol = self::OTHERSTRINGCOLUMN;
@@ -112,7 +112,7 @@ EOD;
     
     public function resetTestDbWithBadTables(PDO $pdo)
     {
-        $idCol = DataTable::COLUMN_ID;
+        $idCol = GenericDataTable::COLUMN_ID;
         $intCol = self::INTCOLUMN;
         $stringCol = self::STRINGCOLUMN;
 
@@ -167,7 +167,7 @@ EOD;
         
         $rows = $restrictedDataTable->getAllRows();
         $this->assertCount(1, $rows);
-        $this->assertEquals($rowId, $rows[0][DataTable::COLUMN_ID]);
+        $this->assertEquals($rowId, $rows[0][GenericDataTable::COLUMN_ID]);
         
         $result = $restrictedDataTable->rowExists($rowId);
         $this->assertTrue($result);
@@ -240,7 +240,7 @@ EOD;
         // INTCOLUMN should be an int
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([DataTable::COLUMN_ID => 1, self::INTCOLUMN => 'bad']);
+            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1, self::INTCOLUMN => 'bad']);
         } catch (RuntimeException $e) {
             $exceptionCaught = true;
         }
@@ -252,7 +252,7 @@ EOD;
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([DataTable::COLUMN_ID => 1,  self::OTHERSTRINGCOLUMN => null]);
+            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1,  self::OTHERSTRINGCOLUMN => null]);
         }
         catch (RuntimeException $e) {
             $exceptionCaught = true;
@@ -295,7 +295,7 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
 
-        $r = $dataTable->select(DataTable::COLUMN_ID . '=1', 0, 'id ASC', 'testSelect2');
+        $r = $dataTable->select(GenericDataTable::COLUMN_ID . '=1', 0, 'id ASC', 'testSelect2');
 
         $this->assertEquals(0, $r->rowCount());
 

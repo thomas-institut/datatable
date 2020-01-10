@@ -26,10 +26,10 @@
 namespace DataTable;
 
 
-class SequentialIdGenerator implements iIdGenerator
+class SequentialIdGenerator implements IdGenerator
 {
 
-    public function getOneUnusedId(DataTable $dataTable): int
+    public function getOneUnusedId(GenericDataTable $dataTable): int
     {
         return $dataTable->getMaxId() + 1;
     }

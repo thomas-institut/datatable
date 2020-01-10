@@ -31,7 +31,7 @@ namespace DataTable;
   *
  * @package DataTable
  */
-interface iErrorReporter
+interface ErrorReporter
 {
     public function getErrorMessage() : string;
     public function getErrorCode() : int;

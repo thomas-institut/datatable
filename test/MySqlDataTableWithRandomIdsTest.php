@@ -40,7 +40,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     public $minId = 100000;
     public $maxId = 200000;
     
-    public function createEmptyDt() : DataTable
+    public function createEmptyDt() : GenericDataTable
     {
         $pdo = $this->getPdo();
         $this->resetTestDb($pdo);
@@ -82,7 +82,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         // Add new rows with fixed Ids
         $nRows = $this->numRows;
         for ($i = 0; $i < $nRows; $i++) {
-            $newId = $dataTable->createRow([DataTable::COLUMN_ID => $i+1, 'somekey' => $i,
+            $newId = $dataTable->createRow([GenericDataTable::COLUMN_ID => $i+1, 'somekey' => $i,
                 'someotherkey' => "textvalue$i"]);
             $this->assertEquals($i+1, $newId);
         }
