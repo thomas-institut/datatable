@@ -12,7 +12,7 @@ its key. The package provides in-memory and MySQL implementation.
 Install the latest version with
 
 ```bash
-$ composer require rafaelnajera/datatable
+$ composer require thomas-institut/datatable
 ```
 
 ## Usage

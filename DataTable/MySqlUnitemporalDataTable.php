@@ -26,6 +26,7 @@
 
 namespace DataTable;
 
+use Cassandra\Time;
 use Exception;
 use InvalidArgumentException;
 use \PDO;
@@ -97,7 +98,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             $this->statements['rowExistsById'] =
                 $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
                         ' WHERE id= :id AND `' . self::FIELD_VALID_UNTIL . '`=' .
-                        $this->quoteValue(UnitemporalDataTable::END_OF_TIMES));
+                        $this->quoteValue(TimeString::END_OF_TIMES));
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
             $this->setError("Could not prepare statements "
@@ -152,7 +153,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         }
         
         $theRow[self::FIELD_VALID_FROM] = $timeString;
-        $theRow[self::FIELD_VALID_UNTIL] = UnitemporalDataTable::END_OF_TIMES;
+        $theRow[self::FIELD_VALID_UNTIL] = TimeString::END_OF_TIMES;
         
         return parent::realCreateRow($theRow);
     }
@@ -232,7 +233,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         $filteredResults = [];
 
         foreach($results as $row) {
-            if ($row[self::FIELD_VALID_UNTIL] === UnitemporalDataTable::END_OF_TIMES) {
+            if ($row[self::FIELD_VALID_UNTIL] === TimeString::END_OF_TIMES) {
                 $filteredResults[] = $row;
             }
         }

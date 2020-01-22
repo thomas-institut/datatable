@@ -43,7 +43,6 @@ namespace DataTable;
 interface UnitemporalDataTable extends DataTable
 {
 
-    const END_OF_TIMES = '9999-12-31 23:59:59.999999';
 
     /**
      * Creates a row that exists starting from the given time

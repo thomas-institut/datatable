@@ -1,9 +1,8 @@
 {
-    "name": "rafaelnajera/datatable",
+    "name": "thomas-institut/datatable",
     "type": "library",
     "description": "A simple data table interface",
     "keywords": ["data"],
-    "homepage": "http://rafaelnajera.com/datatable",
     "license": "MIT",
     "authors": [
         {

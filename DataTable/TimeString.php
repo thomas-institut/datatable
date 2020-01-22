@@ -29,7 +29,7 @@ namespace DataTable;
 /**
  * Class TimeString
  *
- * Static methods to deal with strings that  have a MySql datetime format with microseconds,
+ * Static methods to deal with strings that have a MySql datetime format with microseconds,
  * e.g. 2010-10-10 18:21:23.912123
  *
  * @package DataTable
@@ -39,6 +39,8 @@ class TimeString
 {
 
     const MYSQL_DATE_FORMAT  = 'Y-m-d H:i:s';
+    const END_OF_TIMES = '9999-12-31 23:59:59.999999';
+    const TIME_ZERO = '0000-00-00 00:00:00.000000';
 
     /**
      * Returns the current time in MySQL format with microsecond precision
