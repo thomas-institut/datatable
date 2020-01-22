@@ -26,12 +26,12 @@
 
 namespace DataTable;
 
-use Cassandra\Time;
 use Exception;
 use InvalidArgumentException;
 use \PDO;
 use \PDOException;
 use RuntimeException;
+use ThomasInstitut\TimeString\TimeString;
 
 /**
  * Implements a MySql data table that keeps different versions

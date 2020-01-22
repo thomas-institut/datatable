@@ -11,6 +11,7 @@ namespace DataTable;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
+use ThomasInstitut\TimeString\TimeString;
 
 require '../vendor/autoload.php';
 require_once 'MySqlDataTableTest.php';
@@ -568,7 +569,7 @@ EOD;
             $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INTCOLUMN]);
             $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][MySqlUnitemporalDataTable::FIELD_VALID_FROM]);
         }
-        $this->assertEquals(MySqlUnitemporalDataTable::END_OF_TIMES,$rowHistory[count($rowHistory)-1][MySqlUnitemporalDataTable::FIELD_VALID_UNTIL]);
+        $this->assertEquals(TimeString::END_OF_TIMES,$rowHistory[count($rowHistory)-1][MySqlUnitemporalDataTable::FIELD_VALID_UNTIL]);
 
         $exceptionCaught = false;
         try {
