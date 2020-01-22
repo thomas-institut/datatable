@@ -4,7 +4,7 @@
 [![License](https://poser.pugx.org/rafaelnajera/datatable/license)](https://packagist.org/packages/rafaelnajera/datatable)
 
 An abstraction of an SQL-like table made out of rows with an unique integer id as 
-its key. The package provides in-memory and MySQL implementation.
+its key. The package provides in-memory and MySQL implementations.
 
 
 ## Installation 
