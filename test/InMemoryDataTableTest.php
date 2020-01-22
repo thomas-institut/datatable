@@ -23,7 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 require '../vendor/autoload.php';
 
 require_once 'DataTableTest.php';

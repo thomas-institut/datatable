@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 
 use InvalidArgumentException;

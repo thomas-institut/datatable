@@ -23,13 +23,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 require '../vendor/autoload.php';
 
 require 'MockClasses/FailGetOneUnusedIdGenericDataTable.php';
 
-use DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 use PHPUnit\Framework\TestCase;
+use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 
 /**
  * Additional test for DataTable

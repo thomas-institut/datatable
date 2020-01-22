@@ -25,13 +25,14 @@
  */
 
 
-namespace DataTable\Test;
+namespace ThomasInstitut\DataTable\Test;
 
 include '../DataTable/DataTable.php';
 
-use DataTable\GenericDataTable;
+
 use InvalidArgumentException;
 use RuntimeException;
+use ThomasInstitut\DataTable\GenericDataTable;
 
 /**
  * Mockup class that fails to return new Ids for rows

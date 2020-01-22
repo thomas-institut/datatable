@@ -23,7 +23,7 @@
     },
     "autoload": {
         "psr-4": {
-            "DataTable\\": "DataTable"
+            "ThomasInstitut\\DataTable\\": "DataTable"
         }
     }
 }

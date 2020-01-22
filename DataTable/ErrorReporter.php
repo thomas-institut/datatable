@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 /**
  * Describes a class that reports the last error that occurred during its operations

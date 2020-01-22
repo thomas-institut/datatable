@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 require '../vendor/autoload.php';
 require_once 'config.php';

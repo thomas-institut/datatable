@@ -25,7 +25,7 @@
  */
 
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 /**
  * Defines a class that provides the same methods as a DataTable but with a

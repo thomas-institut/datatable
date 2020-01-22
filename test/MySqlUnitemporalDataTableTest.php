@@ -6,7 +6,7 @@
  * and open the template in the editor.
  */
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 use InvalidArgumentException;
 use PDO;

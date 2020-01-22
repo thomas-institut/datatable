@@ -23,7 +23,7 @@
  * THE SOFTWARE.
  */
 
-namespace DataTable;
+namespace ThomasInstitut\DataTable;
 
 
 class SequentialIdGenerator implements IdGenerator
