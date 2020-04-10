@@ -239,6 +239,7 @@ class MySqlDataTable extends GenericDataTable
      *
      * $context is used to report errors
      *
+     * @param string $what
      * @param string $where
      * @param int $limit
      * @param string $orderBy
