@@ -245,13 +245,17 @@ class MySqlDataTable extends GenericDataTable
      * @param string $context
      * @return PDOStatement
      */
-    public function select(string $where, int $limit, string $orderBy, string $context ) : PDOStatement {
+    public function select(string $what, string $where, int $limit, string $orderBy, string $context ) : PDOStatement {
+
+        if ($what === '') {
+            $what = '*';
+        }
         if ($where ==='') {
             $this->setError('Empty where clause', self::ERROR_INVALID_WHERE_CLAUSE);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE ' . $where;
+        $sql = 'SELECT ' .  $what . ' FROM `' . $this->tableName . '` WHERE ' . $where;
         if ($limit > 0) {
             $sql .= ' LIMIT ' . $limit;
         }
@@ -264,7 +268,7 @@ class MySqlDataTable extends GenericDataTable
     
     public function getRow(int $rowId) : array
     {
-        $r = $this->select(self::COLUMN_ID . '=' . $rowId, 1, '', 'getRow');
+        $r = $this->select('*', self::COLUMN_ID . '=' . $rowId, 1, '', 'getRow');
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
