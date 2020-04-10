@@ -1,7 +1,7 @@
 # DataTable
 
-[![Latest Stable Version](https://poser.pugx.org/rafaelnajera/datatable/v/stable)](https://packagist.org/packages/rafaelnajera/datatable)
-[![License](https://poser.pugx.org/rafaelnajera/datatable/license)](https://packagist.org/packages/rafaelnajera/datatable)
+[![Latest Stable Version](https://poser.pugx.org/thomas-institut/datatable/v/stable)](https://packagist.org/packages/thomas-institut/datatable)
+[![License](https://poser.pugx.org/thomas-institut/datatable/license)](https://packagist.org/packages/thomas-institut/datatable)
 
 An abstraction of an SQL-like table made out of rows with an unique integer id as 
 its key. The package provides in-memory and MySQL implementations.
