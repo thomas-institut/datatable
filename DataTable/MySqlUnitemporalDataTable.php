@@ -130,10 +130,18 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      *   ]
      * @return array
      */
-    public function checkConsistency() : array {
+    public function checkConsistency(array $ids = []) : array {
         $issues = [];
-        $ids = $this->getUniqueIdsWithTime('');
+        if (count($ids) === 0) {
+            // check everything!
+            $ids = $this->getUniqueIdsWithTime('');
+        }
+
         foreach ($ids as $id) {
+            $id = intval($id);  // just in case
+            if ($id < 0) {
+                continue;
+            }
             $rowHistory = $this->getRowHistory($id);
             //print_r($rowHistory);
             $previousVersion = null;
