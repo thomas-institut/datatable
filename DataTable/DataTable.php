@@ -31,8 +31,11 @@ use RuntimeException;
 interface DataTable
 {
 
+    const SEARCH_AND = 0;
+    const SEARCH_OR = 1;
+
     /**
-     * Returns true if the row with the given Id exists
+     * Returns true if the row with the given ID exists
      *
      * @param int $rowId
      * @return bool
@@ -45,19 +48,19 @@ interface DataTable
      * If the given row array does not have a value for 'id' or if the value
      * is equal to 0 a new id will be assigned.
      *
-     * Otherwise, if the given Id is not an int or if the id
+     * Otherwise, if the given ID is not an int or if the id
      * already exists in the table the function will throw
      * an exception
      *
      * @param array $theRow
-     * @return int the Id of the newly created row
+     * @return int the id of the newly created row
      * @throws RuntimeException
      */
     public function createRow(array $theRow) : int;
 
 
     /**
-     * Gets the row with the given row Id.
+     * Gets the row with the given row ID.
      * If the row does not exist throws an InvalidArgument exception
      *
      * @param int $rowId
@@ -75,10 +78,10 @@ interface DataTable
 
 
     /**
-     * Deletes the row with the given Id.
+     * Deletes the row with the given ID.
      *
      * Returns the number of rows actually deleted without problems, which should be 1 if
-     * the row the given Id existed in the datable, or 0 if there was no such row in
+     * the row the given ID existed in the datable, or 0 if there was no such row in
      * the first place.
      *
      * @param int $rowId
@@ -142,7 +145,7 @@ interface DataTable
      * Updates the table with the given row, which must contain an 'id'
      * field specifying the row to update.
      *
-     * If the given row does not contain a valid 'id' field, or if the Id
+     * If the given row does not contain a valid 'id' field, or if the ID
      * is valid but there is no row with that id the table, an InvalidArgument exception
      * will be thrown.
      *
@@ -189,5 +192,13 @@ interface DataTable
      * @return int the max id in the table
      */
     public function getMaxId() : int;
+
+
+    /**
+     * Returns an array with all the unique row ids in the table
+     * in ascending order
+     * @return array
+     */
+    public function getUniqueIds() : array;
 
 }

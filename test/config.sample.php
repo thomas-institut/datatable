@@ -14,7 +14,7 @@ $config['db'] = "<DATABASE>";
 //   grant all privileges on theDb.* to 'someuser'@'somehost';
 //   flush privileges;
 
-$config['user'] = "<DB user>";
+$config['user'] = "<DB USER>";
 $config['pwd'] = "<DB PASSWORD";
 
 
@@ -25,5 +25,5 @@ $config['pwd'] = "<DB PASSWORD";
 //   grant select on theDb.* to 'someuser'@'somehost';
 //   flush privileges;
 
-$config['restricteduser'] = "<DB user>";
+$config['restricteduser'] = "<Restricted DB user>";
 $config['restricteduserpwd'] = "<DB PASSWORD";

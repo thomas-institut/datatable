@@ -42,7 +42,7 @@ use RuntimeException;
  * table as an SQL table, but an implementation with arrays or
  * with something just as simple can be provided for testing.
  *
- * By default each row must have a unique int key: 'id'
+ * By default, each row must have a unique int key: 'id'
  * The assignment of IDs is left to the class, not to the underlying
  * database.
  *
@@ -63,13 +63,6 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     const SEARCH_SPEC_COLUMN = 'column';
     const SEARCH_SPEC_CONDITION = 'condition';
     const SEARCH_SPEC_VALUE = 'value';
-
-    /**
-     * Search types
-     */
-
-    const SEARCH_AND = 0;
-    const SEARCH_OR = 1;
 
     /**
      * Search condition types
@@ -149,9 +142,16 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $this->errorCode;
     }
 
+    public function getUniqueIds(): array
+    {
+        $ids = array_unique(array_map(function ($row) :int { return $row['id'];}, $this->getAllRows()), SORT_NUMERIC);
+        sort($ids, SORT_NUMERIC);
+        return $ids;
+    }
+
     /**
      * @param int $rowId
-     * @return bool true if the row with the given Id exists
+     * @return bool true if the row with the given ID exists
      */
     abstract public function rowExists(int $rowId) : bool;
 
@@ -161,12 +161,12 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      * If the given row does not have a value for 'id' or if the value
      * is equal to 0 a new id will be assigned.
      *
-     * Otherwise, if the given Id is not an int or if the id
+     * Otherwise, if the given ID is not an int or if the id
      * already exists in the table the function will throw
      * an exception
      *
      * @param array $theRow
-     * @return int the Id of the newly created row
+     * @return int the ID of the newly created row
      * @throws RuntimeException
      */
     public function createRow(array $theRow) : int
@@ -177,7 +177,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     }
 
     /**
-     * Gets the row with the given row Id.
+     * Gets the row with the given row ID.
      * If the row does not exist throws an InvalidArgument exception
      *
      * @param int $rowId
@@ -195,10 +195,10 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
 
 
     /**
-     * Deletes the row with the given Id.
+     * Deletes the row with the given ID.
      *
      * Returns the number of rows actually deleted without problems, which should be 1 if
-     * the row the given Id existed in the datable, or 0 if there was no such row in
+     * the row the given ID existed in the datable, or 0 if there was no such row in
      * the first place.
      *
      * @param int $rowId
@@ -274,7 +274,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      * Updates the table with the given row, which must contain an 'id'
      * field specifying the row to update.
      *
-     * If the given row does not contain a valid 'id' field, or if the Id
+     * If the given row does not contain a valid 'id' field, or if the ID
      * is valid but there is no row with that id the table, an InvalidArgument exception
      * will be thrown.
      *
@@ -347,8 +347,8 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     abstract protected function realCreateRow(array $theRow) : int;
 
     /**
-     * Updates the given row, which must have a valid Id.
-     * If there's not row with that id, it throw an InvalidArgument exception.
+     * Updates the given row, which must have a valid ID.
+     * If there is not a row with that id, throws an InvalidArgument exception.
      *
      * Must throw a Runtime Exception if the row was not updated
      *
@@ -367,16 +367,16 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      */
 
     /**
-     * Returns theRow with a valid Id for creation: if there's no id
-     * in the given row, the given Id is 0 or not an integer, the id is set to
-     * an unused Id
+     * Returns theRow with a valid ID for creation: if there's no id
+     * in the given row, the given ID is 0 or not an integer, the id is set to
+     * an unused ID
      *
      * @param array $theRow
      * @throws RuntimeException
      * @throws InvalidArgumentException  if the given row has an invalid self::COLUMN_ID field
      * @return array
      */
-    protected function getRowWithGoodIdForCreation($theRow) : array
+    protected function getRowWithGoodIdForCreation(array $theRow) : array
     {
         if (!isset($theRow[self::COLUMN_ID]) || !is_int($theRow[self::COLUMN_ID]) || $theRow[self::COLUMN_ID]===0) {
             $theRow[self::COLUMN_ID] = $this->getOneUnusedId();
@@ -391,7 +391,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     }
     
      /**
-      * Returns a unique Id that does not exist in the table,
+      * Returns a unique ID that does not exist in the table,
       * defaults to a sequential id if the idGenerator cannot
       * come up with one
       *

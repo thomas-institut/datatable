@@ -36,13 +36,13 @@ use ThomasInstitut\TimeString\TimeString;
 /**
  * Implements a MySql data table that keeps different versions
  * of its rows. The term 'unitemporal' is taken from
- * Johnston and Weis, 'Managing Time in Relational Databases", 2010, but
+ * Johnston and Weis, "Managing Time in Relational Databases", 2010, but
  * this implementation does not necessarily follow the techniques
  * described in that book.
  *
  * The normal DataTable methods for creating, updating and deleting
  * rows do not delete any previous data but just mark that data as
- * not valid any more. Data retrieval methods (getRow and findRows) get
+ * not valid anymore. Data retrieval methods (getRow and findRows) get
  * the latest versions of the data and strip out the time information, so,
  * if used with the normal methods the class behaves as any other DataTable.
  * There are, however, new methods to retrieve data at previous points in time.
@@ -67,6 +67,16 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     // Error codes
     const ERROR_INVALID_TIME = 2010;
     const ERROR_NOT_IMPLEMENTED = 2011;
+
+    const REPORT_TYPE_ERROR = 'error';
+    const REPORT_TYPE_WARNING = 'warning';
+    const REPORT_TYPE_INFO  = 'info';
+
+    const REPORT_ERROR_INVALID_TIME_RANGE = 100;
+    const REPORT_WARNING_ZERO_TIME_RANGE = 101;
+    const REPORT_ERROR_OVERLAPPING_VERSIONS = 102;
+    const REPORT_INFO_GAP = 103;
+
     
     
     // Other constants
@@ -107,6 +117,99 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             // @codeCoverageIgnoreEnd
         }
     }
+
+    /**
+     * Checks that the data's time information is consistent across the table
+     * Returns an array of objects each one describing an issue:
+     *    [
+     *         'id' => int
+     *         'type' =>  ERROR | WARNING | INFO
+     *         'code' =>  int
+     *         'description'  => string
+     *
+     *   ]
+     * @return array
+     */
+    public function checkConsistency() : array {
+        $issues = [];
+        $ids = $this->getUniqueIdsWithTime('');
+        foreach ($ids as $id) {
+            $rowHistory = $this->getRowHistory($id);
+            //print_r($rowHistory);
+            $previousVersion = null;
+            foreach ($rowHistory as $version) {
+                if ($version[self::FIELD_VALID_UNTIL] < $version[self::FIELD_VALID_FROM]) {
+                    $issues[] = [
+                        'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
+                        'code' => self::REPORT_ERROR_INVALID_TIME_RANGE,
+                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " < validFrom " . $version[self::FIELD_VALID_FROM]
+                    ];
+                }
+                if ($version[self::FIELD_VALID_UNTIL] === $version[self::FIELD_VALID_FROM]) {
+                    $issues[] = [
+                        'id' => $id, 'type' => self::REPORT_TYPE_WARNING,
+                        'code' => self::REPORT_WARNING_ZERO_TIME_RANGE,
+                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " = validFrom " . $version[self::FIELD_VALID_FROM]
+                    ];
+                }
+                if (!is_null($previousVersion)) {
+                    if ($version[self::FIELD_VALID_FROM] < $previousVersion[self::FIELD_VALID_UNTIL]) {
+                        $issues[] = [
+                            'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
+                            'code' => self::REPORT_ERROR_OVERLAPPING_VERSIONS,
+                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " < previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
+                        ];
+                    }
+                    if ($version[self::FIELD_VALID_FROM] >  $previousVersion[self::FIELD_VALID_UNTIL]) {
+                        $issues[] = [
+                            'id' => $id, 'type' => self::REPORT_TYPE_INFO,
+                            'code' => self::REPORT_INFO_GAP,
+                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " > previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
+                        ];
+                    }
+                }
+                $previousVersion = $version;
+            }
+        }
+        return $issues;
+    }
+
+    /**
+     * Get all unique Ids in the table at the given time,
+     * If the given time is not a valid timeString returns
+     * all uniqueIds regardless of time.
+     * @param string $timeString
+     * @return array
+     */
+    public function getUniqueIdsWithTime(string $timeString) : array{
+
+        $timeString = TimeString::fromString($timeString);
+        $sqlTimeConstraint  = '';
+        if (TimeString::isValid($timeString)) {
+            $quotedTimeString = $this->quoteValue($timeString);
+            $sqlTimeConstraint =   ' WHERE ' . self::FIELD_VALID_FROM . '<=' . $quotedTimeString .
+               ' AND '. self::FIELD_VALID_UNTIL .  '>' . $quotedTimeString;
+        }
+
+        $tableName = $this->tableName;
+
+        $sql = 'SELECT DISTINCT(id) FROM ' . $this->tableName . $sqlTimeConstraint . " ORDER BY `$tableName`.`id`";
+
+        $result = $this->doQuery($sql, "getUniqueIds");
+        $ids = array_map( function ($row) : int { return intval($row['id']);}, $result->fetchAll());
+        sort($ids, SORT_NUMERIC);
+        return $ids;
+    }
+
+
+
+    public function getUniqueIds(): array
+    {
+        return $this->getUniqueIdsWithTime(TimeString::now());
+    }
+
+
+
 
     /**
      * Creates a row valid from the current time.
@@ -157,6 +260,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         
         return parent::realCreateRow($theRow);
     }
+
 
     /**
      * Makes a row invalid from the given time
@@ -254,7 +358,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     /**
      * Returns all row that are/were valid that the given time
      *
-     * @param $timeString
+     * @param string $timeString
      * @return array
      */
     public function getAllRowsWithTime(string $timeString) : array
@@ -365,7 +469,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      *
      * @param array $theRow
      * @param int $maxResults
-     * @param $timeString
+     * @param string $timeString
      * @return array
      */
     public function findRowsWithTime($theRow, $maxResults, string $timeString) : array

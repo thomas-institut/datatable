@@ -37,7 +37,8 @@ require '../vendor/autoload.php';
 
 
 /**
- * Description of DataTableTest
+ * Reference test cases for a GenericDataTable implementation
+ *
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
@@ -58,22 +59,26 @@ abstract class DataTableTest extends TestCase
         return $dataTable;
     }
     
-    public function testCreation()
+    public function testCreationAndDeletion()
     {
         
         $dataTable = $this->createEmptyDt();
         
         $this->assertSame(false, $dataTable->rowExists(1));
         
-        $ids = array();
+        $ids = [];
         for ($i = 1; $i <= $this->numRows; $i++) {
             $someRow = [ 'somekey' => $i, 'someotherkey' => "textvalue$i"];
             $testMsg = "Creating rows, iteration $i";
             $newId = $dataTable->createRow($someRow);
             $this->assertNotFalse($newId, $testMsg);
             $this->assertTrue($dataTable->rowExists($newId), $testMsg);
-            array_push($ids, $newId);
+            $ids[] = $newId;
         }
+
+        sort($ids, SORT_NUMERIC);
+
+        $this->assertEquals($ids, $dataTable->getUniqueIds());
 
         // Some random deletions and additions
         for ($i = 0; $i < $this->numIterations; $i++) {
@@ -83,10 +88,12 @@ abstract class DataTableTest extends TestCase
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
             $this->assertEquals(1, $dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExists($theId), $testMsg);
+            $this->assertFalse(in_array($theId, $dataTable->getUniqueIds()), $testMsg);
             $newId = $dataTable->createRow([ 'id' => $theId,
                 'somekey' => $theId, 'someotherkey' => "textvalue$theId" ]);
             $this->assertNotFalse($newId, $testMsg);
             $this->assertSame($theId, $newId, $testMsg);
+            $this->assertTrue(in_array($theId, $dataTable->getUniqueIds()), $testMsg);
         }
     }
     

@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection ALL */
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -578,7 +578,38 @@ EOD;
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(MySqlUnitemporalDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+
+    }
+
+    public function testConsistency() {
+        /**
+         * @var MySqlUnitemporalDataTable $dataTable
+         */
+        $dataTable = $this->createEmptyDt();
+        $initialIntValue = 0;
+        $initialYear = 1971;
+        $lastYear = 1975;
+        $rowId = 1;
+        for ($i = $initialYear; $i <= $lastYear; $i++) {
+            $time = "$i-01-01";
+            //print("Creating/updating row with time $time\n");
+            if ($i === $initialYear) {
+                try {
+                    $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => $i], TimeString::fromString($time));
+                } catch (\Exception $e) {
+                    print ("Exception: " . $e->getMessage());
+                }
+                //print ("Row ID is $rowId\n");
+            } else {
+                $dataTable->updateRowWithTime(
+                    [GenericDataTable::COLUMN_ID => $rowId, self::INTCOLUMN => $i],
+                    TimeString::fromString($time));
+            }
+        }
+        $issues = $dataTable->checkConsistency();
+        $this->assertCount(0, $issues);
+
 
     }
 

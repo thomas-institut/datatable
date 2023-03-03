@@ -111,9 +111,14 @@ class MySqlDataTable extends GenericDataTable
                     . ' LIKE \'' . $columnName . '\''
             );
         } catch (PDOException $e) { // @codeCoverageIgnore
+            if ($e->getCode() === '42S02') {
+                $this->setError('Table ' . $this->tableName . ' not found',
+                    self::ERROR_TABLE_NOT_FOUND);
+                return false;
+            }
             // @codeCoverageIgnoreStart
             $this->setError('Query error checking MySQL column '
-                    . $this->tableName . '::' . $columnName . ' : ' . $e->getMessage(),
+                    . $this->tableName . '::' . $columnName . ' : MySql Error Code ' . $e->getCode() . ", msg = ". $e->getMessage(),
                 self::ERROR_MYSQL_QUERY_ERROR);
             return false;
             // @codeCoverageIgnoreEnd
@@ -354,6 +359,16 @@ class MySqlDataTable extends GenericDataTable
         
         return $r;
     }
+
+    public function getUniqueIds(): array
+    {
+        $tableName = $this->tableName;
+        $result = $this->doQuery("SELECT DISTINCT(id) FROM `$tableName` ORDER BY `$tableName`.`id` ASC", "getUniqueIds");
+        $ids = array_map( function ($row) : int { return intval($row['id']);}, $result->fetchAll());
+        sort($ids, SORT_NUMERIC);
+        return $ids;
+    }
+
 
     /**
      * Executes a named prepared statement,
