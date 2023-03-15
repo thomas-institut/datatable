@@ -26,14 +26,14 @@
 namespace ThomasInstitut\DataTable;
 require '../vendor/autoload.php';
 
-require_once 'DataTableTest.php';
+require_once 'DataTableTestCase.php';
 
 /**
  * Description of DataTableTest
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-class InMemoryDataTableTest extends DataTableTest
+class InMemoryDataTableTest extends DataTableTestCase
 {
     
     public function createEmptyDt() : GenericDataTable

@@ -3,6 +3,6 @@ vendor/
 /test/config.php
 /test/coverage/
 .idea/
-test/.phpunit.result.cache
+test/.phpunit.cache
 scratch/
 /test/test.log

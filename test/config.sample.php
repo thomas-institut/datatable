@@ -1,4 +1,7 @@
 <?php
+
+global $config;
+
 /**
  * Sample configuration file for test environment
  *

@@ -113,7 +113,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         $this->idGenerator = $ig;
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger):void
     {
         $this->logger = $logger;
     }
@@ -310,7 +310,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      * @param mixed $value
      * @return int
      */
-    abstract public function getIdForKeyValue(string $key, $value) : int;
+    abstract public function getIdForKeyValue(string $key, mixed $value) : int;
 
     /**
      * Returns the max value in the given column.
@@ -476,6 +476,19 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $problems;
     }
 
+    protected function checkSpec(array $searchSpecArray, int $searchType) : void {
+        $this->resetError();
+        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
+        if ($searchSpecCheck !== []) {
+            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
+            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+        }
+    }
+
     /**
      * @param string $msg
      * @param int $code
@@ -509,25 +522,25 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     /**
      * @var IdGenerator
      */
-    private $idGenerator;
+    private IdGenerator $idGenerator;
 
 
     /**
      * @var LoggerInterface
      */
-    protected $logger;
+    protected LoggerInterface $logger;
 
     /**
      *
      * @var string
      */
-    private $errorMessage;
+    private string $errorMessage;
 
     /**
      *
      * @var int
      */
-    private $errorCode;
+    private int $errorCode;
 
     /**
      * @param string $message

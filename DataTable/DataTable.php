@@ -173,7 +173,7 @@ interface DataTable
      * @param mixed $value
      * @return int
      */
-    public function getIdForKeyValue(string $key, $value) : int;
+    public function getIdForKeyValue(string $key, mixed $value) : int;
 
     /**
      * Returns the max value in the given column.

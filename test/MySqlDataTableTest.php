@@ -28,11 +28,11 @@ namespace ThomasInstitut\DataTable;
 
 require '../vendor/autoload.php';
 require_once 'config.php';
-require_once 'DataTableTest.php';
+require_once 'DataTableTestCase.php';
 
 
 use InvalidArgumentException;
-use \PDO;
+use PDO;
 use RuntimeException;
 
 /**
@@ -40,15 +40,15 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableTest extends DataTableTest
+class MySqlDataTableTest extends DataTableTestCase
 {
     
     public $numRows = 100;
     
-    const TABLE_NAME  = 'testtable';
-    const INTCOLUMN = 'somekey';
-    const STRINGCOLUMN = 'someotherkey';
-    const OTHERSTRINGCOLUMN = 'value';
+    const TABLE_NAME  = 'test_table_mysql_dt';
+    const INT_COLUMN = 'somekey';
+    const STRING_COLUMN = 'someotherkey';
+    const OTHER_STRING_COLUMN = 'value';
     
     public function createEmptyDt() : GenericDataTable
     {
@@ -58,9 +58,8 @@ class MySqlDataTableTest extends DataTableTest
         $dt = new MySqlDataTable($pdo, self::TABLE_NAME);
         $dt->setLogger($this->getLogger()->withName('MySqlDataTable (' . self::TABLE_NAME . ')'));
         return $dt;
-
     }
-    
+
     public function getRestrictedDt() : MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
@@ -70,12 +69,11 @@ class MySqlDataTableTest extends DataTableTest
     public function getPdo() : PDO
     {
         global $config;
+
+        $dsn = 'mysql:dbname=' . $config['db'] . ';host=' . $config['host'];
+//        print $dsn;
         
-        return new PDO(
-            'mysql:dbname=' . $config['db'] . ';host=' . $config['host'],
-            $config['user'],
-            $config['pwd']
-        );
+        return new PDO($dsn,$config['user'],$config['pwd']);
     }
     
     public function getRestrictedPdo() : PDO
@@ -89,18 +87,21 @@ class MySqlDataTableTest extends DataTableTest
         );
     }
 
-    public function resetTestDb(PDO $pdo)
+    public function resetTestDb(PDO $pdo, bool $autoInc = false)
     {
 
         $idCol = GenericDataTable::COLUMN_ID;
-        $intCol = self::INTCOLUMN;
-        $stringCol = self::STRINGCOLUMN;
-        $otherStringCol = self::OTHERSTRINGCOLUMN;
+        $intCol = self::INT_COLUMN;
+        $stringCol = self::STRING_COLUMN;
+        $otherStringCol = self::OTHER_STRING_COLUMN;
+        $testTableName = self::TABLE_NAME;
+
+        $autoIncrement = $autoInc ? 'AUTO_INCREMENT' : '';
 
         $tableSetupSQL =<<<EOD
-            DROP TABLE IF EXISTS `testtable`;
-            CREATE TABLE IF NOT EXISTS `testtable` (
-              `$idCol` int(11) UNSIGNED NOT NULL,
+            DROP TABLE IF EXISTS `$testTableName`;
+            CREATE TABLE IF NOT EXISTS `$testTableName` (
+              `$idCol` int(11) UNSIGNED NOT NULL $autoIncrement,
               `$intCol` int(11) DEFAULT NULL,
               `$stringCol` varchar(100) DEFAULT NULL,
               `$otherStringCol` varchar(100) DEFAULT NULL,
@@ -113,8 +114,8 @@ EOD;
     public function resetTestDbWithBadTables(PDO $pdo)
     {
         $idCol = GenericDataTable::COLUMN_ID;
-        $intCol = self::INTCOLUMN;
-        $stringCol = self::STRINGCOLUMN;
+        $intCol = self::INT_COLUMN;
+        $stringCol = self::STRING_COLUMN;
 
 
         $tableSetupSQL =<<<EOD
@@ -140,12 +141,12 @@ EOD;
         $dataTable = $this->createEmptyDt();
         $restrictedDataTable = $this->getRestrictedDt();
 
-        $stringCol = self::STRINGCOLUMN;
+        $stringCol = self::STRING_COLUMN;
 
         $exceptionCaught = false;
         try {
             $restrictedDataTable->createRow([$stringCol => 25]);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -153,12 +154,12 @@ EOD;
         
         $rowId = $dataTable->createRow([$stringCol => 25]);
         $this->assertNotFalse($rowId);
-        $this->assertEquals(MySqlDataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
+        $this->assertEquals(GenericDataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
 
         $exceptionCaught = false;
         try {
             $restrictedDataTable->deleteRow($rowId);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -183,8 +184,8 @@ EOD;
         // somekey is supposed to be an integer
         $exceptionCaught = false;
         try {
-            $dataTable->createRow([self::INTCOLUMN => 'A string']);
-        } catch (RuntimeException $e) {
+            $dataTable->createRow([self::INT_COLUMN => 'A string']);
+        } catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -197,7 +198,7 @@ EOD;
         $exceptionCaught = false;
         $errorCode = -1;
         try {
-            $dataTable = new MySqlDataTable($pdo, 'testtablebad1');
+            new MySqlDataTable($pdo, 'testtablebad1');
         } catch(RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
@@ -209,7 +210,7 @@ EOD;
         $exceptionCaught = false;
         $errorCode = -1;
         try {
-            $dataTable = new MySqlDataTable($pdo, 'testtablebad2');
+            new MySqlDataTable($pdo, 'testtablebad2');
         } catch(RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
@@ -221,7 +222,7 @@ EOD;
         $exceptionCaught = false;
         $errorCode = -1;
         try {
-            $dataTable = new MySqlDataTable($pdo, 'nonexistenttable');
+            new MySqlDataTable($pdo, 'non_existent_table');
         } catch(RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
@@ -237,11 +238,11 @@ EOD;
         $pdo = $this->getPdo();
         $dataTable = new MySqlDataTable($pdo, self::TABLE_NAME);
         
-        // INTCOLUMN should be an int
+        // INT_COLUMN should be an int
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1, self::INTCOLUMN => 'bad']);
-        } catch (RuntimeException $e) {
+            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1, self::INT_COLUMN => 'bad']);
+        } catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -252,9 +253,9 @@ EOD;
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1,  self::OTHERSTRINGCOLUMN => null]);
+            $dataTable->updateRow([GenericDataTable::COLUMN_ID => 1,  self::OTHER_STRING_COLUMN => null]);
         }
-        catch (RuntimeException $e) {
+        catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertFalse($exceptionCaught);
@@ -270,11 +271,11 @@ EOD;
             $exceptionCaught = false;
             try {
                 $dataTable->getRow($i);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 $exceptionCaught = true;
             }
             $this->assertTrue($exceptionCaught);
-            $this->assertEquals(MySqlDataTable::ERROR_ROW_DOES_NOT_EXIST,
+            $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST,
                 $dataTable->getErrorCode());
             $this->assertNotEquals('', $dataTable->getErrorMessage());
         }
@@ -290,7 +291,7 @@ EOD;
         $exceptionCaught = false;
         try {
             $dataTable->select('*','', 0, '', 'testSelect');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);

@@ -33,7 +33,7 @@ use LogicException;
 class InMemoryDataTable extends GenericDataTable
 {
     
-    private $theData = [];
+    private array $theData = [];
     
     public function getAllRows() : array
     {
@@ -105,7 +105,7 @@ class InMemoryDataTable extends GenericDataTable
         throw new InvalidArgumentException($msg, $errorCode);
     }
     
-    public function getIdForKeyValue(string $key, $value) : int
+    public function getIdForKeyValue(string $key, mixed $value) : int
     {
         $id = array_search(
             $value,
@@ -155,16 +155,8 @@ class InMemoryDataTable extends GenericDataTable
      */
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
-        $this->resetError();
-        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
-        if ($searchSpecCheck !== []) {
-            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
-            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
+
+        $this->checkSpec($searchSpecArray, $searchType);
 
         $results = [];
         foreach ($this->theData as $dataRow) {

@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--  
 
 Configuration file for PHPUnit.
@@ -9,10 +10,10 @@ Note: processIsolation set to true so that code coverage reporting
       https://github.com/sebastianbergmann/php-code-coverage/issues/411#issuecomment-217353411
 
 -->
-<phpunit colors="true" processIsolation="true">
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">../DataTable</directory>
-        </whitelist>
-    </filter>    
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" colors="true" processIsolation="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd" cacheDirectory=".phpunit.cache">
+  <coverage>
+    <include>
+      <directory suffix=".php">../DataTable</directory>
+    </include>
+  </coverage>
 </phpunit>

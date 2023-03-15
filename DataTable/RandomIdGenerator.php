@@ -38,17 +38,17 @@ class RandomIdGenerator implements IdGenerator
     /**
      * @var int
      */
-    private $minId;
+    private int $minId;
 
     /**
      * @var int
      */
-    private $maxId;
+    private int $maxId;
 
     /**
      * @var int
      */
-    private $maxAttempts;
+    private int $maxAttempts;
 
     public function __construct(int $min = 1, int $max = PHP_INT_MAX, int $maxAttempts = 1000)
     {
@@ -69,7 +69,7 @@ class RandomIdGenerator implements IdGenerator
                 return $theId;
             }
         }
-        // No unused Id found, let the client know via an Exception
+        // No unused ID found, let the client know via an Exception
         throw new RuntimeException("Could not generate an unused Id after $this->maxAttempts attempts", self::ERROR_MAX_ATTEMPTS_REACHED);
     }
 }

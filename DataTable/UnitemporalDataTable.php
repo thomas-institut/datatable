@@ -32,7 +32,7 @@ namespace ThomasInstitut\DataTable;
  * time indication.
  *
  * Just as with a regular DataTable, the table can be understood as being composed of rows, each one with
- * a unique Id. A unitemporal datatable, however, has access to different versions of each row, so that
+ * a unique ID. An unitemporal datatable, however, has access to different versions of each row, so that
  * it is possible to retrieve a version of a row at any particular moment in time.
  *
  * This is a transitional interface. In a later version of DataTable it will become

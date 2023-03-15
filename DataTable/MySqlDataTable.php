@@ -28,8 +28,8 @@ namespace ThomasInstitut\DataTable;
 
 use InvalidArgumentException;
 use LogicException;
-use \PDO;
-use \PDOException;
+use PDO;
+use PDOException;
 use PDOStatement;
 use RuntimeException;
 
@@ -46,38 +46,40 @@ class MySqlDataTable extends GenericDataTable
     const ERROR_REQUIRED_COLUMN_NOT_FOUND = 1020;
     const ERROR_WRONG_COLUMN_TYPE = 1030;
     const ERROR_TABLE_NOT_FOUND = 1040;
-    const ERROR_INVALID_TABLE = 1050;
+//    const ERROR_INVALID_TABLE = 1050;
     const ERROR_PREPARING_STATEMENTS = 1070;
     const ERROR_EXECUTING_STATEMENT = 1080;
 
     const ERROR_INVALID_WHERE_CLAUSE = 1090;
 
     /** @var PDO */
-    protected $dbConn;
+    protected PDO $dbConn;
     
     /**
      *
      * @var string
      */
-    protected $tableName;
+    protected string $tableName;
 
     /**
      * @var PDOStatement[]
      */
-    protected $statements;
-    
+    protected array $statements;
+    private bool $mySqlAutoInc;
+
     /**
      *
      * @param PDO $dbConnection  initialized PDO connection
      * @param string $tableName  SQL table name
      */
-    public function __construct(PDO $dbConnection, string $tableName)
+    public function __construct(PDO $dbConnection, string $tableName, bool $useMySqlAutoInc = false)
     {
         
         parent::__construct();
         
         $this->tableName = $tableName;
         $this->dbConn = $dbConnection;
+        $this->mySqlAutoInc = $useMySqlAutoInc;
         
         if (!$this->isMySqlTableColumnValid(self::COLUMN_ID, 'int')) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
@@ -102,6 +104,7 @@ class MySqlDataTable extends GenericDataTable
             // @codeCoverageIgnoreEnd
         }
     }
+
 
     protected function isMySqlTableColumnValid(string $columnName, string $type) : bool
     {
@@ -154,30 +157,50 @@ class MySqlDataTable extends GenericDataTable
     public function rowExists(int $rowId) : bool
     {
         $this->resetError();
-
         $this->executeStatement('rowExistsById', ['id' => $rowId]);
-
         if ($this->statements['rowExistsById']->rowCount() !== 1) {
             return false;
         }
-
         return true;
+    }
+
+    public function createRow(array $theRow) : int {
+        if (!$this->mySqlAutoInc) {
+            // use regular id creator
+            return parent::createRow($theRow);
+        }
+        if (!isset($theRow[self::COLUMN_ID]) || !is_int($theRow[self::COLUMN_ID])) {
+            $theRow[self::COLUMN_ID] = 0;
+        }
+        if ($theRow[self::COLUMN_ID] !== 0) {
+            if ($this->rowExists($theRow[self::COLUMN_ID])) {
+                $this->setError('The row with given id ('. $theRow[self::COLUMN_ID] . ') already exists, cannot create',
+                    self::ERROR_ROW_ALREADY_EXISTS);
+                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            }
+        }
+        $this->doQuery($this->getMySqlInsertQuery($theRow), 'createRow_MySQL_auto_inc');
+        return $this->dbConn->lastInsertId();
+    }
+
+    private function getMySqlInsertQuery(array $theRow): string
+    {
+        $keys = array_keys($theRow);
+        $sql = 'INSERT INTO `' . $this->tableName . '` (' .
+            implode(',', $keys) . ') VALUES ';
+        $values = [];
+        foreach ($keys as $key) {
+            $values[] = $this->quoteValue($theRow[$key]);
+        }
+        $sql .= '(' . implode(',', $values) . ');';
+
+        return $sql;
     }
 
 
     public function realCreateRow(array $theRow) : int
     {
-        $keys = array_keys($theRow);
-        $sql = 'INSERT INTO `' . $this->tableName . '` (' .
-                implode(',', $keys) . ') VALUES ';
-        $values = [];
-        foreach ($keys as $key) {
-            array_push($values, $this->quoteValue($theRow[$key]));
-        }
-        $sql .= '(' . implode(',', $values) . ');';
-        
-        $this->doQuery($sql, 'realCreateRow');
-
+        $this->doQuery($this->getMySqlInsertQuery($theRow), 'realCreateRow');
         return (int) $theRow[self::COLUMN_ID];
     }
     
@@ -190,12 +213,12 @@ class MySqlDataTable extends GenericDataTable
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
-        $sets = array();
+        $sets = [];
         foreach ($keys as $key) {
             if ($key === self::COLUMN_ID) {
                 continue;
             }
-            array_push($sets, $key . '=' . $this->quoteValue($theRow[$key]));
+            $sets[] = $key . '=' . $this->quoteValue($theRow[$key]);
         }
         $sql = 'UPDATE `' . $this->tableName . '` SET '
                 . implode(',', $sets) . ' WHERE `' . self::COLUMN_ID . '`=' . $theRow[self::COLUMN_ID];
@@ -304,7 +327,7 @@ class MySqlDataTable extends GenericDataTable
 
     }
     
-    public function getIdForKeyValue(string $key, $value) : int
+    public function getIdForKeyValue(string $key, mixed $value) : int
     {
         $rows = $this->findRows([$key => $value], 1);
         if ($rows === []) {
@@ -363,7 +386,7 @@ class MySqlDataTable extends GenericDataTable
     public function getUniqueIds(): array
     {
         $tableName = $this->tableName;
-        $result = $this->doQuery("SELECT DISTINCT(id) FROM `$tableName` ORDER BY `$tableName`.`id` ASC", "getUniqueIds");
+        $result = $this->doQuery("SELECT DISTINCT(id) FROM `$tableName` ORDER BY `$tableName`.`id`", "getUniqueIds");
         $ids = array_map( function ($row) : int { return intval($row['id']);}, $result->fetchAll());
         sort($ids, SORT_NUMERIC);
         return $ids;
@@ -434,32 +457,16 @@ class MySqlDataTable extends GenericDataTable
      */
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
-        $this->resetError();
-
-        $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
-        if ($searchSpecCheck !== []) {
-            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
-
-        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
-            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
-        }
+       $this->checkSpec($searchSpecArray, $searchType);
 
         $conditions = [];
         foreach ($searchSpecArray as $spec) {
             $conditions[] = $this->getSqlConditionFromSpec($spec);
         }
 
-        switch($searchType) {
-            case self::SEARCH_AND:
-                $sqlLogicalOperator  = 'AND';
-                break;
-
-            case self::SEARCH_OR:
-                $sqlLogicalOperator = 'OR';
-                break;
+        $sqlLogicalOperator  = 'AND';
+        if ($searchType == self::SEARCH_OR) {
+            $sqlLogicalOperator = 'OR';
         }
 
         $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '

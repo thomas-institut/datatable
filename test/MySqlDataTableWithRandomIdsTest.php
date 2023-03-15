@@ -37,8 +37,8 @@ require_once 'MySqlDataTableTest.php';
 class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
 {
     
-    public $minId = 100000;
-    public $maxId = 200000;
+    public int $minId = 100000;
+    public int $maxId = 200000;
     
     public function createEmptyDt() : GenericDataTable
     {
@@ -93,7 +93,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         $pdo = $this->getPdo();
         $dt2 = new MySqlDataTableWithRandomIds(
             $pdo,
-            'testtable',
+            self::TABLE_NAME,
             1,
             $this->numRows
         );

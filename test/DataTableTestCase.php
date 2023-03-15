@@ -42,7 +42,7 @@ require '../vendor/autoload.php';
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-abstract class DataTableTest extends TestCase
+abstract class DataTableTestCase extends TestCase
 {
     
     public $numRows = 100;
@@ -378,7 +378,6 @@ abstract class DataTableTest extends TestCase
     {
         $dataTable = $this->createEmptyDt();
 
-        
         $res = $dataTable->createRow(['id' => 1, 'value' => 'test']);
         $this->assertEquals(1, $res);
 
@@ -387,7 +386,7 @@ abstract class DataTableTest extends TestCase
         try{
             $dataTable->createRow(['id' => 1, 'value' => 'anothervalue']);
         }
-        catch (InvalidArgumentException $e) {
+        catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -396,11 +395,11 @@ abstract class DataTableTest extends TestCase
         $row = $dataTable->getRow(1);
         $this->assertEquals('test', $row['value']);
 
-        // invalid Id: a new one must be generated
+        // invalid ID: a new one must be generated
         $newId = $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
         $this->assertNotEquals(1, $newId);
 
-        // no Id: a new one must be generated
+        // no ID: a new one must be generated
         $newId2 = $dataTable->createRow(['value' => 'test2']);
         $this->assertNotEquals(1, $newId2);
         $this->assertNotEquals($newId, $newId2);

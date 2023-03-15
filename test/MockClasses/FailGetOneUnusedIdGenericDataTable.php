@@ -120,7 +120,7 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
      * @param mixed $value
      * @return int
      */
-    public function getIdForKeyValue(string $key, $value): int
+    public function getIdForKeyValue(string $key, mixed $value): int
     {
         return 0;
     }

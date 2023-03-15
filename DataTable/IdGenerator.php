@@ -28,14 +28,14 @@ namespace ThomasInstitut\DataTable;
 /**
  * Interface IdGenerator
  *
- * Simple interface that provides a function to get one unused Id out of a DataTable
+ * Simple interface that provides a function to get one unused ID out of a DataTable
  *
  * @package DataTable
  */
 interface IdGenerator
 {
     /**
-     * Generates an unused Id for the given DataTable
+     * Generates an unused ID for the given DataTable
      * @param GenericDataTable $dataTable
      * @return int
      */

@@ -23,15 +23,15 @@ require_once 'MySqlDataTableTest.php';
  */
 class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
 {
-    const INTCOLUMN = 'somekey';
-    const STRINGCOLUMN = 'someotherkey';
-    const OTHERSTRINGCOLUMN = 'value';
+    const INT_COLUMN = 'somekey';
+    const STRING_COLUMN = 'someotherkey';
+    const OTHER_STRING_COLUMN = 'value';
 
-    public function resetTestDb(PDO $pdo)
+    public function resetTestDb(PDO $pdo, bool $autoInc = false)
     {
-        $intCol = self::INTCOLUMN;
-        $stringCol = self::STRINGCOLUMN;
-        $otherStringCol = self::OTHERSTRINGCOLUMN;
+        $intCol = self::INT_COLUMN;
+        $stringCol = self::STRING_COLUMN;
+        $otherStringCol = self::OTHER_STRING_COLUMN;
         $tableName = self::TABLE_NAME;
         $idCol = GenericDataTable::COLUMN_ID;
         $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
@@ -55,8 +55,8 @@ EOD;
     public function resetTestDbWithBadTables(PDO $pdo)
     {
 
-        $intCol = self::INTCOLUMN;
-        $stringCol = self::STRINGCOLUMN;
+        $intCol = self::INT_COLUMN;
+        $stringCol = self::STRING_COLUMN;
         $idCol = GenericDataTable::COLUMN_ID;
         $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
         $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
@@ -220,7 +220,7 @@ EOD;
         $ids = [];
         for ($i = 0; $i < $nEntries; $i++) {
             $rowId = $dataTable->createRowWithTime(
-                [self::INTCOLUMN => $someInt],
+                [self::INT_COLUMN => $someInt],
                 $timeZero
             );
             $ids[] = $rowId;
@@ -228,7 +228,7 @@ EOD;
             foreach ($times as $t) {
                 $t = TimeString::fromVariable($t);
                 $r2 = $dataTable->realUpdateRowWithTime([GenericDataTable::COLUMN_ID => $rowId,
-                    self::STRINGCOLUMN => 'Value' .
+                    self::STRING_COLUMN => 'Value' .
                     $timesCount++], $t);
                 $this->assertNotFalse($r2);
             }
@@ -239,37 +239,37 @@ EOD;
         foreach ($ids as $rowId) {
             $row = $dataTable->getRow($rowId);
             $this->assertNotFalse($row);
-            $this->assertEquals($someInt, $row[self::INTCOLUMN]);
-            $this->assertEquals('Value' . $nTimes, $row[self::STRINGCOLUMN]);
+            $this->assertEquals($someInt, $row[self::INT_COLUMN]);
+            $this->assertEquals('Value' . $nTimes, $row[self::STRING_COLUMN]);
         }
         
         // Only the last versions should show up in these searches
         for($i = 1; $i < $nTimes; $i++) {
-            $foundsRows = $dataTable->findRows([self::STRINGCOLUMN => 'Value' . $i]);
+            $foundsRows = $dataTable->findRows([self::STRING_COLUMN => 'Value' . $i]);
             $this->assertEquals([], $foundsRows);
         }
 
-        $foundsRows = $dataTable->findRows([self::STRINGCOLUMN => 'Value' . $nTimes]);
+        $foundsRows = $dataTable->findRows([self::STRING_COLUMN => 'Value' . $nTimes]);
         $this->assertCount($nEntries, $foundsRows);
         
         // Time info should be irrelevant for the search:
         $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
-            self::STRINGCOLUMN => 'Value3']);
+            self::STRING_COLUMN => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
         $foundsRows3 = $dataTable->findRows(['valid_until'=> $timeZero,
-            self::STRINGCOLUMN => 'Value3']);
+            self::STRING_COLUMN => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
         $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
             'valid_until' => $timeZero,
-            self::STRINGCOLUMN => 'Value3']);
+            self::STRING_COLUMN => 'Value3']);
         $this->assertCount($nEntries, $foundsRows3);
         
                 
         // Search the keys in the times they are valid
         $foundRows4 = $dataTable->findRowsWithTime(
-            [self::STRINGCOLUMN => 'Value3'],
+            [self::STRING_COLUMN => 'Value3'],
             false,
             '2016-01-01 12:00:00'
         );
@@ -277,7 +277,7 @@ EOD;
         
         // timestamps should be fine as well
         $foundRows4 = $dataTable->findRowsWithTime(
-            [self::STRINGCOLUMN => 'Value3'],
+            [self::STRING_COLUMN => 'Value3'],
             false,
             // a day ago
             TimeString::fromVariable(time()-86400)
@@ -285,14 +285,14 @@ EOD;
         $this->assertCount(10, $foundRows4);
         
         $foundRows5 = $dataTable->findRowsWithTime(
-            [self::STRINGCOLUMN => 'Value2'],
+            [self::STRING_COLUMN => 'Value2'],
             false,
             '2015-01-01 12:00:00'
         );
         $this->assertCount(10, $foundRows5);
         
         $foundRows6 = $dataTable->findRowsWithTime(
-            [self::STRINGCOLUMN => 'Value1'],
+            [self::STRING_COLUMN => 'Value1'],
             false,
             '2014-01-01 12:00:00'
         );
@@ -300,45 +300,45 @@ EOD;
         
         // Search the common key, only the latest version should
         // be returned
-        $foundRows7 = $dataTable->findRows([self::INTCOLUMN => $someInt]);
+        $foundRows7 = $dataTable->findRows([self::INT_COLUMN => $someInt]);
         $this->assertCount(10, $foundRows7);
         foreach ($foundRows7 as $row) {
-            $this->assertEquals('Value3', $row[self::STRINGCOLUMN]);
+            $this->assertEquals('Value3', $row[self::STRING_COLUMN]);
         }
         
         // Search the common key at other times
         $foundRows8 = $dataTable->findRowsWithTime(
-            [self::INTCOLUMN => $someInt],
+            [self::INT_COLUMN => $someInt],
             false,
             '2015-01-01 12:00:00'
         );
         $this->assertCount(10, $foundRows8);
         foreach ($foundRows8 as $row) {
-            $this->assertEquals('Value2', $row[self::STRINGCOLUMN]);
+            $this->assertEquals('Value2', $row[self::STRING_COLUMN]);
         }
         
         $foundRows9 = $dataTable->findRowsWithTime(
-            [self::INTCOLUMN => $someInt],
+            [self::INT_COLUMN => $someInt],
             false,
             '2014-01-01 12:00:00'
         );
         $this->assertCount(10, $foundRows9);
         foreach ($foundRows9 as $row) {
-            $this->assertEquals('Value1', $row[self::STRINGCOLUMN]);
+            $this->assertEquals('Value1', $row[self::STRING_COLUMN]);
         }
         
         $foundRows10 = $dataTable->findRowsWithTime(
-            [self::INTCOLUMN => $someInt],
+            [self::INT_COLUMN => $someInt],
             false,
             '2013-01-01'
         );
         $this->assertCount(10, $foundRows10);
         foreach ($foundRows10 as $row) {
-            $this->assertTrue(is_null($row[self::STRINGCOLUMN]));
+            $this->assertTrue(is_null($row[self::STRING_COLUMN]));
         }
         
         $foundRows11 = $dataTable->findRowsWithTime(
-            [self::INTCOLUMN => $someInt],
+            [self::INT_COLUMN => $someInt],
             false,
             '2000-01-01 12:00:00'
         );
@@ -355,7 +355,7 @@ EOD;
         $exceptionCaught = false;
         try{
             $dataTable->createRowWithTime(
-                [GenericDataTable::COLUMN_ID => 1, self::OTHERSTRINGCOLUMN => 'test'],
+                [GenericDataTable::COLUMN_ID => 1, self::OTHER_STRING_COLUMN => 'test'],
                 'badtime');
         } catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
@@ -364,34 +364,34 @@ EOD;
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
         $id1 = $dataTable->createRowWithTime(
-            [GenericDataTable::COLUMN_ID => 1, self::OTHERSTRINGCOLUMN => 'test'],
+            [GenericDataTable::COLUMN_ID => 1, self::OTHER_STRING_COLUMN => 'test'],
             $time
         );
         $this->assertEquals(1, $id1);
 
         // Id not integer : a new Id must be generated
 
-        $id2 = $dataTable->createRowWithTime([GenericDataTable::COLUMN_ID => 'notanumber',self::OTHERSTRINGCOLUMN => 'test2'],$time);
+        $id2 = $dataTable->createRowWithTime([GenericDataTable::COLUMN_ID => 'notanumber',self::OTHER_STRING_COLUMN => 'test2'],$time);
         $this->assertNotEquals($id1, $id2);
 
         // Trying to create an existing row
         $exceptionCaught = false;
         try {
             $dataTable->createRowWithTime([GenericDataTable::COLUMN_ID => 1,
-                self::OTHERSTRINGCOLUMN => 'anothervalue'], $time);
+                self::OTHER_STRING_COLUMN => 'anothervalue'], $time);
         } catch(InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
         $row = $dataTable->getRow($id1);
-        $this->assertEquals('test', $row[self::OTHERSTRINGCOLUMN]);
+        $this->assertEquals('test', $row[self::OTHER_STRING_COLUMN]);
     }
     
     public function testDeleteRowWithTime()
     {
         $dataTable = $this->createEmptyDt();
         
-        $newId = $dataTable->createRow([self::OTHERSTRINGCOLUMN => 'test']);
+        $newId = $dataTable->createRow([self::OTHER_STRING_COLUMN => 'test']);
         $this->assertNotFalse($newId);
 
         // Bad time
@@ -441,7 +441,7 @@ EOD;
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
-        $newId = $dataTable->createRowWithTime([self::INTCOLUMN => 1000], '2010-10-10 10:10:10');
+        $newId = $dataTable->createRowWithTime([self::INT_COLUMN => 1000], '2010-10-10 10:10:10');
 
         $this->assertNotEquals(0, $newId);
 
@@ -460,7 +460,7 @@ EOD;
         // update row
         $exceptionCaught = false;
         try {
-            $dataTable->realUpdateRowWithTime([ GenericDataTable::COLUMN_ID => $newId, self::INTCOLUMN => 1001], 'badtime');
+            $dataTable->realUpdateRowWithTime([ GenericDataTable::COLUMN_ID => $newId, self::INT_COLUMN => 1001], 'badtime');
         } catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
@@ -468,14 +468,14 @@ EOD;
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
         $theRow = $dataTable->getRow($newId);
-        $this->assertEquals(1000, $theRow[self::INTCOLUMN]);
+        $this->assertEquals(1000, $theRow[self::INT_COLUMN]);
 
 
         // find Rows
         $foundRows = [];
         $exceptionCaught = false;
         try {
-            $foundRows = $dataTable->findRowsWithTime([ self::INTCOLUMN => 1000], 0, 'badtime');
+            $foundRows = $dataTable->findRowsWithTime([ self::INT_COLUMN => 1000], 0, 'badtime');
         } catch (InvalidArgumentException $e) {
             $exceptionCaught = true;
         }
@@ -492,7 +492,7 @@ EOD;
          */
         $dataTable = $this->createEmptyDt();
 
-        $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => 1000], TimeString::now());
+        $rowId = $dataTable->createRowWithTime([self::INT_COLUMN => 1000], TimeString::now());
 
         $this->assertTrue($dataTable->rowExistsWithTime($rowId,TimeString::now()));
         $this->assertFalse($dataTable->rowExistsWithTime($rowId + 1,TimeString::now()));
@@ -520,18 +520,18 @@ EOD;
          */
         $dataTable = $this->createEmptyDt();
 
-        $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => 1000], TimeString::now());
+        $rowId = $dataTable->createRowWithTime([self::INT_COLUMN => 1000], TimeString::now());
 
         $theRow = $dataTable->getRow($rowId);
 
-        $theRow[self::INTCOLUMN] = 1001;
+        $theRow[self::INT_COLUMN] = 1001;
         $dataTable->updateRowWithTime($theRow, TimeString::now());
         $theRow2 = $dataTable->getRow($rowId);
-        $this->assertEquals($theRow[self::INTCOLUMN], $theRow2[self::INTCOLUMN]);
+        $this->assertEquals($theRow[self::INT_COLUMN], $theRow2[self::INT_COLUMN]);
 
         $exceptionCaught = false;
         try {
-            $dataTable->updateRowWithTime([self::INTCOLUMN => 1002], TimeString::now());
+            $dataTable->updateRowWithTime([self::INT_COLUMN => 1002], TimeString::now());
         } catch (InvalidArgumentException $e){
             $exceptionCaught = true;
         }
@@ -555,10 +555,10 @@ EOD;
             '2016-01-01'];
 
         $initialIntValue = 1000;
-        $rowId = $dataTable->createRowWithTime([ self::INTCOLUMN => 1000], TimeString::fromString($times[0]));
+        $rowId = $dataTable->createRowWithTime([ self::INT_COLUMN => 1000], TimeString::fromString($times[0]));
         for($i = 1; $i < count($times); $i++){
             $dataTable->updateRowWithTime(
-                [ GenericDataTable::COLUMN_ID => $rowId, self::INTCOLUMN => $initialIntValue+$i ],
+                [ GenericDataTable::COLUMN_ID => $rowId, self::INT_COLUMN => $initialIntValue+$i ],
                 TimeString::fromString($times[$i]));
         }
 
@@ -566,7 +566,7 @@ EOD;
         $this->assertCount(4, $rowHistory);
         for($i=0; $i<count($rowHistory); $i++) {
             $this->assertEquals($rowId, $rowHistory[$i][GenericDataTable::COLUMN_ID]);
-            $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INTCOLUMN]);
+            $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INT_COLUMN]);
             $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][MySqlUnitemporalDataTable::FIELD_VALID_FROM]);
         }
         $this->assertEquals(TimeString::END_OF_TIMES,$rowHistory[count($rowHistory)-1][MySqlUnitemporalDataTable::FIELD_VALID_UNTIL]);
@@ -596,14 +596,14 @@ EOD;
             //print("Creating/updating row with time $time\n");
             if ($i === $initialYear) {
                 try {
-                    $rowId = $dataTable->createRowWithTime([self::INTCOLUMN => $i], TimeString::fromString($time));
+                    $rowId = $dataTable->createRowWithTime([self::INT_COLUMN => $i], TimeString::fromString($time));
                 } catch (\Exception $e) {
                     print ("Exception: " . $e->getMessage());
                 }
                 //print ("Row ID is $rowId\n");
             } else {
                 $dataTable->updateRowWithTime(
-                    [GenericDataTable::COLUMN_ID => $rowId, self::INTCOLUMN => $i],
+                    [GenericDataTable::COLUMN_ID => $rowId, self::INT_COLUMN => $i],
                     TimeString::fromString($time));
             }
         }

@@ -28,8 +28,8 @@ namespace ThomasInstitut\DataTable;
 
 use Exception;
 use InvalidArgumentException;
-use \PDO;
-use \PDOException;
+use PDO;
+use PDOException;
 use RuntimeException;
 use ThomasInstitut\TimeString\TimeString;
 
@@ -128,6 +128,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      *         'description'  => string
      *
      *   ]
+     * @param array $ids
      * @return array
      */
     public function checkConsistency(array $ids = []) : array {
@@ -635,7 +636,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     public function getRowHistory(int $rowId): array
     {
         $sql = 'SELECT * FROM ' . $this->tableName .
-            ' WHERE `'. self::COLUMN_ID. '`=' . $rowId . ' ORDER BY `'. self::FIELD_VALID_FROM . '` ASC' ;
+            ' WHERE `'. self::COLUMN_ID. '`=' . $rowId . ' ORDER BY `'. self::FIELD_VALID_FROM . '`' ;
 
         $r = $this->doQuery($sql, 'getRowHistory');
         if ($r->rowCount() === 0) {
