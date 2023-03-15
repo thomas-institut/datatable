@@ -117,7 +117,7 @@ If a row matches the value for every key in `$rowToMatch`, it is returned as
 part of the result set. This is equivalent to do an AND search with EQUAL_TO conditions
 for every key in `$rowToMatch`  
 
-#### Update Rows
+#### Update Row
 ```
 $result = $dt->updateRow($row);
 ```
@@ -141,12 +141,21 @@ a database.
 A `DataTable` implementation using a MySQL table. 
 
 ```
-$dt = new MySqlDataTable($pdoDatabaseConnection, $mySqlTableName);
+$dt = new MySqlDataTable($pdoDatabaseConnection, $mySqlTableName, $useAutoInc);
 ```
 
-`MySqlDataTable` assumes that there is a table setup with at least 
-an integer id column without autoincrement. `MySqlDataTable` itself takes
-care of generating new incremental ids. 
+`MySqlDataTable` assumes that there is a table setup with at least
+an integer `id` column. 
+
+If `$useAutoInc` is true, `MySqlDataTable` assumes that the `id` column has 
+the `AUTO_INCREMENT` attribute and will create rows so that MySQL will take care 
+of generating IDs. Otherwise, `MySqlDataTable` itself takes care of generating 
+incremental IDs. 
+
+For compatibility with previous versions of this library, `$useAutoInc` defaults to false.
+However, it is recommended that you use MySQL auto-increment functionality. In a
+scenario where there are multiple calls to `createRow` concurrently, `DataTable`'s 
+internal ID generator may generate non-unique IDs.  
 
 The table in MySQL can have any number of extra columns of any type. As long
 as calls to `createRow` and `updateRow` agree with columns names and types, everything
@@ -162,7 +171,7 @@ The same as `MySqlDatable` but using the randomId generator.
 
 A MySQL table with time-tagged rows. Every row not only has a unique id, but
 also a valid_from and a valid_until time. When using the normal `DataTable` methods
-`MySQLUnitemporalDataTable` behaves exactly the same as MySqlDataTable but
+`MySQLUnitemporalDataTable` behaves exactly the same as MySqlDataTable, but
 it does not delete any rows, it just makes them invalid.
 
 There is a set of time methods to create, read, update and delete
@@ -184,6 +193,3 @@ The underlying MySQL table must have two datetime fields: `valid_from` and
 
 The user is responsible for setting the PDO connection with the timezone
 that is going to be used in all queries using time parameters. 
-
-
-
