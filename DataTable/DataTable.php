@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017-20 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,21 @@ namespace ThomasInstitut\DataTable;
 use InvalidArgumentException;
 use RuntimeException;
 
+/**
+ * An interface to a table made out of rows addressable by a unique integer id that behaves mostly like a SQL table.
+ *
+ * It captures common functionality for this kind of table but does not attempt to impose a particular implementation.
+ * The idea is that one descendant of this class will implement the table as an SQL table, but an implementation
+ * with arrays or with something just as simple can be provided for testing.
+ *
+ * Each row must have a unique id integer column or key, which by default has the name 'id'. This name can be
+ * changed with setIdColumnName.
+ *
+ * The assignment of IDs is by default left to the class, not to the underlying database, but implementations can
+ * change this behaviour.
+ *
+ * @author Rafael Nájera <rafael.najera@uni-koeln.de>
+ */
 interface DataTable
 {
 
@@ -45,12 +60,11 @@ interface DataTable
     /**
      * Creates a new row in the table.
      *
-     * If the given row array does not have a value for 'id' or if the value
-     * is equal to 0 a new id will be assigned.
+     * If the given row array does not have a value for its id or if the row's id is equal to 0 a new id will be
+     * assigned.
      *
-     * Otherwise, if the given ID is not an int or if the id
-     * already exists in the table the function will throw
-     * an exception
+     * Otherwise, if the given ID is not an int or if the id already exists in the table the function will throw
+     * an exception.
      *
      * @param array $theRow
      * @return int the id of the newly created row
@@ -61,6 +75,7 @@ interface DataTable
 
     /**
      * Gets the row with the given row ID.
+     *
      * If the row does not exist throws an InvalidArgument exception
      *
      * @param int $rowId
@@ -70,7 +85,7 @@ interface DataTable
     public function getRow(int $rowId) : array;
 
     /**
-     * Gets all rows in the table
+     * Returns all rows in the table
      *
      * @return array
      */
@@ -142,10 +157,10 @@ interface DataTable
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
 
     /**
-     * Updates the table with the given row, which must contain an 'id'
-     * field specifying the row to update.
+     * Updates the table with the given row, which must contain an id
+     * field matching the current idColumnName specifying the row to update.
      *
-     * If the given row does not contain a valid 'id' field, or if the ID
+     * If the given row does not contain a valid id field, or if the id
      * is valid but there is no row with that id the table, an InvalidArgument exception
      * will be thrown.
      *
@@ -189,16 +204,53 @@ interface DataTable
 
 
     /**
-     * @return int the max id in the table
+     * Returns the max id in the table
+     *
+     * @return int
      */
     public function getMaxId() : int;
 
 
     /**
-     * Returns an array with all the unique row ids in the table
-     * in ascending order
-     * @return array
+     * Returns an array with all the unique row ids in the table in ascending order
+     *
+     * @return int[]
      */
     public function getUniqueIds() : array;
+
+
+    /**
+     * Returns the table's name, which may be an empty string if the name is not set.
+     *
+     * @return string
+     */
+    public function getName() : string;
+
+    /**
+     * Sets the table's name
+     *
+     * @param string $name
+     * @return void
+     */
+    public function setName(string $name) : void;
+
+
+    /**
+     * Sets the name of the id column in the table to reflect the actual name used in the underlying database table.
+     * Normally, this will be called right after constructing the DataTable object.
+     *
+     * This method does not change anything in the underlying database.
+     *
+     * @param string $columnName
+     * @return void
+     */
+    public function setIdColumnName(string $columnName) : void;
+
+
+    /**
+     * Returns the current id column name used in the DataTable object.
+     * @return string
+     */
+    public function getIdColumnName() : string;
 
 }

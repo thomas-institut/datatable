@@ -51,9 +51,9 @@ class InMemoryDataTable extends GenericDataTable
     
     public function realCreateRow(array $theRow) : int
     {
-        $this->theData[$theRow['id']] = [];
-        $this->theData[$theRow['id']] = $theRow;
-        return $theRow['id'];
+        $this->theData[$theRow[$this->idColumnName]] = [];
+        $this->theData[$theRow[$this->idColumnName]] = $theRow;
+        return $theRow[$this->idColumnName];
     }
     
     public function deleteRow(int $rowId) : int
@@ -67,12 +67,12 @@ class InMemoryDataTable extends GenericDataTable
     
     public function realUpdateRow(array $theRow) : void
     {
-        if (!$this->rowExists($theRow['id'])) {
-            $this->setError('Id ' . $theRow['id'] . ' does not exist, cannot update', self::ERROR_ROW_DOES_NOT_EXIST);
+        if (!$this->rowExists($theRow[$this->idColumnName])) {
+            $this->setError('Id ' . $theRow[$this->idColumnName] . ' does not exist, cannot update', self::ERROR_ROW_DOES_NOT_EXIST);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
-        $rowId = $theRow['id'];
+        $rowId = $theRow[$this->idColumnName];
         
         foreach ($keys as $k) {
             $this->theData[$rowId][$k] = $theRow[$k];
@@ -91,7 +91,7 @@ class InMemoryDataTable extends GenericDataTable
 
     public function getMaxId() : int
     {
-        return $this->getMaxValueInColumn('id');
+        return $this->getMaxValueInColumn($this->idColumnName);
     }
     
     public function getRow(int $rowId) : array
@@ -109,7 +109,7 @@ class InMemoryDataTable extends GenericDataTable
     {
         $id = array_search(
             $value,
-            array_column($this->theData, $key, 'id'),
+            array_column($this->theData, $key, $this->idColumnName),
             true
         );
         if ($id === false) {
@@ -119,40 +119,6 @@ class InMemoryDataTable extends GenericDataTable
         return $id;
     }
     
-    /**
-     * Searches the datatable according to the given $searchSpec
-     *
-     * $searchSpec is an array of conditions.
-     *
-     * If $searchType is SEARCH_AND, the row must satisfy:
-     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
-     *
-     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
-     *
-     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
-     *
-     *
-     * A condition is an array of the form:
-     *
-     *  $condition = [
-     *      'column' => 'columnName',
-     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
-     *      'value' => someValue
-     * ]
-     *
-     * Notice that each condition type has a negation:
-     *      EQUAL_TO  <==> NOT_EQUAL_TO
-     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
-     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
-     *
-     * if $maxResults > 0, an array of max $maxResults will be returned
-     * if $maxResults <= 0, all results will be returned
-     *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return array
-     */
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
 

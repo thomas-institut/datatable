@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017-20 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,28 +32,13 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use RuntimeException;
 
-/**
- * An interface to a table made out of rows addressable by a unique integer id that
- * behaves mostly like a SQL table.
- *
- * It captures common functionality for this kind of table but does
- * not attempt to impose a particular implementation.
- * The idea is that one descendant of this class will implement the
- * table as an SQL table, but an implementation with arrays or
- * with something just as simple can be provided for testing.
- *
- * By default, each row must have a unique int key: 'id'
- * The assignment of IDs is left to the class, not to the underlying
- * database.
- *
- * @author Rafael Nájera <rafael@najera.ca>
- */
+
 abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, DataTable
 {
 
     const NULL_ROW_ID = -1;
 
-    const COLUMN_ID = 'id';
+    const DEFAULT_ID_COLUMN_NAME = 'id';
 
 
     /**
@@ -96,6 +81,14 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     const ERROR_SPEC_INVALID_CONDITION = 114;
 
 
+    /**
+     *
+     * @var string
+     */
+    protected string $tableName;
+
+    protected string $idColumnName;
+
     /** *********************************************************************
      * PUBLIC METHODS
      ************************************************************************/
@@ -103,10 +96,33 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     /**
      * Constructor
      */
-    public function __construct() {
-        $this->setIdGenerator(new SequentialIdGenerator());
+    public function __construct(IdGenerator $idGenerator = null) {
+        if ($idGenerator === null) {
+            $this->setIdGenerator(new SequentialIdGenerator());
+        } else {
+            $this->setIdGenerator($idGenerator);
+        }
         $this->resetError();
         $this->setLogger(new NullLogger());
+        $this->idColumnName = self::DEFAULT_ID_COLUMN_NAME;
+    }
+
+    public function setIdColumnName(string $columnName) : void {
+        $this->idColumnName = $columnName;
+    }
+
+    public function getIdColumnName() : string {
+        return $this->idColumnName;
+    }
+
+    public function getName(): string
+    {
+        return $this->tableName;
+    }
+
+    public function setName(string $name) : void
+    {
+        $this->tableName = $name;
     }
 
     public function setIdGenerator(IdGenerator $ig) : void {
@@ -119,20 +135,10 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     }
 
 
-    /**
-     *  Error reporting methods
-     */
-
-    /**
-     * Returns a string describing the last error
-     *
-     * @return string
-     */
     public function getErrorMessage() : string
     {
         return $this->errorMessage;
     }
-
 
     /**
      * @return int
@@ -144,31 +150,14 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
 
     public function getUniqueIds(): array
     {
-        $ids = array_unique(array_map(function ($row) :int { return $row['id'];}, $this->getAllRows()), SORT_NUMERIC);
+        $ids = array_unique(array_map(function ($row) :int { return $row[$this->idColumnName];}, $this->getAllRows()), SORT_NUMERIC);
         sort($ids, SORT_NUMERIC);
         return $ids;
     }
 
-    /**
-     * @param int $rowId
-     * @return bool true if the row with the given ID exists
-     */
     abstract public function rowExists(int $rowId) : bool;
 
-    /**
-     * Attempts to create a new row.
-     *
-     * If the given row does not have a value for 'id' or if the value
-     * is equal to 0 a new id will be assigned.
-     *
-     * Otherwise, if the given ID is not an int or if the id
-     * already exists in the table the function will throw
-     * an exception
-     *
-     * @param array $theRow
-     * @return int the ID of the newly created row
-     * @throws RuntimeException
-     */
+
     public function createRow(array $theRow) : int
     {
         $this->resetError();
@@ -176,49 +165,13 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $this->realCreateRow($preparedRow);
     }
 
-    /**
-     * Gets the row with the given row ID.
-     * If the row does not exist throws an InvalidArgument exception
-     *
-     * @param int $rowId
-     * @return array The row
-     * @throws InvalidArgumentException
-     */
+
     abstract public function getRow(int $rowId) : array;
 
-    /**
-     * Gets all rows in the table
-     *
-     * @return array
-     */
     abstract public function getAllRows() : array;
 
-
-    /**
-     * Deletes the row with the given ID.
-     *
-     * Returns the number of rows actually deleted without problems, which should be 1 if
-     * the row the given ID existed in the datable, or 0 if there was no such row in
-     * the first place.
-     *
-     * @param int $rowId
-     * @return int
-     */
     abstract public function deleteRow(int $rowId) : int;
 
-    /**
-     * Finds rows in the data table that match the values in $rowToMatch
-     *
-     * A row in the data table matches $rowToMatch if for every field
-     * in $rowToMatch the row has exactly that same value.
-     *
-     * if $maxResults > 0, an array of max $maxResults will be returned
-     * if $maxResults <= 0, all results will be returned
-     *
-     * @param array $rowToMatch
-     * @param int $maxResults
-     * @return array
-     */
     public function findRows(array $rowToMatch, int $maxResults = 0) : array {
         $searchSpec = [];
 
@@ -233,63 +186,9 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
     }
 
-
-    /**
-     * Searches the datatable according to the given $searchSpec
-     *
-     * $searchSpec is an array of conditions.
-     *
-     * If $searchType is SEARCH_AND, the row must satisfy:
-     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
-     *
-     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
-     *
-     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
-     *
-     *
-     * A condition is an array of the form:
-     *
-     *  $condition = [
-     *      'column' => 'columnName',
-     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
-     *      'value' => someValue
-     * ]
-     *
-     * Notice that each condition type has a negation:
-     *      EQUAL_TO  <==> NOT_EQUAL_TO
-     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
-     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
-     *
-     * if $maxResults > 0, an array of max $maxResults will be returned
-     * if $maxResults <= 0, all results will be returned
-     *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return array
-     */
     abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
 
-    /**
-     * Updates the table with the given row, which must contain an 'id'
-     * field specifying the row to update.
-     *
-     * If the given row does not contain a valid 'id' field, or if the ID
-     * is valid but there is no row with that id the table, an InvalidArgument exception
-     * will be thrown.
-     *
-     * Only the keys given in $theRow are updated. The user must make sure
-     * that not updating the non-given keys does not cause any problem
-     *  (e.g., if in an SQL implementation the underlying SQL table does not
-     *  have default values for the non-given keys)
-     *
-     * If the row was not successfully updated, throws a Runtime exception
-     *
-     * @param array $theRow
-     * @return void
-     * @throws InvalidArgumentException
-     * @throws RuntimeException
-     */
+
     public function updateRow(array $theRow) : void
     {
         $this->resetError();
@@ -300,28 +199,9 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
     }
     
 
-
-    /**
-     * Returns the id of one row in which $row[$key] === $value
-     * or false if such a row cannot be found or an error occurred whilst
-     * trying to find it.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return int
-     */
     abstract public function getIdForKeyValue(string $key, mixed $value) : int;
 
-    /**
-     * Returns the max value in the given column.
-     *
-     * The actual column must exist and be numeric for the actual value returned
-     * to be meaningful. Implementations may choose to throw a RunTime exception
-     * in this case.
-     *
-     * @param string $columnName
-     * @return int
-     */
+
     abstract public function getMaxValueInColumn(string $columnName) : int;
 
 
@@ -378,11 +258,11 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      */
     protected function getRowWithGoodIdForCreation(array $theRow) : array
     {
-        if (!isset($theRow[self::COLUMN_ID]) || !is_int($theRow[self::COLUMN_ID]) || $theRow[self::COLUMN_ID]===0) {
-            $theRow[self::COLUMN_ID] = $this->getOneUnusedId();
+        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName]===0) {
+            $theRow[$this->idColumnName] = $this->getOneUnusedId();
         } else {
-            if ($this->rowExists($theRow[self::COLUMN_ID])) {
-                $this->setError('The row with given id ('. $theRow[self::COLUMN_ID] . ') already exists, cannot create',
+            if ($this->rowExists($theRow[$this->idColumnName])) {
+                $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
                 throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
@@ -507,11 +387,13 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         $this->setErrorMessage('');
     }
 
-    protected function log(string $logLevel, string $msg, int $code, array $otherContext) {
+    protected function log(string $logLevel, string $msg, int $code, array $otherContext): void
+    {
         $this->logger->log($logLevel, $msg, array_merge([ 'code' => $code], $otherContext));
     }
 
-    protected function logWarning(string $msg, int $code, array $otherContext = []) {
+    protected function logWarning(string $msg, int $code, array $otherContext = []): void
+    {
         $this->log(LogLevel::WARNING, $msg, $code, $otherContext);
     }
 
@@ -568,16 +450,16 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      * @return bool
      */
     protected function isRowIdGoodForRowUpdate($theRow, string $context) : bool {
-        if (!isset($theRow[self::COLUMN_ID]))  {
+        if (!isset($theRow[$this->idColumnName]))  {
             $this->setError('Id not set in given row' . " ($context)", self::ERROR_ID_NOT_SET);
             return false;
         }
 
-        if ($theRow[self::COLUMN_ID] <=0) {
+        if ($theRow[$this->idColumnName] <=0) {
             $this->setError('Id is equal to zero in given row' . " ($context)", self::ERROR_ID_IS_ZERO);
             return false;
         }
-        if (!is_int($theRow[self::COLUMN_ID])) {
+        if (!is_int($theRow[$this->idColumnName])) {
             $this->setError('Id in given row is not an integer' . " ($context)", self::ERROR_ID_NOT_INTEGER);
             return false;
         }

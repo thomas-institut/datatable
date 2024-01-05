@@ -45,8 +45,8 @@ require '../vendor/autoload.php';
 abstract class DataTableTestCase extends TestCase
 {
     
-    public $numRows = 100;
-    public $numIterations = 50;
+    public int $numRows = 100;
+    public int $numIterations = 50;
     
     abstract public function createEmptyDt() : GenericDataTable;
     
@@ -63,6 +63,7 @@ abstract class DataTableTestCase extends TestCase
     {
         
         $dataTable = $this->createEmptyDt();
+        $idColumn = $dataTable->getIdColumnName();
         
         $this->assertSame(false, $dataTable->rowExists(1));
         
@@ -84,12 +85,12 @@ abstract class DataTableTestCase extends TestCase
         for ($i = 0; $i < $this->numIterations; $i++) {
             $theId = $ids[rand(0, $this->numRows-1)];
             $testMsg = "Random deletions and additions,  iteration $i, "
-                    . "id=$theId";
+                    . "$idColumn=$theId";
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
             $this->assertEquals(1, $dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExists($theId), $testMsg);
             $this->assertFalse(in_array($theId, $dataTable->getUniqueIds()), $testMsg);
-            $newId = $dataTable->createRow([ 'id' => $theId,
+            $newId = $dataTable->createRow([ $idColumn => $theId,
                 'somekey' => $theId, 'someotherkey' => "textvalue$theId" ]);
             $this->assertNotFalse($newId, $testMsg);
             $this->assertSame($theId, $newId, $testMsg);
@@ -100,6 +101,7 @@ abstract class DataTableTestCase extends TestCase
     public function testFindSingle()
     {
         $dataTable = $this->fillUpTestDataTable($this->createEmptyDt());
+        $idColumn = $dataTable->getIdColumnName();
 
         // Random searches
         $nSearches = $this->numIterations;
@@ -109,22 +111,21 @@ abstract class DataTableTestCase extends TestCase
             $testMsg = "Random searches,  iteration $i, int=$someInt";
             $theRows = $dataTable->findRows(['somekey' => $someInt], 1);
             $this->assertCount(1, $theRows, $testMsg);
-            $this->assertTrue(is_int($theRows[0]['id']), $testMsg);
+            $this->assertTrue(is_int($theRows[0][$idColumn]), $testMsg);
             $theRows2 = $dataTable->findRows(['someotherkey' => $someTextvalue], 1);
             $this->assertCount(1, $theRows2, $testMsg);
-            $this->assertEquals($theRows[0]['id'], $theRows2[0]['id'], $testMsg);
+            $this->assertEquals($theRows[0][$idColumn], $theRows2[0][$idColumn], $testMsg);
             $rowId = $dataTable->getIdForKeyValue(
                 'someotherkey',
                 $someTextvalue
             );
             $this->assertNotEquals(GenericDataTable::NULL_ROW_ID, $rowId, $testMsg);
-            $this->assertEquals($theRows[0]['id'], $rowId);
+            $this->assertEquals($theRows[0][$idColumn], $rowId);
             $theRows3 = $dataTable->findRows(['somekey' => $someInt,
                 'someotherkey' => $someTextvalue]);
             $this->assertCount(1, $theRows3, $testMsg);
-
-            $this->assertEquals($theRows[0]['id'], $theRows3[0]['id'], $testMsg);
-            $this->assertTrue(is_int($theRows3[0]['id']), $testMsg);
+            $this->assertTrue(is_int($theRows3[0][$idColumn]), $testMsg);
+            $this->assertEquals($theRows[0][$idColumn], $theRows3[0][$idColumn], $testMsg);
         }
     }
     
@@ -166,7 +167,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'No matches (equal)',
                 'expectedCount' => 0,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'x' . $stringValuePrefix]
                 ]
@@ -174,7 +175,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'No matches (greater than)',
                 'expectedCount' => 0,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' =>  $this->numRows+1]
                 ]
@@ -182,7 +183,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Not equal to (int)',
                 'expectedCount' => 99,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_NOT_EQUAL_TO, 'value' =>  1]
                 ]
@@ -190,7 +191,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Not equal to (string)',
                 'expectedCount' => 99,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_NOT_EQUAL_TO, 'value' =>  $this->getStringValue($stringValuePrefix, 1)]
                 ]
@@ -198,7 +199,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Greater than and less than (int)',
                 'expectedCount' => $this->numRows - 20,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => 10],
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->numRows-10],
@@ -207,7 +208,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Greater than and less than (string)',
                 'expectedCount' => $this->numRows - 20,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, 10) ],
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_LESS_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
@@ -216,7 +217,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Less than or greater than (int)',
                 'expectedCount' => 20,
-                'searchType' => GenericDataTable::SEARCH_OR,
+                'searchType' => DataTable::SEARCH_OR,
                 'specArray' => [
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_LESS_THAN, 'value' => 11 ],
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' =>  $this->numRows-10 ],
@@ -225,7 +226,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Less than or greater than (string)',
                 'expectedCount' => 20,
-                'searchType' => GenericDataTable::SEARCH_OR,
+                'searchType' => DataTable::SEARCH_OR,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_LESS_THAN, 'value' => $this->getStringValue($stringValuePrefix, 11) ],
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_THAN, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-10)],
@@ -234,7 +235,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Greater than or equal to (int)',
                 'expectedCount' => 10,
-                'searchType' => GenericDataTable::SEARCH_OR,
+                'searchType' => DataTable::SEARCH_OR,
                 'specArray' => [
                     [ 'column' => $intKeyName, 'condition' => GenericDataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->numRows-9],
                 ]
@@ -242,7 +243,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Greater than or equal to (string)',
                 'expectedCount' => 10,
-                'searchType' => GenericDataTable::SEARCH_OR,
+                'searchType' => DataTable::SEARCH_OR,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_GREATER_OR_EQUAL_TO, 'value' => $this->getStringValue($stringValuePrefix, $this->numRows-9)],
                 ]
@@ -263,13 +264,13 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Empty Spec Array',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => []
             ],
             [
                 'title' => 'No Column',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'anyValue']
                 ]
@@ -277,7 +278,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Wrong Column (int)',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => 32, 'condition' => GenericDataTable::COND_EQUAL_TO, 'value' => 'anyValue']
                 ]
@@ -293,7 +294,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Bad condition (wrong int)',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => GenericDataTable::COND_EQUAL_TO + 1000, 'value' => 'anyValue']
                 ]
@@ -301,7 +302,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'Bad condition (string)',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => '1', 'value' => 'anyValue']
                 ]
@@ -309,7 +310,7 @@ abstract class DataTableTestCase extends TestCase
             [
                 'title' => 'No value',
                 'expectedErrorCode' => GenericDataTable::ERROR_INVALID_SPEC_ARRAY,
-                'searchType' => GenericDataTable::SEARCH_AND,
+                'searchType' => DataTable::SEARCH_AND,
                 'specArray' => [
                     [ 'column' => $stringKeyName, 'condition' => '1']
                 ]
@@ -320,7 +321,7 @@ abstract class DataTableTestCase extends TestCase
             $exceptionCaught = false;
             try {
                 $dataTable->search($testCase['specArray'], $testCase['searchType']);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 $exceptionCaught = true;
             }
             $this->assertTrue($exceptionCaught, $testCase['title']);
@@ -332,6 +333,8 @@ abstract class DataTableTestCase extends TestCase
     public function testUpdate()
     {
         $dataTable = $this->fillUpTestDataTable($this->createEmptyDt());
+        $idColumn = $dataTable->getIdColumnName();
+
         $nUpdates = $this->numIterations;
         for ($i = 0; $i < $nUpdates; $i++) {
             $someInt = rand(1, $this->numRows);
@@ -340,8 +343,8 @@ abstract class DataTableTestCase extends TestCase
             $theRows = $dataTable->findRows(['somekey' => $someInt], 1);
             $this->assertCount(1, $theRows, $testMsg);
             $theRow = $theRows[0];
-            $theId = $theRow['id'];
-            $dataTable->updateRow(['id'=>$theId,  'someotherkey' => $newTextValue]);
+            $theId = $theRow[$idColumn];
+            $dataTable->updateRow([$idColumn=>$theId,  'someotherkey' => $newTextValue]);
             $theRow2 = $dataTable->getRow($theId);
             $this->assertEquals(
                 $newTextValue,
@@ -360,16 +363,16 @@ abstract class DataTableTestCase extends TestCase
         $exceptionCaught = false;
         try {
             $dataTable->getRow(1);
-        } catch(InvalidArgumentException $e) {
+        } catch(InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
 
-        $this->assertEquals([], $dataTable->findRows(['key' => 'somevalue'], 1));
+        $this->assertEquals([], $dataTable->findRows(['key' => 'someValue'], 1));
 
-        $this->assertEquals(GenericDataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'somevalue'));
+        $this->assertEquals(GenericDataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'someValue'));
         $this->assertEquals([], $dataTable->getAllRows());
         $this->assertEquals(0,$dataTable->deleteRow(1));
     }
@@ -377,14 +380,15 @@ abstract class DataTableTestCase extends TestCase
     public function testCreateRow()
     {
         $dataTable = $this->createEmptyDt();
+        $idColumn = $dataTable->getIdColumnName();
 
-        $res = $dataTable->createRow(['id' => 1, 'value' => 'test']);
+        $res = $dataTable->createRow([$idColumn => 1, 'value' => 'test']);
         $this->assertEquals(1, $res);
 
         // Trying to create an existing row
         $exceptionCaught = false;
         try{
-            $dataTable->createRow(['id' => 1, 'value' => 'anothervalue']);
+            $dataTable->createRow([$idColumn => 1, 'value' => 'anotherValue']);
         }
         catch (InvalidArgumentException) {
             $exceptionCaught = true;
@@ -396,7 +400,7 @@ abstract class DataTableTestCase extends TestCase
         $this->assertEquals('test', $row['value']);
 
         // invalid ID: a new one must be generated
-        $newId = $dataTable->createRow(['id' => 'notanumber', 'value' => 'test']);
+        $newId = $dataTable->createRow([$idColumn => 'notaNumber', 'value' => 'test']);
         $this->assertNotEquals(1, $newId);
 
         // no ID: a new one must be generated
@@ -409,8 +413,9 @@ abstract class DataTableTestCase extends TestCase
     public function testUpdateRow()
     {
         $dataTable = $this->createEmptyDt();
+        $idColumn = $dataTable->getIdColumnName();
         $theRow = [
-            'id' => 1,
+            $idColumn => 1,
             'value' => 'test',
             'somekey' => 0,
             'someotherkey' => 0
@@ -418,11 +423,11 @@ abstract class DataTableTestCase extends TestCase
         $res = $dataTable->createRow($theRow);
         $this->assertEquals(1, $res);
         
-        // No Id in row
+        // No id in row
         $exceptionCaught = false;
         try {
             $dataTable->updateRow([]);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -434,7 +439,7 @@ abstract class DataTableTestCase extends TestCase
         $exceptionCaught = false;
         try {
             $dataTable->updateRow(['value' => 'testUpdate']);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -445,11 +450,11 @@ abstract class DataTableTestCase extends TestCase
         $updatedRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $updatedRow);
         
-        // Id 0, which is invalid
+        // id 0, which is invalid
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow(['id'=> 0, 'value' => 'testUpdate']);
-        } catch (InvalidArgumentException $e) {
+            $dataTable->updateRow([$idColumn=> 0, 'value' => 'testUpdate']);
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -463,8 +468,8 @@ abstract class DataTableTestCase extends TestCase
         // Id not integer
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow(['id'=> '1', 'value' => 'testUpdate']);
-        } catch (InvalidArgumentException $e) {
+            $dataTable->updateRow([$idColumn=> '1', 'value' => 'testUpdate']);
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -478,8 +483,8 @@ abstract class DataTableTestCase extends TestCase
         // Row does not exist
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow(['id'=> 2, 'value' => 'testUpdate']);
-        } catch (InvalidArgumentException $e) {
+            $dataTable->updateRow([$idColumn=> 2, 'value' => 'testUpdate']);
+        } catch (InvalidArgumentException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -494,7 +499,8 @@ abstract class DataTableTestCase extends TestCase
     public function testRowExistsById()
     {
         $dataTable = $this->createEmptyDt();
-        $theRow = ['id' => 1, 'value' => 'test'];
+        $idColumn = $dataTable->getIdColumnName();
+        $theRow = [$idColumn => 1, 'value' => 'test'];
         
         $res = $dataTable->createRow($theRow);
         $this->assertEquals(1, $res);
@@ -507,13 +513,14 @@ abstract class DataTableTestCase extends TestCase
     public function testEscaping()
     {
         $dataTable = $this->createEmptyDt();
+        $idColumn = $dataTable->getIdColumnName();
 
         $rowId = $dataTable->createRow(['somekey' => 120]);
         $theRow = $dataTable->getRow($rowId);
-        $this->assertSame($rowId, $theRow['id']);
+        $this->assertSame($rowId, $theRow[$idColumn]);
         $this->assertEquals(120, $theRow['somekey']);
         $this->assertFalse(isset($theRow['someotherkey']));
-        $dataTable->updateRow(['id' => $rowId, 'somekey' => null,
+        $dataTable->updateRow([$idColumn => $rowId, 'somekey' => null,
             'someotherkey' => 'Some string']);
         $theRow2 = $dataTable->getRow($rowId);
         $this->assertTrue(is_null($theRow2['somekey']));

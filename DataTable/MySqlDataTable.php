@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 namespace ThomasInstitut\DataTable;
 
 use InvalidArgumentException;
@@ -46,20 +45,12 @@ class MySqlDataTable extends GenericDataTable
     const ERROR_REQUIRED_COLUMN_NOT_FOUND = 1020;
     const ERROR_WRONG_COLUMN_TYPE = 1030;
     const ERROR_TABLE_NOT_FOUND = 1040;
-//    const ERROR_INVALID_TABLE = 1050;
     const ERROR_PREPARING_STATEMENTS = 1070;
     const ERROR_EXECUTING_STATEMENT = 1080;
 
     const ERROR_INVALID_WHERE_CLAUSE = 1090;
 
-    /** @var PDO */
     protected PDO $dbConn;
-    
-    /**
-     *
-     * @var string
-     */
-    protected string $tableName;
 
     /**
      * @var PDOStatement[]
@@ -72,16 +63,17 @@ class MySqlDataTable extends GenericDataTable
      * @param PDO $dbConnection  initialized PDO connection
      * @param string $tableName  SQL table name
      */
-    public function __construct(PDO $dbConnection, string $tableName, bool $useMySqlAutoInc = false)
+    public function __construct(PDO $dbConnection, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
         
         parent::__construct();
         
         $this->tableName = $tableName;
+        $this->idColumnName = $idColumnName;
         $this->dbConn = $dbConnection;
         $this->mySqlAutoInc = $useMySqlAutoInc;
         
-        if (!$this->isMySqlTableColumnValid(self::COLUMN_ID, 'int')) {
+        if (!$this->isMySqlTableColumnValid($this->idColumnName, 'int')) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         
@@ -90,11 +82,11 @@ class MySqlDataTable extends GenericDataTable
         // Pre-prepare common statements
         try {
             $this->statements['rowExistsById'] =
-                $this->dbConn->prepare('SELECT `' . self::COLUMN_ID .  '` FROM `' . $this->tableName
-                        . '` WHERE '. self::COLUMN_ID .  '= :id');
+                $this->dbConn->prepare('SELECT `' . $this->idColumnName .  '` FROM `' . $this->tableName
+                        . '` WHERE '. $this->idColumnName .  '= :id');
             $this->statements['deleteRow'] =
                 $this->dbConn->prepare('DELETE FROM `' . $this->tableName
-                    . '` WHERE `'. self::COLUMN_ID .  '`= :id');
+                    . '` WHERE `'. $this->idColumnName .  '`= :id');
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
             $msg = "Could not prepare statements in constructor, " . $e->getMessage();
@@ -169,12 +161,12 @@ class MySqlDataTable extends GenericDataTable
             // use regular id creator
             return parent::createRow($theRow);
         }
-        if (!isset($theRow[self::COLUMN_ID]) || !is_int($theRow[self::COLUMN_ID])) {
-            $theRow[self::COLUMN_ID] = 0;
+        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName])) {
+            $theRow[$this->idColumnName] = 0;
         }
-        if ($theRow[self::COLUMN_ID] !== 0) {
-            if ($this->rowExists($theRow[self::COLUMN_ID])) {
-                $this->setError('The row with given id ('. $theRow[self::COLUMN_ID] . ') already exists, cannot create',
+        if ($theRow[$this->idColumnName] !== 0) {
+            if ($this->rowExists($theRow[$this->idColumnName])) {
+                $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
                 throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
             }
@@ -201,27 +193,27 @@ class MySqlDataTable extends GenericDataTable
     public function realCreateRow(array $theRow) : int
     {
         $this->doQuery($this->getMySqlInsertQuery($theRow), 'realCreateRow');
-        return (int) $theRow[self::COLUMN_ID];
+        return (int) $theRow[$this->idColumnName];
     }
     
     public function realUpdateRow(array $theRow) : void
     {
 
-        if (!$this->rowExists($theRow[self::COLUMN_ID])) {
-            $this->setError('Id ' . $theRow[self::COLUMN_ID] . ' does not exist, cannot update',
+        if (!$this->rowExists($theRow[$this->idColumnName])) {
+            $this->setError('Id ' . $theRow[$this->idColumnName] . ' does not exist, cannot update',
                 self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
         $sets = [];
         foreach ($keys as $key) {
-            if ($key === self::COLUMN_ID) {
+            if ($key === $this->idColumnName) {
                 continue;
             }
             $sets[] = $key . '=' . $this->quoteValue($theRow[$key]);
         }
         $sql = 'UPDATE `' . $this->tableName . '` SET '
-                . implode(',', $sets) . ' WHERE `' . self::COLUMN_ID . '`=' . $theRow[self::COLUMN_ID];
+                . implode(',', $sets) . ' WHERE `' . $this->idColumnName . '`=' . $theRow[$this->idColumnName];
         
         $this->doQuery($sql, 'realUpdateRow');
 
@@ -297,14 +289,14 @@ class MySqlDataTable extends GenericDataTable
     
     public function getRow(int $rowId) : array
     {
-        $r = $this->select('*', self::COLUMN_ID . '=' . $rowId, 1, '', 'getRow');
+        $r = $this->select('*', $this->idColumnName . '=' . $rowId, 1, '', 'getRow');
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
             $this->setError('The row with id ' . $rowId . ' does not exist',self::ERROR_ROW_DOES_NOT_EXIST );
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
-        $res[self::COLUMN_ID] = (int) $res[self::COLUMN_ID];
+        $res[$this->idColumnName] = (int) $res[$this->idColumnName];
         return $res;
     }
 
@@ -323,7 +315,7 @@ class MySqlDataTable extends GenericDataTable
 
     public function getMaxId() : int
     {
-        return $this->getMaxValueInColumn(self::COLUMN_ID);
+        return $this->getMaxValueInColumn($this->idColumnName);
 
     }
     
@@ -334,7 +326,7 @@ class MySqlDataTable extends GenericDataTable
             $this->setError('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
-        return intval($rows[0][self::COLUMN_ID]);
+        return intval($rows[0][$this->idColumnName]);
     }
 
     public function deleteRow(int $rowId) : int
@@ -354,8 +346,8 @@ class MySqlDataTable extends GenericDataTable
     {
         $rows = $theRows;
         for ($i = 0; $i < count($rows); $i++) {
-            if (!is_int($rows[$i][self::COLUMN_ID])) {
-                $rows[$i][self::COLUMN_ID] = (int) $rows[$i][self::COLUMN_ID];
+            if (!is_int($rows[$i][$this->idColumnName])) {
+                $rows[$i][$this->idColumnName] = (int) $rows[$i][$this->idColumnName];
             }
         }
         return $rows;
@@ -386,8 +378,9 @@ class MySqlDataTable extends GenericDataTable
     public function getUniqueIds(): array
     {
         $tableName = $this->tableName;
-        $result = $this->doQuery("SELECT DISTINCT(id) FROM `$tableName` ORDER BY `$tableName`.`id`", "getUniqueIds");
-        $ids = array_map( function ($row) : int { return intval($row['id']);}, $result->fetchAll());
+        $idColumn = $this->idColumnName;
+        $result = $this->doQuery("SELECT DISTINCT($idColumn) FROM `$tableName` ORDER BY `$tableName`.`$idColumn`", "getUniqueIds");
+        $ids = array_map( function ($row) use ($idColumn): int { return intval($row[$idColumn]);}, $result->fetchAll());
         sort($ids, SORT_NUMERIC);
         return $ids;
     }
@@ -421,40 +414,7 @@ class MySqlDataTable extends GenericDataTable
         }
     }
 
-    /**
-     * Searches the datatable according to the given $searchSpec
-     *
-     * $searchSpec is an array of conditions.
-     *
-     * If $searchType is SEARCH_AND, the row must satisfy:
-     *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
-     *
-     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
-     *
-     *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
-     *
-     *
-     * A condition is an array of the form:
-     *
-     *  $condition = [
-     *      'column' => 'columnName',
-     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
-     *      'value' => someValue
-     * ]
-     *
-     * Notice that each condition type has a negation:
-     *      EQUAL_TO  <==> NOT_EQUAL_TO
-     *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
-     *      LESS_OR_EQUAL_TO <==> GREATER_THAN
-     *
-     * if $maxResults > 0, an array of max $maxResults will be returned
-     * if $maxResults <= 0, all results will be returned
-     *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return array
-     */
+
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
     {
        $this->checkSpec($searchSpecArray, $searchType);

@@ -87,10 +87,10 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
      * @param PDO $dbConnection initialized PDO connection
      * @param string $tableName SQL table name
      */
-    public function __construct(PDO $dbConnection, string $tableName)
+    public function __construct(PDO $dbConnection, string $tableName, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
 
-        parent::__construct($dbConnection, $tableName);
+        parent::__construct($dbConnection, $tableName, false, $idColumnName);
 
         // Check additional columns
         if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_FROM, 'datetime')) {
@@ -106,8 +106,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         // Override rowExistsById statement
         try {
             $this->statements['rowExistsById'] =
-                $this->dbConn->prepare('SELECT id FROM ' . $this->tableName .
-                        ' WHERE id= :id AND `' . self::FIELD_VALID_UNTIL . '`=' .
+                $this->dbConn->prepare("SELECT `$this->idColumnName` FROM " . $this->tableName .
+                        " WHERE `$this->idColumnName`= :id AND `" . self::FIELD_VALID_UNTIL . '`=' .
                         $this->quoteValue(TimeString::END_OF_TIMES));
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
@@ -201,11 +201,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         }
 
         $tableName = $this->tableName;
+        $idColumn = $this->idColumnName;
 
-        $sql = 'SELECT DISTINCT(id) FROM ' . $this->tableName . $sqlTimeConstraint . " ORDER BY `$tableName`.`id`";
+        $sql = "SELECT DISTINCT($idColumn) FROM " . $this->tableName . $sqlTimeConstraint . " ORDER BY `$tableName`.`$idColumn`";
 
         $result = $this->doQuery($sql, "getUniqueIds");
-        $ids = array_map( function ($row) : int { return intval($row['id']);}, $result->fetchAll());
+        $ids = array_map( function ($row) use ($idColumn): int { return intval($row[$idColumn]);}, $result->fetchAll());
         sort($ids, SORT_NUMERIC);
         return $ids;
     }
@@ -286,13 +287,13 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         }
         $sql = 'UPDATE ' . $this->tableName . ' SET ' .
                  self::FIELD_VALID_UNTIL . '=' . $this->quoteValue($timeString) .
-                ' WHERE id=' . $theRow['id'] .
+                " WHERE `$this->idColumnName`=" . $theRow[$this->idColumnName] .
                 ' AND ' . self::FIELD_VALID_FROM . ' = ' . $this->quoteValue($theRow[self::FIELD_VALID_FROM]) .
                 ' AND ' . self::FIELD_VALID_UNTIL . '= ' . $this->quoteValue($theRow[self::FIELD_VALID_UNTIL]);
         
         $this->doQuery($sql, 'makeRowInvalid');
 
-        return $theRow['id'];
+        return $theRow[$this->idColumnName];
     }
 
     /**
@@ -321,7 +322,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             $this->throwExceptionForInvalidTime($timeString, 'realUpdateRowWithTime');
         }
 
-        $oldRow = $this->realGetRow($theRow['id']);
+        $oldRow = $this->realGetRow($theRow[$this->idColumnName]);
 
         $this->makeRowInvalid($oldRow, $timeString);
         foreach (array_keys($oldRow) as $key) {
@@ -445,7 +446,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         $quotedTimeString = $this->quoteValue($timeString);
 
         $sql = 'SELECT * FROM ' . $this->tableName .
-                        ' WHERE `id`=' . $rowId .
+                        " WHERE `$this->idColumnName`=" . $rowId .
                         ' AND `'. self::FIELD_VALID_FROM . '`<=' . $quotedTimeString .
                         ' AND `'. self::FIELD_VALID_UNTIL . '`>' . $quotedTimeString .
                         ' LIMIT 1';
@@ -457,7 +458,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             $this->setError('The row with id ' . $rowId . ' does not exist', self::ERROR_ROW_DOES_NOT_EXIST);
             throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
         }
-        $res['id'] = (int) $res['id'];
+        $res[$this->idColumnName] = (int) $res[$this->idColumnName];
         return $res;
     }
 
@@ -636,7 +637,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     public function getRowHistory(int $rowId): array
     {
         $sql = 'SELECT * FROM ' . $this->tableName .
-            ' WHERE `'. self::COLUMN_ID. '`=' . $rowId . ' ORDER BY `'. self::FIELD_VALID_FROM . '`' ;
+            ' WHERE `'. $this->idColumnName. '`=' . $rowId . ' ORDER BY `'. self::FIELD_VALID_FROM . '`' ;
 
         $r = $this->doQuery($sql, 'getRowHistory');
         if ($r->rowCount() === 0) {

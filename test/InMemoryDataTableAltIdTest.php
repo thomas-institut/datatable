@@ -24,34 +24,23 @@
  * THE SOFTWARE.
  */
 namespace ThomasInstitut\DataTable;
+require '../vendor/autoload.php';
 
-use PDO;
+require_once 'DataTableTestCase.php';
 
 /**
- * Class MySqlDataTableWithRandomIds
+ * Description of DataTableTest
  *
- * Utility class to that just constructs a MySqlDataTable with a RandomId generator
- *
- * @package DataTable
+ * @author Rafael Nájera <rafael@najera.ca>
  */
-class MySqlDataTableWithRandomIds extends MySqlDataTable
+class InMemoryDataTableAltIdTest extends DataTableTestCase
 {
-
-    const MAX_ATTEMPTS = 1000;
-    /**
-     *
-     * $min and $max should be carefully chosen so that
-     * the method to get new unused id doesn't take too
-     * long.
-     * @param PDO $dbConnection
-     * @param string $tableName
-     * @param int $min
-     * @param int $max
-     */
-    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX, $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    
+    public function createEmptyDt() : GenericDataTable
     {
-        parent::__construct($dbConnection, $tableName, false, $idColumnName);
-        $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
+        $dt = new InMemoryDataTable();
+        $dt->setIdColumnName('tid');
+        $dt->setLogger($this->getLogger()->withName('InMemoryDT with id column = tid'));
+        return $dt;
     }
-
 }
