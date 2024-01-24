@@ -26,14 +26,12 @@
 namespace ThomasInstitut\DataTable;
 
 use Exception;
-use InvalidArgumentException;
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-use RuntimeException;
+use Traversable;
 
 
-abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, DataTable
+abstract class GenericDataTable implements DataTable
 {
 
     const NULL_ROW_ID = -1;
@@ -148,14 +146,25 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $this->errorCode;
     }
 
+    public function getIterator(): Traversable
+    {
+        return $this->getAllRows();
+    }
+
     public function getUniqueIds(): array
     {
-        $ids = array_unique(array_map(function ($row) :int { return $row[$this->idColumnName];}, $this->getAllRows()), SORT_NUMERIC);
+        $rowIterator = $this->getAllRows();
+        $allIds = [];
+        foreach($rowIterator as $row) {
+            $allIds[] = $row[$this->idColumnName];
+        }
+        $ids = array_unique($allIds, SORT_NUMERIC);
         sort($ids, SORT_NUMERIC);
         return $ids;
     }
 
     abstract public function rowExists(int $rowId) : bool;
+
 
 
     public function createRow(array $theRow) : int
@@ -165,14 +174,93 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $this->realCreateRow($preparedRow);
     }
 
+    public function offsetExists(mixed $offset): bool
+    {
+        return $this->rowExists(intval($offset));
+    }
+
+
+    public function offsetGet(mixed $offset): ?array
+    {
+        try {
+            $row = $this->getRow(intval($offset));
+        } catch (RowDoesNotExist) {
+            return null;
+        }
+        return $row;
+    }
+
+
+    /**
+     *
+     * @throws InvalidRowForUpdate
+     * @throws RowAlreadyExists
+     */
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        if ($offset === null) {
+            $this->createRow($value);
+            return;
+        }
+        $id = intval($offset);
+        $value[$this->idColumnName] = $id;
+        if ($this->rowExists($id)) {
+            try {
+                $this->updateRow($value);
+            } catch(RowDoesNotExist) {
+                // this should never happen
+            }
+        } else {
+            try {
+                $this->createRow($value);
+            } catch (RowAlreadyExists) {
+                // this should never happen
+            }
+
+        }
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        $this->deleteRow(intval($offset));
+    }
+
+    public function supportsTransactions(): bool
+    {
+        return false;
+    }
+
+    public function startTransaction(): bool
+    {
+        return false;
+    }
+
+    public function isInTransaction(): bool
+    {
+        return false;
+    }
+
+    public function isUnderlyingDatabaseInTransaction() : bool
+    {
+        return false;
+    }
+
+    public function commit(): bool
+    {
+        return false;
+    }
 
     abstract public function getRow(int $rowId) : array;
 
-    abstract public function getAllRows() : array;
+    abstract public function getAllRows() : DataTableResultsIterator;
 
     abstract public function deleteRow(int $rowId) : int;
 
-    public function findRows(array $rowToMatch, int $maxResults = 0) : array {
+    /**
+     * @inheritdoc
+     */
+    public function findRows(array $rowToMatch, int $maxResults = 0) : DataTableResultsIterator
+    {
         $searchSpec = [];
 
         $givenRowKeys = array_keys($rowToMatch);
@@ -183,21 +271,40 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
                 self::SEARCH_SPEC_VALUE => $rowToMatch[$key]
             ];
         }
-        return $this->search($searchSpec, self::SEARCH_AND, $maxResults);
+        try {
+            $results = $this->search($searchSpec, self::SEARCH_AND, $maxResults);
+        } catch (InvalidSearchSpec|InvalidSearchType ) {
+            // this should never happen!
+        }
+        return $results ?? new ArrayDataTableResultsIterator([]);
     }
 
-    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
+    /**
+     * @inheritdoc
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
+     */
+    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : DataTableResultsIterator;
 
 
+    /**
+     * @throws InvalidRowForUpdate
+     * @throws RowDoesNotExist
+     */
     public function updateRow(array $theRow) : void
     {
         $this->resetError();
         if (!$this->isRowIdGoodForRowUpdate($theRow, 'DataTable updateRow')) {
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new InvalidRowForUpdate($this->getErrorMessage(), $this->getErrorCode());
         }
         $this->realUpdateRow($theRow);
     }
-    
+
+
+    /**
+     * @inheritdoc
+     * @deprecated Use search functions
+     */
 
     abstract public function getIdForKeyValue(string $key, mixed $value) : int;
 
@@ -234,8 +341,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      *
      * @param array $theRow
      * @return void
-     * @throws RuntimeException
-     * @throws InvalidArgumentException
+     * @throws RowDoesNotExist
      */
     abstract protected function realUpdateRow(array $theRow) : void;
 
@@ -252,9 +358,8 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
      * an unused ID
      *
      * @param array $theRow
-     * @throws RuntimeException
-     * @throws InvalidArgumentException  if the given row has an invalid self::COLUMN_ID field
      * @return array
+     * @throws RowAlreadyExists
      */
     protected function getRowWithGoodIdForCreation(array $theRow) : array
     {
@@ -264,7 +369,7 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
             if ($this->rowExists($theRow[$this->idColumnName])) {
                 $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
-                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+                throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
             }
         }
         return $theRow;
@@ -356,16 +461,21 @@ abstract class GenericDataTable implements LoggerAwareInterface, ErrorReporter, 
         return $problems;
     }
 
+
+    /**
+     * @throws InvalidSearchType
+     * @throws InvalidSearchSpec
+     */
     protected function checkSpec(array $searchSpecArray, int $searchType) : void {
         $this->resetError();
         $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
         if ($searchSpecCheck !== []) {
             $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY, $searchSpecCheck);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new InvalidSearchSpec($this->getErrorMessage(), $this->getErrorCode());
         }
         if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
             $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new InvalidSearchType($this->getErrorMessage(), $this->getErrorCode());
         }
     }
 

@@ -35,14 +35,10 @@ namespace ThomasInstitut\DataTable;
  * a unique ID. An unitemporal datatable, however, has access to different versions of each row, so that
  * it is possible to retrieve a version of a row at any particular moment in time.
  *
- * This is a transitional interface. In a later version of DataTable it will become
- * an abstract class to implement Unitemporal DataTables with any DataTable foundation
  *
- * @package DataTable
  */
 interface UnitemporalDataTable extends DataTable
 {
-
 
     /**
      * Creates a row that exists starting from the given time
@@ -51,6 +47,8 @@ interface UnitemporalDataTable extends DataTable
      * @param array $theRow
      * @param string $timeString
      * @return int
+     * @throws InvalidTimeStringException
+     * @throws RowAlreadyExists
      */
     public function createRowWithTime(array $theRow, string $timeString) : int;
 
@@ -69,6 +67,7 @@ interface UnitemporalDataTable extends DataTable
      * @param int $rowId
      * @param string $timeString
      * @return array
+     * @throws RowDoesNotExist
      */
     public function getRowWithTime(int $rowId, string $timeString) : array;
 
@@ -79,9 +78,9 @@ interface UnitemporalDataTable extends DataTable
      * @param $theRow
      * @param $maxResults
      * @param string $timeString
-     * @return array
+     * @return DataTableResultsIterator
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString) : array;
+    public function findRowsWithTime($theRow, $maxResults, string $timeString) : DataTableResultsIterator;
 
     /**
      * Searches the datatable the versions of rows that match the given $searchSpec array and $searchType
@@ -91,9 +90,11 @@ interface UnitemporalDataTable extends DataTable
      * @param int $searchType
      * @param string $timeString
      * @param int $maxResults
-     * @return array
+     * @return DataTableResultsIterator
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
      */
-    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): array;
+    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): DataTableResultsIterator;
 
     /**
      * Creates a new version of the given row that is valid from the given time
@@ -101,6 +102,7 @@ interface UnitemporalDataTable extends DataTable
      *
      * @param array $theRow
      * @param string $timeString
+     * @throws InvalidTimeStringException
      */
     public function updateRowWithTime(array $theRow, string $timeString) : void;
 
@@ -113,6 +115,7 @@ interface UnitemporalDataTable extends DataTable
      * @param int $rowId
      * @param string $timeString
      * @return int
+     * @throws InvalidTimeStringException
      */
     public function deleteRowWithTime(int $rowId, string $timeString) : int;
 
@@ -123,6 +126,7 @@ interface UnitemporalDataTable extends DataTable
      *
      * @param int $rowId
      * @return array
+     * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId) : array;
 

@@ -8,7 +8,6 @@
 
 namespace ThomasInstitut\DataTable;
 
-use InvalidArgumentException;
 use PDO;
 use RuntimeException;
 use ThomasInstitut\TimeString\TimeString;
@@ -247,62 +246,60 @@ EOD;
         // Only the last versions should show up in these searches
         for($i = 1; $i < $nTimes; $i++) {
             $foundsRows = $dataTable->findRows([self::STRING_COLUMN => 'Value' . $i]);
-            $this->assertEquals([], $foundsRows);
+            $this->assertEquals(0, $foundsRows->count());
         }
 
         $foundsRows = $dataTable->findRows([self::STRING_COLUMN => 'Value' . $nTimes]);
-        $this->assertCount($nEntries, $foundsRows);
+        $this->assertEquals($nEntries, $foundsRows->count());
         
         // Time info should be irrelevant for the search:
         $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
             self::STRING_COLUMN => 'Value3']);
-        $this->assertCount($nEntries, $foundsRows3);
+        $this->assertEquals($nEntries, $foundsRows3->count());
         
         $foundsRows3 = $dataTable->findRows(['valid_until'=> $timeZero,
             self::STRING_COLUMN => 'Value3']);
-        $this->assertCount($nEntries, $foundsRows3);
+        $this->assertEquals($nEntries, $foundsRows3->count());
         
         $foundsRows3 = $dataTable->findRows(['valid_from'=> $timeZero,
             'valid_until' => $timeZero,
             self::STRING_COLUMN => 'Value3']);
-        $this->assertCount($nEntries, $foundsRows3);
-        
-                
+        $this->assertEquals($nEntries, $foundsRows3->count());
+
         // Search the keys in the times they are valid
         $foundRows4 = $dataTable->findRowsWithTime(
             [self::STRING_COLUMN => 'Value3'],
             false,
             '2016-01-01 12:00:00'
         );
-        $this->assertCount(10, $foundRows4);
+        $this->assertEquals(10, $foundRows4->count());
         
         // timestamps should be fine as well
-        $foundRows4 = $dataTable->findRowsWithTime(
+        $foundRows4b = $dataTable->findRowsWithTime(
             [self::STRING_COLUMN => 'Value3'],
             false,
             // a day ago
             TimeString::fromVariable(time()-86400)
         );
-        $this->assertCount(10, $foundRows4);
+        $this->assertEquals(10, $foundRows4b->count());
         
         $foundRows5 = $dataTable->findRowsWithTime(
             [self::STRING_COLUMN => 'Value2'],
             false,
             '2015-01-01 12:00:00'
         );
-        $this->assertCount(10, $foundRows5);
+        $this->assertEquals(10, $foundRows5->count());
         
-        $foundRows6 = $dataTable->findRowsWithTime(
-            [self::STRING_COLUMN => 'Value1'],
+        $foundRows6 = $dataTable->findRowsWithTime([self::STRING_COLUMN => 'Value1'],
             false,
             '2014-01-01 12:00:00'
         );
-        $this->assertCount(10, $foundRows6);
+        $this->assertEquals(10, $foundRows6->count());
         
         // Search the common key, only the latest version should
         // be returned
         $foundRows7 = $dataTable->findRows([self::INT_COLUMN => $someInt]);
-        $this->assertCount(10, $foundRows7);
+        $this->assertEquals(10, $foundRows7->count());
         foreach ($foundRows7 as $row) {
             $this->assertEquals('Value3', $row[self::STRING_COLUMN]);
         }
@@ -313,7 +310,7 @@ EOD;
             false,
             '2015-01-01 12:00:00'
         );
-        $this->assertCount(10, $foundRows8);
+        $this->assertEquals(10, $foundRows8->count());
         foreach ($foundRows8 as $row) {
             $this->assertEquals('Value2', $row[self::STRING_COLUMN]);
         }
@@ -323,7 +320,7 @@ EOD;
             false,
             '2014-01-01 12:00:00'
         );
-        $this->assertCount(10, $foundRows9);
+        $this->assertEquals(10, $foundRows9->count());
         foreach ($foundRows9 as $row) {
             $this->assertEquals('Value1', $row[self::STRING_COLUMN]);
         }
@@ -333,7 +330,7 @@ EOD;
             false,
             '2013-01-01'
         );
-        $this->assertCount(10, $foundRows10);
+        $this->assertEquals(10, $foundRows10->count());
         foreach ($foundRows10 as $row) {
             $this->assertTrue(is_null($row[self::STRING_COLUMN]));
         }
@@ -343,7 +340,7 @@ EOD;
             false,
             '2000-01-01 12:00:00'
         );
-        $this->assertCount(0, $foundRows11);
+        $this->assertEquals(0, $foundRows11->count());
     }
     
     public function testCreateRowWithTime()
@@ -358,7 +355,7 @@ EOD;
             $dataTable->createRowWithTime(
                 [self::ID_COLUMN_NAME => 1, self::OTHER_STRING_COLUMN => 'test'],
                 'badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -380,7 +377,7 @@ EOD;
         try {
             $dataTable->createRowWithTime([self::ID_COLUMN_NAME => 1,
                 self::OTHER_STRING_COLUMN => 'anothervalue'], $time);
-        } catch(InvalidArgumentException $e) {
+        } catch(RowAlreadyExists) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -399,7 +396,7 @@ EOD;
         $exceptionCaught = false;
         try{
             $dataTable->deleteRowWithTime($newId, 'badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -420,7 +417,7 @@ EOD;
          */
         $dataTable = $this->createEmptyDt();
 
-        $this->assertEquals([], $dataTable->getAllRowsWithTime('2019-01-01'));
+        $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
 
 
     }
@@ -436,7 +433,7 @@ EOD;
         $exceptionCaught = false;
         try {
             $dataTable->getAllRowsWithTime('badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -451,7 +448,7 @@ EOD;
         $theRow = [];
         try {
             $theRow = $dataTable->getRowWithTime($newId, 'badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -462,7 +459,7 @@ EOD;
         $exceptionCaught = false;
         try {
             $dataTable->realUpdateRowWithTime([ self::ID_COLUMN_NAME => $newId, self::INT_COLUMN => 1001], 'badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -477,7 +474,7 @@ EOD;
         $exceptionCaught = false;
         try {
             $foundRows = $dataTable->findRowsWithTime([ self::INT_COLUMN => 1000], 0, 'badtime');
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidTimeStringException $e) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -510,7 +507,7 @@ EOD;
         $dataTable = $this->createEmptyDt();
         // search not implemented yet
 
-        $this->assertEquals([], $dataTable->searchWithTime([], MySqlUnitemporalDataTable::SEARCH_AND, TimeString::now()));
+        $this->assertEquals(0, $dataTable->searchWithTime([], MySqlUnitemporalDataTable::SEARCH_AND, TimeString::now())->count());
         $this->assertEquals(MySqlUnitemporalDataTable::ERROR_NOT_IMPLEMENTED, $dataTable->getErrorCode());
     }
 

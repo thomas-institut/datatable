@@ -25,12 +25,12 @@
  */
 namespace ThomasInstitut\DataTable;
 
-use InvalidArgumentException;
 use LogicException;
 use PDO;
 use PDOException;
 use PDOStatement;
 use RuntimeException;
+
 
 /**
  * Implements a data table with MySQL
@@ -47,8 +47,13 @@ class MySqlDataTable extends GenericDataTable
     const ERROR_TABLE_NOT_FOUND = 1040;
     const ERROR_PREPARING_STATEMENTS = 1070;
     const ERROR_EXECUTING_STATEMENT = 1080;
-
     const ERROR_INVALID_WHERE_CLAUSE = 1090;
+
+    const ERROR_TABLE_ALREADY_IN_TRANSACTION = 1100;
+    const ERROR_MYSQL_ALREADY_IN_TRANSACTION = 1101;
+    const ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION =  1102;
+    const ERROR_TABLE_NOT_IN_TRANSACTION = 1103;
+    const ERROR_MYSQL_COULD_NOT_EXECUTE_COMMIT = 1104;
 
     protected PDO $dbConn;
 
@@ -57,12 +62,16 @@ class MySqlDataTable extends GenericDataTable
      */
     protected array $statements;
     private bool $mySqlAutoInc;
+    /**
+     * @var true
+     */
+    private bool $inTransaction;
 
     /**
      *
-     * @param PDO $dbConnection  initialized PDO connection
-     * @param string $tableName  SQL table name
-     */
+     * @param PDO $dbConnection initialized PDO connection
+     * @param string $tableName SQL table name
+          */
     public function __construct(PDO $dbConnection, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
         
@@ -72,6 +81,7 @@ class MySqlDataTable extends GenericDataTable
         $this->idColumnName = $idColumnName;
         $this->dbConn = $dbConnection;
         $this->mySqlAutoInc = $useMySqlAutoInc;
+        $this->inTransaction = false;
         
         if (!$this->isMySqlTableColumnValid($this->idColumnName, 'int')) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
@@ -145,7 +155,10 @@ class MySqlDataTable extends GenericDataTable
         }
         return true;
     }
-    
+
+    /**
+     * @throws RuntimeException
+     */
     public function rowExists(int $rowId) : bool
     {
         $this->resetError();
@@ -156,7 +169,7 @@ class MySqlDataTable extends GenericDataTable
         return true;
     }
 
-    public function createRow(array $theRow) : int {
+     public function createRow(array $theRow) : int {
         if (!$this->mySqlAutoInc) {
             // use regular id creator
             return parent::createRow($theRow);
@@ -168,7 +181,7 @@ class MySqlDataTable extends GenericDataTable
             if ($this->rowExists($theRow[$this->idColumnName])) {
                 $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
-                throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+                throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
             }
         }
         $this->doQuery($this->getMySqlInsertQuery($theRow), 'createRow_MySQL_auto_inc');
@@ -189,20 +202,20 @@ class MySqlDataTable extends GenericDataTable
         return $sql;
     }
 
-
     public function realCreateRow(array $theRow) : int
     {
         $this->doQuery($this->getMySqlInsertQuery($theRow), 'realCreateRow');
         return (int) $theRow[$this->idColumnName];
     }
-    
+
+
     public function realUpdateRow(array $theRow) : void
     {
 
         if (!$this->rowExists($theRow[$this->idColumnName])) {
             $this->setError('Id ' . $theRow[$this->idColumnName] . ' does not exist, cannot update',
                 self::ERROR_ROW_DOES_NOT_EXIST );
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RowDoesNotExist($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
         $sets = [];
@@ -216,7 +229,6 @@ class MySqlDataTable extends GenericDataTable
                 . implode(',', $sets) . ' WHERE `' . $this->idColumnName . '`=' . $theRow[$this->idColumnName];
         
         $this->doQuery($sql, 'realUpdateRow');
-
     }
 
     /**
@@ -235,20 +247,18 @@ class MySqlDataTable extends GenericDataTable
         }
         return (string) $var;
     }
-    
-    public function getAllRows() : array
+
+    public function getAllRows() : DataTableResultsIterator
     {
         $sql  = 'SELECT * FROM ' . $this->tableName;
-        
-        $r = $this->doQuery($sql, 'getAllRows');
+        return new MySqlDataTableResultsIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
 
-        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
     }
 
     /**
      * Executes a general SELECT query on the data table
      *
-     * ATTENTION: Try not to use this method directly , prefer to use 'search' if possible,
+     * Try not to use this method directly, prefer to use search() or findRows() if possible,
      * search is implemented by any DataTable not just by MySqlDataTable
      *
      * The method executes the following query:
@@ -265,6 +275,9 @@ class MySqlDataTable extends GenericDataTable
      * @param string $orderBy
      * @param string $context
      * @return PDOStatement
+     * @throws InvalidWhereClauseException
+     * @see DataTable::search()  Preferred alternative
+     * @see DataTable::findRows() Preferred alternative
      */
     public function select(string $what, string $where, int $limit, string $orderBy, string $context ) : PDOStatement {
 
@@ -273,7 +286,7 @@ class MySqlDataTable extends GenericDataTable
         }
         if ($where ==='') {
             $this->setError('Empty where clause', self::ERROR_INVALID_WHERE_CLAUSE);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new InvalidWhereClauseException($this->getErrorMessage(), $this->getErrorCode());
         }
 
         $sql = 'SELECT ' .  $what . ' FROM `' . $this->tableName . '` WHERE ' . $where;
@@ -286,20 +299,32 @@ class MySqlDataTable extends GenericDataTable
 
         return $this->doQuery($sql, $context);
     }
-    
+
+
+
     public function getRow(int $rowId) : array
     {
-        $r = $this->select('*', $this->idColumnName . '=' . $rowId, 1, '', 'getRow');
+        try {
+            $r = $this->select('*', $this->idColumnName . '=' . $rowId, 1, '', 'getRow');
+        } catch (InvalidWhereClauseException) {
+            // should never happen
+        }
+        if (!isset($r)) {
+            throw new RuntimeException("Unknown error while getting Row", self::ERROR_UNKNOWN_ERROR);
+        }
 
         $res = $r->fetch(PDO::FETCH_ASSOC);
         if ($res === false) {
             $this->setError('The row with id ' . $rowId . ' does not exist',self::ERROR_ROW_DOES_NOT_EXIST );
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RowDoesNotExist($this->getErrorMessage(), $this->getErrorCode());
         }
         $res[$this->idColumnName] = (int) $res[$this->idColumnName];
         return $res;
     }
 
+    /**
+     * @throws RunTimeException
+     */
     public function getMaxValueInColumn(string $columnName): int
     {
         $sql = 'SELECT MAX('. $columnName . ') FROM ' . $this->tableName;
@@ -322,11 +347,11 @@ class MySqlDataTable extends GenericDataTable
     public function getIdForKeyValue(string $key, mixed $value) : int
     {
         $rows = $this->findRows([$key => $value], 1);
-        if ($rows === []) {
+        if ($rows->count() === 0) {
             $this->setError('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
-        return intval($rows[0][$this->idColumnName]);
+        return $rows->getFirst()[$this->idColumnName];
     }
 
     public function deleteRow(int $rowId) : int
@@ -352,7 +377,7 @@ class MySqlDataTable extends GenericDataTable
         }
         return $rows;
     }
-    
+
     protected function doQuery(string $sql, string $context) : PDOStatement
     {
         try {
@@ -362,13 +387,13 @@ class MySqlDataTable extends GenericDataTable
                 . $e->getMessage() . '", query = "' . $sql . '"',
                 self::ERROR_MYSQL_QUERY_ERROR
                 );
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in "' . $context
                 . '" when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
         
@@ -392,7 +417,6 @@ class MySqlDataTable extends GenericDataTable
      *
      * @param string $statement
      * @param array $param
-     * @throws RuntimeException
      */
     protected function executeStatement(string $statement, array $param) : void
     {
@@ -415,7 +439,10 @@ class MySqlDataTable extends GenericDataTable
     }
 
 
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
+    /**
+     * @inheritdoc
+     */
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
     {
        $this->checkSpec($searchSpecArray, $searchType);
 
@@ -449,12 +476,12 @@ class MySqlDataTable extends GenericDataTable
                 // TODO: add an optional full table schema check in order avoid ambiguities here
                 $this->logger->info('Query error in realFindRows (reported as no results)',
                     ['query' => $sql, 'message' => $e->getMessage(), 'code' => $e->getCode()]);
-                return [];
+                return new ArrayDataTableResultsIterator([]);
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
                 . $e->getMessage() . ' :: query = ' . $sql, self::ERROR_MYSQL_QUERY_ERROR);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
 
@@ -462,10 +489,10 @@ class MySqlDataTable extends GenericDataTable
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in realFindRows '
                 . 'when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
-        return $this->forceIntIds($r->fetchAll(PDO::FETCH_ASSOC));
+        return new MySqlDataTableResultsIterator($r, $this->idColumnName);
     }
 
     private function  getSqlConditionFromSpec(array $spec) : string {
@@ -496,5 +523,93 @@ class MySqlDataTable extends GenericDataTable
         $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
         throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
         // @codeCoverageIgnoreEnd
+    }
+
+    /**
+     * Returns true if the MySql table storage engine is 'InnoDB', which is the only engine that
+     * supports transactions in MySql.
+     *
+     * Since almost all tables in MySql are InnoDB, in almost all use cases it should not be necessary
+     * to run this function.
+     *
+     * @return bool
+     */
+    public function supportsTransactions(): bool
+    {
+        $r = $this->doQuery("SHOW TABLE STATUS WHERE Name='$this->tableName'", __FUNCTION__);
+        $info = $r->fetch();
+        return $info['Engine'] === 'InnoDB' ?? false;
+    }
+
+    /**
+     * Starts a MySql transaction.
+     *
+     * Care must be taken when using transactions in the context of DataTable operations.
+     * In particular, a MySql transactions apply to the database connection as a whole, so starting
+     * a transaction in a MySqlDataTable will also start a transaction in all other MySqlDataTables that
+     * share the same database connection. This might be desirable, but it can also be dangerous.
+     *
+     * Returns true if a transaction started without problems.
+     *
+     * Returns false if MySql is in a transaction already or if MySql could not start the transaction.
+     * The actual error can be retrieved with getErrorCode and getErrorMessage
+     *
+     * @return bool
+     */
+
+    public function startTransaction(): bool
+    {
+
+        if ($this->inTransaction) {
+            $this->setError("Current table already in a transaction", self::ERROR_TABLE_ALREADY_IN_TRANSACTION);
+            return false;
+        }
+        if ($this->dbConn->inTransaction()) {
+            $this->setError("Current table already in a transaction", self::ERROR_MYSQL_ALREADY_IN_TRANSACTION);
+            return false;
+        }
+        $this->inTransaction = $this->dbConn->beginTransaction();
+        if (!$this->inTransaction) {
+            $this->setError("MySql could not begin transaction", self::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION);
+            return false;
+        }
+        return $this->inTransaction;
+    }
+
+    /**
+     * Commits an already started transaction.
+     *
+     * Will only commit if the transaction was started in this DataTable.
+     *
+     * Returns false if the MySqlDataTable is not in a transaction or if MySql could not execute the commit.
+     * The actual error can be retrieved with getErrorCode and getErrorMessage
+     *
+     * @return bool
+     */
+    public function commit(): bool
+    {
+        if (!$this->inTransaction) {
+            $this->setError("Table not in a transaction, commit not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
+            return false;
+        }
+        if ($this->dbConn->commit()) {
+            $this->inTransaction = false;
+            return true;
+        }
+        $this->inTransaction = $this->dbConn->inTransaction();
+        $msg = $this->inTransaction ? "table still in a transaction" : "transaction ended";
+        $this->setError("MySql could not commit, $msg", self::ERROR_MYSQL_COULD_NOT_EXECUTE_COMMIT);
+        return false;
+    }
+
+    public function isInTransaction() : bool
+    {
+        return $this->inTransaction;
+
+    }
+
+    public function isUnderlyingDatabaseInTransaction(): bool
+    {
+        return $this->dbConn->inTransaction();
     }
 }

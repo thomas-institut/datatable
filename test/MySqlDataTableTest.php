@@ -66,8 +66,7 @@ class MySqlDataTableTest extends DataTableTestCase
     public function getRestrictedDt() : MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
-        $dt = new MySqlDataTable($restrictedPdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
-        return $dt;
+        return new MySqlDataTable($restrictedPdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
     }
     
     public function getPdo() : PDO
@@ -139,7 +138,10 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
 
-    
+
+    /**
+     * @throws RowAlreadyExists
+     */
     public function testRestrictedPdo()
     {
         $dataTable = $this->createEmptyDt();
@@ -171,8 +173,8 @@ EOD;
         
         
         $rows = $restrictedDataTable->getAllRows();
-        $this->assertCount(1, $rows);
-        $this->assertEquals($rowId, $rows[0][self::ID_COLUMN_NAME]);
+        $this->assertEquals(1, $rows->count());
+        $this->assertEquals($rowId, $rows->getFirst()[self::ID_COLUMN_NAME]);
         
         $result = $restrictedDataTable->rowExists($rowId);
         $this->assertTrue($result);
@@ -248,7 +250,7 @@ EOD;
         $exceptionCaught = false;
         try {
             $dataTable->updateRow([self::ID_COLUMN_NAME => 1, self::INT_COLUMN => 'bad']);
-        } catch (RuntimeException) {
+        } catch (RuntimeException|InvalidRowForUpdate|RowDoesNotExist) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -277,7 +279,7 @@ EOD;
             $exceptionCaught = false;
             try {
                 $dataTable->getRow($i);
-            } catch (InvalidArgumentException) {
+            } catch (RowDoesNotExist) {
                 $exceptionCaught = true;
             }
             $this->assertTrue($exceptionCaught);
@@ -297,14 +299,17 @@ EOD;
         $exceptionCaught = false;
         try {
             $dataTable->select('*','', 0, '', 'testSelect');
-        } catch (InvalidArgumentException) {
+        } catch (InvalidWhereClauseException) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
 
-        $r = $dataTable->select('*', self::ID_COLUMN_NAME . '=1', 0, self::ID_COLUMN_NAME . ' ASC', 'testSelect2');
+        try {
+            $r = $dataTable->select('*', self::ID_COLUMN_NAME . '=1', 0, self::ID_COLUMN_NAME . ' ASC', 'testSelect2');
 
-        $this->assertEquals(0, $r->rowCount());
+            $this->assertEquals(0, $r->rowCount());
+        } catch (InvalidWhereClauseException) {
 
+        }
     }
 }

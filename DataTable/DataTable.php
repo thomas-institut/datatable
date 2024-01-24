@@ -25,8 +25,9 @@
  */
 namespace ThomasInstitut\DataTable;
 
-use InvalidArgumentException;
-use RuntimeException;
+use ArrayAccess;
+use IteratorAggregate;
+use Psr\Log\LoggerAwareInterface;
 
 /**
  * An interface to a table made out of rows addressable by a unique integer id that behaves mostly like a SQL table.
@@ -43,7 +44,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-interface DataTable
+interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface, ErrorReporter
 {
 
     const SEARCH_AND = 0;
@@ -67,8 +68,8 @@ interface DataTable
      * an exception.
      *
      * @param array $theRow
-     * @return int the id of the newly created row
-     * @throws RuntimeException
+     * @return int
+     * @throws RowAlreadyExists
      */
     public function createRow(array $theRow) : int;
 
@@ -76,21 +77,20 @@ interface DataTable
     /**
      * Gets the row with the given row ID.
      *
-     * If the row does not exist throws an InvalidArgument exception
+     * If the row does not exist throws a RowDoesNotExist exception
      *
      * @param int $rowId
      * @return array
-     * @throws InvalidArgumentException
+     * @throws RowDoesNotExist
      */
     public function getRow(int $rowId) : array;
 
     /**
-     * Returns all rows in the table
+     * Returns an iterator with all rows in the table
      *
-     * @return array
+     * @return DataTableResultsIterator
      */
-    public function getAllRows() : array;
-
+    public function getAllRows() : DataTableResultsIterator;
 
     /**
      * Deletes the row with the given ID.
@@ -110,14 +110,14 @@ interface DataTable
      * A row in the data table matches $rowToMatch if for every field
      * in $rowToMatch the row has exactly that same value.
      *
-     * if $maxResults > 0, an array of max $maxResults will be returned
+     * if $maxResults > 0, an iterator of max $maxResults will be returned
      * if $maxResults <= 0, all results will be returned
      *
      * @param array $rowToMatch
      * @param int $maxResults
-     * @return array
+     * @return DataTableResultsIterator
      */
-    function findRows(array $rowToMatch, int $maxResults = 0) : array;
+    function findRows(array $rowToMatch, int $maxResults = 0) : DataTableResultsIterator;
 
 
     /**
@@ -146,22 +146,24 @@ interface DataTable
      *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
      *      LESS_OR_EQUAL_TO <==> GREATER_THAN
      *
-     * if $maxResults > 0, an array of max $maxResults will be returned
-     * if $maxResults <= 0, all results will be returned
+     * if $maxResults > 0, an iterator of max $maxResults will be returned
+     * if $maxResults <= 0, an iterator with all results will be returned
      *
      * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
-     * @return array
+     * @return DataTableResultsIterator
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : array;
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : DataTableResultsIterator;
 
     /**
      * Updates the table with the given row, which must contain an id
      * field matching the current idColumnName specifying the row to update.
      *
      * If the given row does not contain a valid id field, or if the id
-     * is valid but there is no row with that id the table, an InvalidArgument exception
+     * is valid but there is no row with that id the table, an InvalidRowForUpdate exception
      * will be thrown.
      *
      * Only the keys given in $theRow are updated. The user must make sure
@@ -169,24 +171,80 @@ interface DataTable
      *  (e.g., if in an SQL implementation the underlying SQL table does not
      *  have default values for the non-given keys)
      *
-     * If the row was not successfully updated, throws a Runtime exception
      *
      * @param array $theRow
      * @return void
-     * @throws InvalidArgumentException
-     * @throws RuntimeException
+     * @throws InvalidRowForUpdate
      */
     public function updateRow(array $theRow) : void;
 
 
     /**
+     * Returns true if SQL-like transactions are supported.
+     *
+     * If they are, any updates to the table (row creation/update/delete) after
+     * a call to startTransaction() will not take effect until commit() is called.
+     *
+     * If transaction are not supported startTransaction() and commit() will do nothing.
+     *
+     * @return bool
+     */
+    public function supportsTransactions() : bool;
+
+
+    /**
+     *
+     * If transactions are supported, all changes to be table will not
+     * take effect until commit() is called.
+     *
+     * Returns true if the transaction started successfully.
+     *
+     * If transactions are not supported, returns false.
+     *
+     * @return bool
+     */
+    public function startTransaction() : bool;
+
+    /**
+     * If transactions are supported, commits all changes since the last call to startTransaction().
+     *
+     * Returns true if the commit was successful.
+     *
+     * If transactions are not supported, returns false.
+     *
+     * @return bool
+     */
+    public function commit(): bool;
+
+
+    /**
+     * Returns true if a transaction initiated by the table is currently going on.
+     *
+     * Always returns false if the DataTable does not support transactions.
+     *
+     * @return bool
+     */
+    public function isInTransaction() : bool;
+
+
+    /**
+     * Attempts to determine if a transaction is currently going on in the underlying
+     * database.
+     *
+     * Always returns false if the DataTable does not support transactions.
+     *
+     * @return bool
+     */
+    public function isUnderlyingDatabaseInTransaction() : bool;
+
+    /**
      * Returns the id of one row in which $row[$key] === $value
-     * or false if such a row cannot be found or an error occurred whilst
-     * trying to find it.
+     * or -1 if no such row was found
      *
      * @param string $key
      * @param mixed $value
      * @return int
+     * @deprecated Use normal search functions
      */
     public function getIdForKeyValue(string $key, mixed $value) : int;
 
@@ -202,14 +260,12 @@ interface DataTable
      */
     public function getMaxValueInColumn(string $columnName) : int;
 
-
     /**
      * Returns the max id in the table
      *
      * @return int
      */
     public function getMaxId() : int;
-
 
     /**
      * Returns an array with all the unique row ids in the table in ascending order
@@ -227,13 +283,12 @@ interface DataTable
     public function getName() : string;
 
     /**
-     * Sets the table's name
+     * Sets the table's name.
      *
      * @param string $name
      * @return void
      */
     public function setName(string $name) : void;
-
 
     /**
      * Sets the name of the id column in the table to reflect the actual name used in the underlying database table.

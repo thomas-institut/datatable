@@ -26,8 +26,6 @@
 
 namespace ThomasInstitut\DataTable;
 
-
-use InvalidArgumentException;
 use LogicException;
 
 class InMemoryDataTable extends GenericDataTable
@@ -35,9 +33,9 @@ class InMemoryDataTable extends GenericDataTable
     
     private array $theData = [];
     
-    public function getAllRows() : array
+    public function getAllRows() : DataTableResultsIterator
     {
-        return $this->theData;
+        return new ArrayDataTableResultsIterator($this->theData);
     }
     
     public function rowExists(int $rowId) : bool
@@ -69,7 +67,7 @@ class InMemoryDataTable extends GenericDataTable
     {
         if (!$this->rowExists($theRow[$this->idColumnName])) {
             $this->setError('Id ' . $theRow[$this->idColumnName] . ' does not exist, cannot update', self::ERROR_ROW_DOES_NOT_EXIST);
-            throw new InvalidArgumentException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RowDoesNotExist($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
         $rowId = $theRow[$this->idColumnName];
@@ -93,7 +91,7 @@ class InMemoryDataTable extends GenericDataTable
     {
         return $this->getMaxValueInColumn($this->idColumnName);
     }
-    
+
     public function getRow(int $rowId) : array
     {
         if ($this->rowExists($rowId)) {
@@ -102,7 +100,7 @@ class InMemoryDataTable extends GenericDataTable
         $msg = 'Row ' . $rowId . ' does not exist';
         $errorCode = self::ERROR_ROW_DOES_NOT_EXIST;
         $this->setError($msg, $errorCode, [ 'method' => __METHOD__]);
-        throw new InvalidArgumentException($msg, $errorCode);
+        throw new RowDoesNotExist($msg, $errorCode);
     }
     
     public function getIdForKeyValue(string $key, mixed $value) : int
@@ -118,10 +116,14 @@ class InMemoryDataTable extends GenericDataTable
         }
         return $id;
     }
-    
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): array
-    {
 
+    /**
+     * @inheritdoc
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
+     */
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
+    {
         $this->checkSpec($searchSpecArray, $searchType);
 
         $results = [];
@@ -129,11 +131,11 @@ class InMemoryDataTable extends GenericDataTable
             if ($this->matchSearchSpec($dataRow, $searchSpecArray, $searchType)) {
                 $results[] = $dataRow;
                 if ($maxResults > 0 && count($results) === $maxResults) {
-                    return $results;
+                    return new ArrayDataTableResultsIterator($results);
                 }
             }
         }
-        return $results;
+        return new ArrayDataTableResultsIterator($results);
     }
 
     /**
@@ -222,4 +224,5 @@ class InMemoryDataTable extends GenericDataTable
         throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
         // @codeCoverageIgnoreEnd
     }
+
 }

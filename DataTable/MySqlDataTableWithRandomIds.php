@@ -38,6 +38,7 @@ class MySqlDataTableWithRandomIds extends MySqlDataTable
 {
 
     const MAX_ATTEMPTS = 1000;
+
     /**
      *
      * $min and $max should be carefully chosen so that
@@ -47,8 +48,9 @@ class MySqlDataTableWithRandomIds extends MySqlDataTable
      * @param string $tableName
      * @param int $min
      * @param int $max
+     * @param string $idColumnName
      */
-    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX, $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
         parent::__construct($dbConnection, $tableName, false, $idColumnName);
         $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
