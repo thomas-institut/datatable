@@ -2,18 +2,23 @@
 
 namespace ThomasInstitut\DataTable;
 
+use PDO;
+
 require_once 'MySqlDataTableTest.php';
 
 class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
 {
 
-    public function createEmptyDt() : GenericDataTable
-    {
-        $pdo = $this->getPdo();
-        $this->resetTestDb($pdo, true);
+    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+        return new MySqlDataTable($pdo, self::TABLE_NAME, true, self::ID_COLUMN_NAME);
+    }
 
-        $dt = new MySqlDataTable($pdo, self::TABLE_NAME, true, self::ID_COLUMN_NAME);
-        $dt->setLogger($this->getLogger()->withName('MySqlDataTable (' . self::TABLE_NAME . ')'));
-        return $dt;
+    protected function getLoggerNamePrefix() : string {
+        return 'MySqlDataTableAutoInc';
+    }
+
+    public function resetTestDb(PDO $pdo, bool $autoInc = false): void
+    {
+        parent::resetTestDb($pdo, true);
     }
 }

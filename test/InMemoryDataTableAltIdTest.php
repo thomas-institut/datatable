@@ -35,12 +35,32 @@ require_once 'DataTableTestCase.php';
  */
 class InMemoryDataTableAltIdTest extends DataTableTestCase
 {
+
+    static private ?InMemoryDataTable $motherTable = null;
+    static private ?array $theData = null;
     
-    public function createEmptyDt() : GenericDataTable
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : GenericDataTable
     {
-        $dt = new InMemoryDataTable();
-        $dt->setIdColumnName('tid');
-        $dt->setLogger($this->getLogger()->withName('InMemoryDT with id column = tid'));
+        if (self::$motherTable === null) {  // first table to serve
+            self::$theData = [];
+            self::$motherTable = new InMemoryDataTable(self::$theData);
+            self::$motherTable->setIdColumnName('tid');
+            $dt = self::$motherTable;
+        } else {
+            $dt = new InMemoryDataTable(self::$theData);
+            $dt->setIdColumnName('tid');
+        }
+
+        if ($resetTable) {
+            self::$theData = [];
+        }
+        $dt->setLogger($this->getLogger()->withName('InMemoryDT'));
+
         return $dt;
+    }
+
+    public function multipleDataAccessSessionsAvailable(): bool
+    {
+        return false;
     }
 }

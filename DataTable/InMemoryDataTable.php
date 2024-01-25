@@ -31,8 +31,19 @@ use LogicException;
 class InMemoryDataTable extends GenericDataTable
 {
     
-    private array $theData = [];
-    
+    private array $theData;
+
+    public function __construct(array &$data = null, IdGenerator $idGenerator = null)
+    {
+        parent::__construct($idGenerator);
+        if ($data === null) {
+            $this->theData = [];
+        } else {
+            $this->theData = &$data;
+        }
+    }
+
+
     public function getAllRows() : DataTableResultsIterator
     {
         return new ArrayDataTableResultsIterator($this->theData);

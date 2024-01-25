@@ -33,52 +33,6 @@ use Traversable;
 
 abstract class GenericDataTable implements DataTable
 {
-
-    const NULL_ROW_ID = -1;
-
-    const DEFAULT_ID_COLUMN_NAME = 'id';
-
-
-    /**
-     * Search spec fields
-     */
-
-    const SEARCH_SPEC_COLUMN = 'column';
-    const SEARCH_SPEC_CONDITION = 'condition';
-    const SEARCH_SPEC_VALUE = 'value';
-
-    /**
-     * Search condition types
-     */
-
-    const COND_EQUAL_TO = 0;
-    const COND_NOT_EQUAL_TO = 1;
-    const COND_LESS_THAN = 2;
-    const COND_LESS_OR_EQUAL_TO = 3;
-    const COND_GREATER_THAN = 4;
-    const COND_GREATER_OR_EQUAL_TO = 5;
-
-    /**
-     * Error code constants
-     */
-    const ERROR_NO_ERROR = 0;
-    const ERROR_UNKNOWN_ERROR = 1;
-    const ERROR_ROW_DOES_NOT_EXIST = 102;
-    const ERROR_ROW_ALREADY_EXISTS = 103;
-    const ERROR_ID_NOT_INTEGER = 104;
-    const ERROR_ID_NOT_SET = 105;
-    const ERROR_ID_IS_ZERO = 106;
-    const ERROR_EMPTY_RESULT_SET = 107;
-    const ERROR_KEY_VALUE_NOT_FOUND = 108;
-    const ERROR_INVALID_SEARCH_TYPE = 109;
-
-    const ERROR_INVALID_SPEC_ARRAY = 110;
-    const ERROR_SPEC_ARRAY_IS_EMPTY = 111;
-    const ERROR_SPEC_INVALID_COLUMN = 112;
-    const ERROR_SPEC_NO_VALUE = 113;
-    const ERROR_SPEC_INVALID_CONDITION = 114;
-
-
     /**
      *
      * @var string
@@ -165,8 +119,6 @@ abstract class GenericDataTable implements DataTable
 
     abstract public function rowExists(int $rowId) : bool;
 
-
-
     public function createRow(array $theRow) : int
     {
         $this->resetError();
@@ -232,21 +184,31 @@ abstract class GenericDataTable implements DataTable
 
     public function startTransaction(): bool
     {
+        $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
         return false;
     }
 
     public function isInTransaction(): bool
     {
+        $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
         return false;
     }
 
     public function isUnderlyingDatabaseInTransaction() : bool
     {
+        $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
         return false;
     }
 
     public function commit(): bool
     {
+        $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
+        return false;
+    }
+
+    public function rollBack(): bool
+    {
+        $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
         return false;
     }
 
@@ -354,7 +316,7 @@ abstract class GenericDataTable implements DataTable
 
     /**
      * Returns theRow with a valid ID for creation: if there's no id
-     * in the given row, the given ID is 0 or not an integer, the id is set to
+     * in the given row, the given ID is negative or 0, or not an integer, the id is set to
      * an unused ID
      *
      * @param array $theRow
@@ -363,7 +325,7 @@ abstract class GenericDataTable implements DataTable
      */
     protected function getRowWithGoodIdForCreation(array $theRow) : array
     {
-        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName]===0) {
+        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName]<=0) {
             $theRow[$this->idColumnName] = $this->getOneUnusedId();
         } else {
             if ($this->rowExists($theRow[$this->idColumnName])) {
@@ -565,7 +527,7 @@ abstract class GenericDataTable implements DataTable
             return false;
         }
 
-        if ($theRow[$this->idColumnName] <=0) {
+        if ($theRow[$this->idColumnName] <= 0) {
             $this->setError('Id is equal to zero in given row' . " ($context)", self::ERROR_ID_IS_ZERO);
             return false;
         }

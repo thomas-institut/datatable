@@ -25,6 +25,8 @@
  */
 
 namespace ThomasInstitut\DataTable;
+use PDO;
+
 require '../vendor/autoload.php';
 
 require_once 'MySqlDataTableTest.php';
@@ -39,22 +41,17 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     
     public int $minId = 100000;
     public int $maxId = 200000;
-    
-    public function createEmptyDt() : GenericDataTable
-    {
-        $pdo = $this->getPdo();
-        $this->resetTestDb($pdo);
-        $dt = new MySqlDataTableWithRandomIds(
-            $pdo,
-            self::TABLE_NAME,
-            $this->minId,
-            $this->maxId,
-            self::ID_COLUMN_NAME
-        );
-        $dt->setLogger($this->getLogger()->withName('MySqlDTWithRandomIds (' . self::TABLE_NAME . ')'));
-        return $dt;
+
+
+    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+        return new MySqlDataTableWithRandomIds($pdo, self::TABLE_NAME,  $this->minId, $this->maxId, self::ID_COLUMN_NAME);
     }
-    
+
+    protected function getLoggerNamePrefix(): string
+    {
+       return 'MySqlDtWithRandomIds';
+    }
+
     public function getRestrictedDt() : MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
@@ -73,13 +70,13 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     public function testRandomIds()
     {
         
-        $dataTable = $this->createEmptyDt();
+        $dataTable = $this->getTestDataTable();
        
         // Adding new rows
         $nRows = 10;
         for ($i = 0; $i < $nRows; $i++) {
-            $newId = $dataTable->createRow(['somekey' => $i,
-                'someotherkey' => "textvalue$i"]);
+            $newId = $dataTable->createRow([ self::INT_COLUMN => $i,
+                self::STRING_COLUMN => "textvalue$i"]);
             $this->assertGreaterThanOrEqual($this->minId, $newId);
             $this->assertLessThanOrEqual($this->maxId, $newId);
         }
@@ -87,8 +84,8 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         // Add new rows with fixed Ids
         $nRows = $this->numRows;
         for ($i = 0; $i < $nRows; $i++) {
-            $newId = $dataTable->createRow([self::ID_COLUMN_NAME => $i+1, 'somekey' => $i,
-                'someotherkey' => "textvalue$i"]);
+            $newId = $dataTable->createRow([self::ID_COLUMN_NAME => $i+1, self::INT_COLUMN => $i,
+                self::STRING_COLUMN => "textvalue$i"]);
             $this->assertEquals($i+1, $newId);
         }
         
@@ -103,8 +100,8 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
             $this->numRows, self::ID_COLUMN_NAME
         );
         for ($i = 0; $i < $nRows; $i++) {
-            $newID = $dt2->createRow([ 'somekey' => $i,
-                'someotherkey' => "textvalue$i"]);
+            $newID = $dt2->createRow([ self::INT_COLUMN => $i,
+                self::STRING_COLUMN => "textvalue$i"]);
             $this->assertNotSame(false, $newID);
             $this->assertGreaterThan($this->numRows, $newID);
         }

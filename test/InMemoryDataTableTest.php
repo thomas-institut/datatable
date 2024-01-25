@@ -35,11 +35,30 @@ require_once 'DataTableTestCase.php';
  */
 class InMemoryDataTableTest extends DataTableTestCase
 {
-    
-    public function createEmptyDt() : GenericDataTable
+
+    static private ?InMemoryDataTable $motherTable = null;
+    static private ?array $theData = null;
+
+    public function multipleDataAccessSessionsAvailable(): bool
     {
-        $dt = new InMemoryDataTable();
+        return false;
+    }
+
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
+    {
+        if (self::$motherTable === null) {  // first table to serve
+            self::$theData = [];
+            self::$motherTable = new InMemoryDataTable(self::$theData);
+            $dt = self::$motherTable;
+        } else {
+            $dt = new InMemoryDataTable(self::$theData);
+        }
+
+        if ($resetTable) {
+            self::$theData = [];
+        }
         $dt->setLogger($this->getLogger()->withName('InMemoryDT'));
+
         return $dt;
     }
 }

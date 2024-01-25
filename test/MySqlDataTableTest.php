@@ -31,7 +31,6 @@ require_once 'config.php';
 require_once 'DataTableTestCase.php';
 
 
-use InvalidArgumentException;
 use PDO;
 use RuntimeException;
 
@@ -46,20 +45,52 @@ class MySqlDataTableTest extends DataTableTestCase
     public int $numRows = 100;
     
     const TABLE_NAME  = 'test_table_mysql_dt';
-    const INT_COLUMN = 'somekey';
-    const STRING_COLUMN = 'someotherkey';
-    const OTHER_STRING_COLUMN = 'value';
+
 
     const ID_COLUMN_NAME = 'row_id';
-    
-    public function createEmptyDt() : GenericDataTable
+
+    static private ?PDO $motherSession = null;
+
+    static private int $pdoCount = 0;
+
+    public function multipleDataAccessSessionsAvailable(): bool
     {
-        $pdo = $this->getPdo();
-        $this->resetTestDb($pdo);
+        return true;
+    }
 
-        $dt = new MySqlDataTable($pdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+        return new MySqlDataTable($pdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+    }
 
-        $dt->setLogger($this->getLogger()->withName('MySqlDataTable (' . self::TABLE_NAME . ')'));
+    protected function getLoggerNamePrefix() : string {
+        return 'MySqlDataTable';
+    }
+    
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : MySqlDataTable
+    {
+        $pdoNumber = 1;
+        if (self::$motherSession === null) {
+            self::$motherSession = $this->getPdo();
+            $pdo = self::$motherSession;
+            self::$pdoCount = 1;
+        } else {
+            if ($newSession) {
+                $pdo = $this->getPdo();
+                self::$pdoCount++;
+                $pdoNumber = self::$pdoCount;
+            } else {
+                $pdo =  self::$motherSession;
+            }
+
+        }
+
+        if ($resetTable) {
+            $this->resetTestDb(self::$motherSession);
+        }
+
+        $dt = $this->constructMySqlDataTable($pdo);
+
+        $dt->setLogger($this->getLogger()->withName($this->getLoggerNamePrefix() . "-PDO$pdoNumber"));
         return $dt;
     }
 
@@ -96,7 +127,7 @@ class MySqlDataTableTest extends DataTableTestCase
         $idCol = self::ID_COLUMN_NAME;
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
-        $otherStringCol = self::OTHER_STRING_COLUMN;
+        $otherStringCol = self::STRING_COLUMN_2;
         $testTableName = self::TABLE_NAME;
 
         $autoIncrement = $autoInc ? 'AUTO_INCREMENT' : '';
@@ -144,7 +175,7 @@ EOD;
      */
     public function testRestrictedPdo()
     {
-        $dataTable = $this->createEmptyDt();
+        $dataTable = $this->getTestDataTable();
         $restrictedDataTable = $this->getRestrictedDt();
 
         $stringCol = self::STRING_COLUMN;
@@ -160,7 +191,7 @@ EOD;
         
         $rowId = $dataTable->createRow([$stringCol => 25]);
         $this->assertNotFalse($rowId);
-        $this->assertEquals(GenericDataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
+        $this->assertEquals(DataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
 
         $exceptionCaught = false;
         try {
@@ -237,7 +268,12 @@ EOD;
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_FOUND, $errorCode);
     }
-    
+
+    /**
+     * @throws RowAlreadyExists
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     */
     public function testUpdateRow()
     {
         parent::testUpdateRow();
@@ -261,7 +297,7 @@ EOD;
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([self::ID_COLUMN_NAME => 1,  self::OTHER_STRING_COLUMN => null]);
+            $dataTable->updateRow([self::ID_COLUMN_NAME => 1,  self::STRING_COLUMN_2 => null]);
         }
         catch (RuntimeException) {
             $exceptionCaught = true;
@@ -273,7 +309,7 @@ EOD;
     {
         parent::testNonExistentRows();
         
-        $dataTable = $this->createEmptyDt();
+        $dataTable = $this->getTestDataTable();
         
         for ($i = 1; $i < 100; $i++) {
             $exceptionCaught = false;
@@ -283,7 +319,7 @@ EOD;
                 $exceptionCaught = true;
             }
             $this->assertTrue($exceptionCaught);
-            $this->assertEquals(GenericDataTable::ERROR_ROW_DOES_NOT_EXIST,
+            $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST,
                 $dataTable->getErrorCode());
             $this->assertNotEquals('', $dataTable->getErrorMessage());
         }
@@ -294,7 +330,7 @@ EOD;
         /**
          * @var MySqlDataTable $dataTable
          */
-        $dataTable= $this->createEmptyDt();
+        $dataTable= $this->getTestDataTable();
 
         $exceptionCaught = false;
         try {
@@ -312,4 +348,6 @@ EOD;
 
         }
     }
+
+
 }

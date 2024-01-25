@@ -16,10 +16,8 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
     private string $idColumnName;
     private Iterator $source;
     private PDOStatement $statement;
-    /**
-     * @var null
-     */
-    private ?array $first;
+
+    private mixed $first;
 
     public function __construct(PDOStatement $statement, string $idColumnName)
     {

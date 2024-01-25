@@ -53,7 +53,8 @@ class MySqlDataTable extends GenericDataTable
     const ERROR_MYSQL_ALREADY_IN_TRANSACTION = 1101;
     const ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION =  1102;
     const ERROR_TABLE_NOT_IN_TRANSACTION = 1103;
-    const ERROR_MYSQL_COULD_NOT_EXECUTE_COMMIT = 1104;
+    const ERROR_MYSQL_COULD_NOT_COMMIT = 1104;
+    const ERROR_MYSQL_COULD_NOT_ROLLBACK = 1105;
 
     protected PDO $dbConn;
 
@@ -559,7 +560,7 @@ class MySqlDataTable extends GenericDataTable
 
     public function startTransaction(): bool
     {
-
+        $this->resetError();
         if ($this->inTransaction) {
             $this->setError("Current table already in a transaction", self::ERROR_TABLE_ALREADY_IN_TRANSACTION);
             return false;
@@ -588,6 +589,7 @@ class MySqlDataTable extends GenericDataTable
      */
     public function commit(): bool
     {
+        $this->resetError();
         if (!$this->inTransaction) {
             $this->setError("Table not in a transaction, commit not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
             return false;
@@ -596,9 +598,26 @@ class MySqlDataTable extends GenericDataTable
             $this->inTransaction = false;
             return true;
         }
-        $this->inTransaction = $this->dbConn->inTransaction();
+        $this->inTransaction = $this->isUnderlyingDatabaseInTransaction();
         $msg = $this->inTransaction ? "table still in a transaction" : "transaction ended";
-        $this->setError("MySql could not commit, $msg", self::ERROR_MYSQL_COULD_NOT_EXECUTE_COMMIT);
+        $this->setError("MySql could not commit, $msg", self::ERROR_MYSQL_COULD_NOT_COMMIT);
+        return false;
+    }
+
+    public function rollBack(): bool
+    {
+        $this->resetError();
+        if (!$this->inTransaction) {
+            $this->setError("Table not in a transaction, rollBack not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
+            return false;
+        }
+        if ($this->dbConn->rollBack()) {
+            $this->inTransaction = false;
+            return true;
+        }
+        $this->inTransaction = $this->isUnderlyingDatabaseInTransaction();
+        $msg = $this->inTransaction ? "table still in a transaction" : "transaction ended";
+        $this->setError("MySql could not roll back, $msg", self::ERROR_MYSQL_COULD_NOT_ROLLBACK);
         return false;
     }
 
