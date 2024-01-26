@@ -28,7 +28,7 @@ namespace ThomasInstitut\DataTable;
 
 require '../vendor/autoload.php';
 require_once 'config.php';
-require_once 'DataTableTestCase.php';
+require_once 'DataTableReferenceTestCase.php';
 
 
 use PDO;
@@ -39,7 +39,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableTest extends DataTableTestCase
+class MySqlDataTableReferenceTest extends DataTableReferenceTestCase
 {
     
     public int $numRows = 100;

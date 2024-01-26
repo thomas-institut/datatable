@@ -3,9 +3,9 @@
 [![Latest Stable Version](https://poser.pugx.org/thomas-institut/datatable/v/stable)](https://packagist.org/packages/thomas-institut/datatable)
 [![License](https://poser.pugx.org/thomas-institut/datatable/license)](https://packagist.org/packages/thomas-institut/datatable)
 
-An abstraction of an SQL-like table made out of rows with a unique integer id as 
-its key. The package provides in-memory and MySQL implementations.
-
+This package defines an interface to abstract data access and manipulation of SQL-like tables made out of rows with a unique integer id as 
+its key and provides in-memory and MySQL implementations. The purpose is to decouple basic data functions
+from actual database details and to allow for faster testing by using in-memory tables.
 
 ## Installation 
 
@@ -18,63 +18,87 @@ $ composer require thomas-institut/datatable
 ## Usage
 
 ### DataTable 
-The main interface is the `DataTable` class, which captures the basic functionality
-of an SQL table with unique ids. Implementations take care of creating new
-unique ids and of interfacing with the underlying storage mechanism.
+The main component is the `DataTable` interface, which captures the basic functionality
+of an SQL table with unique integer ids. Implementations deal with the underlying storage,
+which can be shared among different DataTable instances. Basic id generation mechanisms are
+provided as alternatives to sequential ids. 
 
 ```
-$dt = new DataTableDescendantClass(...) 
+$dt = new DataTableImplementationClass(...) 
 ```
-DataTable objects also implement the ArrayAccess, IteratorAggregate, LoggerAwareInterface
- and ErrorReporter interfaces.
+`DataTable` objects also implement the `ArrayAccess`, `IteratorAggregate`, `LoggerAwareInterface`
+ and `ErrorReporter` interfaces.
 
-The default id generation mechanism behaves exactly like auto-increment in databases.
-Use `setIdGenerator` to install an alternative generator. The `MySqlDataTable` implementation
-can also defer id generation to MySql's AUTO INCREMENT functionality.
+The default id generation mechanism behaves exactly like auto-increment in databases, but it is
+handled without database intervention. Alternative id generators can be devised and set with 
+`setIdGenerator`.
+
+The `MySqlDataTable` implementation provided in this package can also defer id generation to MySql's 
+AUTO INCREMENT functionality, and this is preferred over DataTable's default implementation.
  
-A random id generator is provided. This generator will try to assign random Ids to 
-new rows between two given values up to a maximum number of attempts, after which it
-will default to the maximum current id plus 1:
+A random id generator is provided. This generator will try to generate random Ids between two given 
+values to up to a maximum number of attempts, after which it will default to the maximum current id plus 1:
 ```
 $dt->setIdGenerator(new RandomIdGenerator($min, $max, $maxAttempts));
 ```
 If proper values of `$min`, `$max` and `$maxAttempts` are chosen, it can be practically
 impossible for the random id generator to go to the default.
 
-#### Error Handling 
+#### Error Handling and Reporting 
 
 Invalid argument errors are handled by custom exceptions (see each
 method's documentation for details) and all other problems normally result in
-a RunTimeException being thrown. The latest error can be inspected by calling 
-the `getErrorCode` and `getErrorMessage` methods.
+a RunTimeException being thrown. 
 
-#### Create Rows
+The latest error can be inspected by calling the `getErrorCode` and `getErrorMessage` methods.
+These two methods are defined in the `ErrorReporter` interface.
+
+Per the `LoggerAwareInteface`, a PSR Logger can be set as well and implementations should normally
+report all errors here too. 
+
+#### Row Creation
 ```
-$newRow = [ 'field1' => 'string value', 
-            'field2' => 'string value', 
-             'field3' => numberValue ];  
+$newRow = [ 'field1' => 'exampleStringValue', // or  
+            'field2' => null, 
+            'field3' => true, // or false
+            'field4' => $someIntegerVariable
+            // ... 
+             'fieldN' => $nthValue ];  
+             
 $newId  = $dt->createRow($newRow);  
-// $newId is unique but not necessarily sequential
+
+// $newId is unique within the table
 ```
 
 If an id is present in the row used for creation it will be used as the new id and 
-a `RowAlreadyExists` exception will be thrown if that id is in use.
+a `RowAlreadyExists` exception will be thrown if that id is in use.  
+
+The default name for the id field/column is `id`, if the underlying table in actual storage
+uses a different name, this can be set setIdColumnName, normally right after construction:
+
+```
+$dt = new DataTableImplementation();
+$dt->setIdColumnName('row_id'); 
+
+$dt->getIdColumnName();  // 'row_id'
+```
+
+Setting the column name in a DataTable does not change anything in the underlying database. It only
+tells the DataTable what the actual database id name is.
 
 Array access can also be used to create new rows:
 
 ``` 
-// new row with a newly generated id (not necessarily sequential)
 $dt[] = $newRow; 
 
-// new word with a given id 
+// new row with a given id 
 $dt[$desiredId] = $newRow;
-// but it updates the row if $desiredId already exists
+// but this updates the row if $desiredId already exists
 ```
 
-You can use any number of fields and types in the creation row as long as this makes
-sense with the implementation. An SQL implementation, for instance, 
-may require that the fields agree in number and type with the underlying
-SQL table. 
+Any number of fields/column and types can be used in the creation row as long as this makes
+sense with the implementation and actual storage. It's up to the implementation to ignore extra data
+or throw an error.
 
 #### Read / Search Rows
 
@@ -83,9 +107,10 @@ To check whether a row exists:
 $result = $dt->rowExists($rowId);
 ``` 
 
-to get a particular row:
+To get a particular row:
 ```  
-$row = $dt->getRow($rowId);
+$row = $dt->getRow($rowId);  
+//  $row === [ 'id' => $rowId, 'col1' => value, .... 'colN' => value]; 
 
 // OR
 
@@ -94,8 +119,12 @@ $row = $dt[$rowId];
 // both throw a RowDoesNotExist exception if the row does not exist
 ``` 
 
+To get all rows:
+```
+$rows = $dt->getAllRows();
+```
 All methods that may return multiple rows return an `DataTableIterator` object.
-This is a normal iterator that can be used in a `foreach` statement extended with 
+This is a normal PHP iterator that can be used in a `foreach` statement extended with 
 a `count()` method that returns the number of results. 
 
 The iterator also provides a `getFirst()` convenience method that returns the first 
@@ -105,6 +134,7 @@ rewinding might not be possible in particular implementations.
 
 ```
 $rows = $dt->getAllRows();
+
 $numRows = $rows->count();
 
 // EITHER 
@@ -115,7 +145,7 @@ foreach($rows as $row) {
 
 // OR
 
-$firstRow = $rows->getFirst();
+$firstRow = $rows->getFirst(); // null if there are no rows in the result set
     
 ```
 
@@ -254,8 +284,6 @@ If a DataTable does not support transactions, `startTransaction()`,  `commit()` 
 `rollBack()`  will always return `false`.
 
  
-
-
 
 ### InMemoryDataTable
 

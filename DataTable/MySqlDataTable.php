@@ -252,7 +252,7 @@ class MySqlDataTable extends GenericDataTable
     public function getAllRows() : DataTableResultsIterator
     {
         $sql  = 'SELECT * FROM ' . $this->tableName;
-        return new MySqlDataTableResultsIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
+        return new DataTableResultsPdoIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
 
     }
 
@@ -441,11 +441,14 @@ class MySqlDataTable extends GenericDataTable
 
 
     /**
-     * @inheritdoc
+     * Returns the sql query needed to the get the search results
+     *
+     * @param array $searchSpecArray
+     * @param int $searchType
+     * @param int $maxResults
+     * @return string
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
-    {
-       $this->checkSpec($searchSpecArray, $searchType);
+    protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults) : string {
 
         $conditions = [];
         foreach ($searchSpecArray as $spec) {
@@ -456,12 +459,24 @@ class MySqlDataTable extends GenericDataTable
         if ($searchType == self::SEARCH_OR) {
             $sqlLogicalOperator = 'OR';
         }
-
         $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '
             .  implode(' ' . $sqlLogicalOperator . ' ', $conditions);
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
         }
+
+        return $sql;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
+    {
+       $this->checkSpec($searchSpecArray, $searchType);
+
+
+        $sql = $this->getSearchSqlQuery($searchSpecArray, $searchType, $maxResults);
 
         try {
             $r = $this->dbConn->query($sql);
@@ -477,7 +492,7 @@ class MySqlDataTable extends GenericDataTable
                 // TODO: add an optional full table schema check in order avoid ambiguities here
                 $this->logger->info('Query error in realFindRows (reported as no results)',
                     ['query' => $sql, 'message' => $e->getMessage(), 'code' => $e->getCode()]);
-                return new ArrayDataTableResultsIterator([]);
+                return new DataTableResultsArrayIterator([]);
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
@@ -493,10 +508,10 @@ class MySqlDataTable extends GenericDataTable
             throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
-        return new MySqlDataTableResultsIterator($r, $this->idColumnName);
+        return new DataTableResultsPdoIterator($r, $this->idColumnName);
     }
 
-    private function  getSqlConditionFromSpec(array $spec) : string {
+    protected function  getSqlConditionFromSpec(array $spec) : string {
         $column = $spec['column'];
         $quotedValue = $this->quoteValue($spec['value']);
 

@@ -355,22 +355,37 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
 
 
     /**
-     * @inheritdoc
-     * @throws InvalidSearchSpec
-     * @throws InvalidSearchType
+     * Returns the sql query needed to the get the search results
+     *
+     * @param array $searchSpecArray
+     * @param int $searchType
+     * @param int $maxResults
+     * @return string
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
-    {
-        // Provisional implementation: get a full search a filter out rows not valid at the current time
-        $results = parent::search($searchSpecArray, $searchType, $maxResults);
+    protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults) : string {
 
-        $isRowValidUntilEndOfTimes = function (array $row) {
-            return $row[self::FIELD_VALID_UNTIL] === TimeString::END_OF_TIMES;
-        };
+        $conditions = [];
+        foreach ($searchSpecArray as $spec) {
+            $conditions[] = $this->getSqlConditionFromSpec($spec);
+        }
+        $sqlLogicalOperator  = 'AND';
+        if ($searchType == self::SEARCH_OR) {
+            $sqlLogicalOperator = 'OR';
+        }
+        $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '
+            .  implode(' ' . $sqlLogicalOperator . ' ', $conditions);
 
-        return new FilterIterator($results, $isRowValidUntilEndOfTimes);
+        $validUntilColumn = self::FIELD_VALID_UNTIL;
+        $eot = TimeString::END_OF_TIMES;
+
+        $sql .= " AND `$validUntilColumn`='$eot'";
+
+        if ($maxResults > 0) {
+            $sql .= ' LIMIT ' . $maxResults;
+        }
+
+        return $sql;
     }
-
 
     public function getAllRows() : DataTableResultsIterator
     {
@@ -379,7 +394,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         } catch (InvalidTimeStringException) {
             // should never happen
         }
-        return  $iterator ?? new ArrayDataTableResultsIterator([]);
+        return  $iterator ?? new DataTableResultsArrayIterator([]);
     }
 
 
@@ -399,7 +414,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
                 ' WHERE ' . self::FIELD_VALID_FROM . '<=' . $quotedTimeString .
                 ' AND '. self::FIELD_VALID_UNTIL .  '>' . $quotedTimeString;
         
-        return new MySqlDataTableResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
+        return new DataTableResultsPdoIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
 
     public function getRow(int $rowId) : array
@@ -468,7 +483,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         } catch (InvalidTimeStringException) {
             // should never happen
         }
-        return new ArrayDataTableResultsIterator([]);
+        return new DataTableResultsArrayIterator([]);
     }
 
 
@@ -521,22 +536,22 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
                 // let's report everything in the error message
                 $this->setError('Query error in realFindRowsWithTime (reported as no results) : ' .
                         $e->getMessage() . ' :: query = ' . $sql, self::ERROR_EMPTY_RESULT_SET);
-                return new ArrayDataTableResultsIterator([]);
+                return new DataTableResultsArrayIterator([]);
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRowsWithTime: ' . $e->getMessage() . ' :: query = ' . $sql,
                 self::ERROR_MYSQL_QUERY_ERROR);
-            return new ArrayDataTableResultsIterator([]);
+            return new DataTableResultsArrayIterator([]);
             // @codeCoverageIgnoreEnd
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in realFindRowsWithTime when executing query: ' . $sql,
                 self::ERROR_UNKNOWN_ERROR);
-            return new ArrayDataTableResultsIterator([]);
+            return new DataTableResultsArrayIterator([]);
             // @codeCoverageIgnoreEnd
         }
-        return new MySqlDataTableResultsIterator($r, $this->idColumnName);
+        return new DataTableResultsPdoIterator($r, $this->idColumnName);
     }
 
 
@@ -607,7 +622,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     {
         // TODO: implement searchWithTime
         $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
-        return new ArrayDataTableResultsIterator([]);
+        return new DataTableResultsArrayIterator([]);
 
     }
 

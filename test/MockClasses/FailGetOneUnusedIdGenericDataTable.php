@@ -31,7 +31,7 @@ include '../DataTable/DataTable.php';
 
 
 use RunTimeException;
-use ThomasInstitut\DataTable\ArrayDataTableResultsIterator;
+use ThomasInstitut\DataTable\DataTableResultsArrayIterator;
 use ThomasInstitut\DataTable\DataTableResultsIterator;
 use ThomasInstitut\DataTable\GenericDataTable;
 
@@ -49,7 +49,7 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
     public function findRows(array $rowToMatch, int $maxResults = 0): DataTableResultsIterator
     {
-        return new ArrayDataTableResultsIterator([]);
+        return new DataTableResultsArrayIterator([]);
     }
 
     public function deleteRow(int $rowId): int
@@ -64,7 +64,7 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
     public function getAllRows(): DataTableResultsIterator
     {
-        return new ArrayDataTableResultsIterator([]);
+        return new DataTableResultsArrayIterator([]);
     }
 
     public function getRow(int $rowId): array
@@ -98,7 +98,7 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
     {
-        return new ArrayDataTableResultsIterator([]);
+        return new DataTableResultsArrayIterator([]);
     }
 
 

@@ -238,7 +238,7 @@ abstract class GenericDataTable implements DataTable
         } catch (InvalidSearchSpec|InvalidSearchType ) {
             // this should never happen!
         }
-        return $results ?? new ArrayDataTableResultsIterator([]);
+        return $results ?? new DataTableResultsArrayIterator([]);
     }
 
     /**

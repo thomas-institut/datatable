@@ -10,7 +10,7 @@ use PDOStatement;
  *   * enforces the id column the result rows to be of type integer.
  *   * reports the row id as the key to each result
  */
-class MySqlDataTableResultsIterator implements DataTableResultsIterator
+class DataTableResultsPdoIterator implements DataTableResultsIterator
 {
 
     private string $idColumnName;
@@ -18,6 +18,7 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
     private PDOStatement $statement;
 
     private mixed $first;
+    private int $currentKey;
 
     public function __construct(PDOStatement $statement, string $idColumnName)
     {
@@ -25,6 +26,7 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
         $this->source = $statement->getIterator();
         $this->idColumnName = $idColumnName;
         $this->first = null;
+        $this->currentKey = 0;
     }
 
     private function forceIntId(array $row) : array {
@@ -32,20 +34,22 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
         return $row;
     }
 
-    public function current(): array
+    public function current(): ?array
     {
-        return $this->forceIntId($this->source->current());
+        $current = $this->source->current();
+        return isset($current) ? $this->forceIntId($current) : null;
 
     }
 
     public function next(): void
     {
        $this->source->next();
+       $this->currentKey++;
     }
 
     public function key(): int
     {
-        return $this->source->current()[$this->idColumnName];
+        return $this->currentKey;
     }
 
     public function valid(): bool
@@ -56,6 +60,7 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
     public function rewind(): void
     {
         $this->source->rewind();
+        $this->currentKey = 0;
     }
 
     public function count(): int
@@ -63,11 +68,14 @@ class MySqlDataTableResultsIterator implements DataTableResultsIterator
         return $this->statement->rowCount();
     }
 
-    public function getFirst(): array
+    public function getFirst(): ?array
     {
+        if ($this->statement->rowCount() === 0) {
+            return null;
+        }
         if ($this->first === null) {
             $this->rewind();
-            $this->first = $this->current();
+            $this->first = $this->forceIntId($this->current());
         }
         return $this->first;
     }

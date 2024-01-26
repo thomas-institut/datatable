@@ -48,7 +48,7 @@ require '../vendor/autoload.php';
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-abstract class DataTableTestCase extends TestCase
+abstract class DataTableReferenceTestCase extends TestCase
 {
 
     const INT_COLUMN = 'the_int';
@@ -301,8 +301,8 @@ abstract class DataTableTestCase extends TestCase
         foreach($testCases as $testCase) {
             $exceptionCaught = false;
             try {
-                $resultingRows = $dataTable->search($testCase['specArray'], $testCase['searchType']);
-                $this->assertEquals($testCase['expectedCount'], $resultingRows->count(), $testCase['title']);
+                $resultSet = $dataTable->search($testCase['specArray'], $testCase['searchType']);
+                $this->assertEquals($testCase['expectedCount'], $resultSet->count(), $testCase['title']);
             } catch(InvalidSearchSpec) {
                 $exceptionCaught = true;
             }
@@ -374,9 +374,7 @@ abstract class DataTableTestCase extends TestCase
         foreach($testCases as $testCase) {
             try {
                 $dataTable->search($testCase['specArray'], $testCase['searchType']);
-            } catch(InvalidArgumentException) {
-
-            }
+            } catch(InvalidArgumentException) {}
 
             $this->assertEquals($testCase['expectedErrorCode'], $dataTable->getErrorCode(), $testCase['title']);
         }
@@ -657,7 +655,7 @@ abstract class DataTableTestCase extends TestCase
 
         $idColumn = $dataTable->getIdColumnName();
         if ($dataTable->supportsTransactions()) {
-            $dtSameSession = $this->getTestDataTable(false, false);
+            $dtSameSession = $this->getTestDataTable(false);
             $dtOtherSession = $this->multipleDataAccessSessionsAvailable() ? $this->getTestDataTable(false, true) : null;
 
             $dataTables = [ $dataTable, $dtSameSession, $dtOtherSession];

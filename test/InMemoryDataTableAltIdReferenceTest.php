@@ -26,14 +26,14 @@
 namespace ThomasInstitut\DataTable;
 require '../vendor/autoload.php';
 
-require_once 'DataTableTestCase.php';
+require_once 'DataTableReferenceTestCase.php';
 
 /**
  * Description of DataTableTest
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-class InMemoryDataTableAltIdTest extends DataTableTestCase
+class InMemoryDataTableAltIdReferenceTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;

@@ -10,14 +10,14 @@ use RuntimeException;
 use ThomasInstitut\TimeString\TimeString;
 
 require '../vendor/autoload.php';
-require_once 'MySqlDataTableTest.php';
+require_once 'MySqlDataTableReferenceTest.php';
 
 /**
  * Description of MySqlUnitemporalDataTableTest
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
+class MySqlUnitemporalDataTableTest extends MySqlDataTableReferenceTest
 {
 
     protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {

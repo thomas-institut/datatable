@@ -29,14 +29,14 @@ use PDO;
 
 require '../vendor/autoload.php';
 
-require_once 'MySqlDataTableTest.php';
+require_once 'MySqlDataTableReferenceTest.php';
 
 /**
  * Description of SQLDataTableTest
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
+class MySqlDataTableWithRandomIdsTest extends MySqlDataTableReferenceTest
 {
     
     public int $minId = 100000;

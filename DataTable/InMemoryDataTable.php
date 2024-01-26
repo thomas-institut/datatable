@@ -46,7 +46,7 @@ class InMemoryDataTable extends GenericDataTable
 
     public function getAllRows() : DataTableResultsIterator
     {
-        return new ArrayDataTableResultsIterator($this->theData);
+        return new DataTableResultsArrayIterator($this->theData);
     }
     
     public function rowExists(int $rowId) : bool
@@ -142,11 +142,11 @@ class InMemoryDataTable extends GenericDataTable
             if ($this->matchSearchSpec($dataRow, $searchSpecArray, $searchType)) {
                 $results[] = $dataRow;
                 if ($maxResults > 0 && count($results) === $maxResults) {
-                    return new ArrayDataTableResultsIterator($results);
+                    return new DataTableResultsArrayIterator($results);
                 }
             }
         }
-        return new ArrayDataTableResultsIterator($results);
+        return new DataTableResultsArrayIterator($results);
     }
 
     /**

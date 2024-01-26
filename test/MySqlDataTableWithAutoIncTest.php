@@ -4,9 +4,9 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 
-require_once 'MySqlDataTableTest.php';
+require_once 'MySqlDataTableReferenceTest.php';
 
-class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
+class MySqlDataTableWithAutoIncTest extends MySqlDataTableReferenceTest
 {
 
     protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
