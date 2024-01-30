@@ -11,18 +11,23 @@ use Iterator;
  * with a foreach loop, DataTableResultsIterator provides two convenience
  * methods:
  *
- * * count(): returns the number of results
+ * * count(): returns the number of results without traversing the result set
  * * getFirst(): returns the first result or null if there are no results
  *
- * Depending on the DataTable implementation  that generates the result set, it might
- * not be possible to rewind the iterator.
+ * The iterator strictly returns only arrays as results and iterator keys
+ * are strictly consecutive integers.
+ *
+ *
+ * Depending on the DataTable implementation that generates the result set, it might
+ * not be possible to rewind the iterator. In particular, results from a PDO source,
+ * for example, MySql, cannot be rewound.
  *
  */
 interface DataTableResultsIterator extends Iterator
 {
 
     /**
-     * Returns the number of results.
+     * Returns the number of results without traversing the result set.
      *
      * It is better to use this function instead of PHP's _iterator_count_
      *

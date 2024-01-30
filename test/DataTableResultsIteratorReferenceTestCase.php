@@ -3,9 +3,6 @@
 
 namespace ThomasInstitut\DataTable;
 
-use Monolog\Handler\StreamHandler;
-use Monolog\Level;
-use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 
 
@@ -69,7 +66,6 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
     {
         $iterator = $this->getEmptyIterator();
 
-        $count = $iterator->count();
         $this->assertEquals(0, $iterator->count());
 
         $this->assertNull($iterator->getFirst());
@@ -91,7 +87,7 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
         $this->assertNotEquals(0, $iterator->count());
         $this->assertNotNull($iterator->getFirst());
         $firstResult = $iterator->getFirst();
-        $this->assertValidResultRow($firstResult);
+        $this->assertValidResultRow($firstResult, __FUNCTION__);
     }
 
     /**
@@ -102,18 +98,25 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
         $numIterations = 0;
         foreach($iterator as $index => $row) {
             $this->assertIsInt($index);
-            $this->assertValidResultRow($row);
+            $this->assertValidResultRow($row, __FUNCTION__);
             $numIterations++;
         }
         $this->assertEquals($iterator->count(), $numIterations);
     }
 
 
-    private function assertValidResultRow(mixed $row) : void {
-        $this->assertTrue(is_array($row));
-        $this->assertNotCount(0, array_keys($row));
-        $this->assertIsInt($row['id']);
-        $this->assertNotEquals(0, $row['id']);
+    private function assertValidResultRow(mixed $row, string $context) : void {
+        $context .= ": testing row validity";
+        $this->assertTrue(is_array($row), $context);
+        $rowKeys = array_keys($row);
+        $this->assertNotCount(0, $rowKeys, $context);
+        // No numeric keys allowed
+        foreach($rowKeys as $key) {
+            $this->assertIsNotInt($key, $context . ": row keys must not be int");
+        }
+        $this->assertIsInt($row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
+        $this->assertTrue(isset($row[self::INT_COLUM]), $context);
+        $this->assertNotEquals(0, $row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
     }
 
 }

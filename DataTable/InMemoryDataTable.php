@@ -103,7 +103,7 @@ class InMemoryDataTable extends GenericDataTable
         return $this->getMaxValueInColumn($this->idColumnName);
     }
 
-    public function getRow(int $rowId) : array
+    public function getRow(int $rowId) : ?array
     {
         if ($this->rowExists($rowId)) {
             return $this->theData[$rowId];
@@ -111,7 +111,7 @@ class InMemoryDataTable extends GenericDataTable
         $msg = 'Row ' . $rowId . ' does not exist';
         $errorCode = self::ERROR_ROW_DOES_NOT_EXIST;
         $this->setError($msg, $errorCode, [ 'method' => __METHOD__]);
-        throw new RowDoesNotExist($msg, $errorCode);
+        return null;
     }
     
     public function getIdForKeyValue(string $key, mixed $value) : int

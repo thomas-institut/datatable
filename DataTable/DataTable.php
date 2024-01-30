@@ -26,11 +26,13 @@
 namespace ThomasInstitut\DataTable;
 
 use ArrayAccess;
+use Iterator;
 use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
 
 /**
- * An interface to a table made out of rows addressable by a unique integer id that behaves mostly like a SQL table.
+ * An interface to a table made out of associative array rows addressable by a unique integer and that is normally
+ * stored in a database table.
  *
  * It captures common functionality for this kind of table but does not attempt to impose a particular implementation.
  * The idea is that one descendant of this class will implement the table as an SQL table, but an implementation
@@ -41,6 +43,8 @@ use Psr\Log\LoggerAwareInterface;
  *
  * The assignment of IDs is by default left to the class, not to the underlying database, but implementations can
  * change this behaviour.
+ *
+ * @see https://github.com/thomas-institut/datatable
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
@@ -92,9 +96,15 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     const ERROR_SPEC_NO_VALUE = 113;
     const ERROR_SPEC_INVALID_CONDITION = 114;
 
-
     const ERROR_TRANSACTIONS_NOT_SUPPORTED = 115;
+    const ERROR_NOT_IMPLEMENTED = 116;
 
+    /**
+     * Assigns an IdGenerator to the DataTable
+     *
+     * @param IdGenerator $ig
+     * @return void
+     */
     public function setIdGenerator(IdGenerator $ig) : void;
 
     /**
@@ -108,11 +118,10 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     /**
      * Creates a new row in the table.
      *
-     * If the given row array does not have a value for its id or if the row's id is equal to 0 a new id will be
-     * assigned.
+     * If the given row array does not have a value for the DataTable's ID column, that value is not an integer, or the
+     * value is less or equal to zero a new unique ID will be assigned.
      *
-     * Otherwise, if the given ID is not an int or if the id already exists in the table the function will throw
-     * an exception.
+     * Otherwise, if the given ID already exists in the table the function will throw an exception.
      *
      * @param array $theRow
      * @return int
@@ -122,15 +131,14 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 
 
     /**
-     * Gets the row with the given row ID.
+     * Returns the row with the given row ID.
      *
-     * If the row does not exist throws a RowDoesNotExist exception
+     * If the row does not exist returns null
      *
      * @param int $rowId
-     * @return array
-     * @throws RowDoesNotExist
+     * @return array|null
      */
-    public function getRow(int $rowId) : array;
+    public function getRow(int $rowId) : ?array;
 
     /**
      * Returns an iterator with all rows in the table
@@ -229,7 +237,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     /**
      * Returns true if SQL-like transactions are supported.
      *
-     * If they are, any updates to the table (row creation/update/delete) after
+     * If transactions are supported, any updates to the table (row creation/update/delete) after
      * a call to startTransaction() will not take effect until commit() is called.
      *
      * If transaction are not supported startTransaction() and commit() will do nothing.
@@ -241,8 +249,8 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 
     /**
      *
-     * If transactions are supported, all changes to be table will not
-     * take effect until commit() is called.
+     * If transactions are supported, all further changes to be table will not take effect until commit() is called
+     * and changes can be cancelled with rollBack()
      *
      * Returns true if the transaction started successfully.
      *
@@ -254,7 +262,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 
     /**
      * If transactions are supported, commits all changes since the last call to startTransaction()
-     *
      *
      * Returns true if the commit was successful.
      *
@@ -313,8 +320,8 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns the max value in the given column.
      *
      * The actual column must exist and be numeric for the actual value returned
-     * to be meaningful. Implementations may choose to throw a RunTime exception
-     * in this case.
+     * to be meaningful. Implementations may throw a RunTime exception
+     * if the column in the underlying database is not numeric.
      *
      * @param string $columnName
      * @return int
@@ -329,11 +336,11 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     public function getMaxId() : int;
 
     /**
-     * Returns an array with all the unique row ids in the table in ascending order
+     * Returns an iterator with all the unique row ids in the table in ascending order.
      *
-     * @return int[]
+     * @return Iterator
      */
-    public function getUniqueIds() : array;
+    public function getUniqueIds() : Iterator;
 
 
     /**

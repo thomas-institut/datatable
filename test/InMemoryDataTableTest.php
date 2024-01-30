@@ -33,7 +33,7 @@ require_once 'DataTableReferenceTestCase.php';
  *
  * @author Rafael Nájera <rafael@najera.ca>
  */
-class InMemoryDataTableReferenceTest extends DataTableReferenceTestCase
+class InMemoryDataTableTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;

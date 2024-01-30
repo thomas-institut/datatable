@@ -40,6 +40,10 @@ namespace ThomasInstitut\DataTable;
 interface UnitemporalDataTable extends DataTable
 {
 
+    const ERROR_INVALID_ROW_UPDATE_TIME = 2001;
+    const ERROR_INVALID_TIME = 2002;
+
+
     /**
      * Creates a row that exists starting from the given time
      * Returns the id of the newly created row.
@@ -63,16 +67,16 @@ interface UnitemporalDataTable extends DataTable
 
     /**
      * Gets the version of the row with the given $rowId at the given time.
+     * If the row does not exist at the given time, returns null.
      *
      * @param int $rowId
      * @param string $timeString
-     * @return array
-     * @throws RowDoesNotExist
+     * @return array|null
      */
-    public function getRowWithTime(int $rowId, string $timeString) : array;
+    public function getRowWithTime(int $rowId, string $timeString) : ?array;
 
     /**
-     * Returns an array of versions of rows that match the key/value pairs in the given $theRow
+     * Returns an iterator with versions of rows that match the key/value pairs in the given $theRow
      * at the given time
      *
      * @param $theRow
@@ -83,7 +87,7 @@ interface UnitemporalDataTable extends DataTable
     public function findRowsWithTime($theRow, $maxResults, string $timeString) : DataTableResultsIterator;
 
     /**
-     * Searches the datatable the versions of rows that match the given $searchSpec array and $searchType
+     * Searches the datatable for rows that match the given $searchSpec array and $searchType
      * at the given time
      *
      * @param array $searchSpecArray
@@ -97,12 +101,16 @@ interface UnitemporalDataTable extends DataTable
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): DataTableResultsIterator;
 
     /**
-     * Creates a new version of the given row that is valid from the given time
+     * Creates a new version of the given row that is valid from the given time.
+     *
      * Assumes that the given time is later than the last version of the row.
      *
      * @param array $theRow
      * @param string $timeString
      * @throws InvalidTimeStringException
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
      */
     public function updateRowWithTime(array $theRow, string $timeString) : void;
 
@@ -121,8 +129,6 @@ interface UnitemporalDataTable extends DataTable
 
     /**
      * Returns an array with all the different versions of the row with the given $rowId
-     * Each version has the same fields as any row in the datatable plus
-     *  'valid_from' and a 'valid_until' fields.
      *
      * @param int $rowId
      * @return array

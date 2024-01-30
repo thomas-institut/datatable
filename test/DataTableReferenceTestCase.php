@@ -25,6 +25,7 @@
  */
 namespace ThomasInstitut\DataTable;
 
+use Iterator;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
@@ -120,7 +121,7 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         sort($ids, SORT_NUMERIC);
 
-        $this->assertEquals($ids, $dataTable->getUniqueIds());
+        $this->assertEquals($ids, iterator_to_array($dataTable->getUniqueIds()));
 
         // Some random deletions and additions
         for ($i = 0; $i < $this->numIterations; $i++) {
@@ -130,12 +131,22 @@ abstract class DataTableReferenceTestCase extends TestCase
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
             $this->assertEquals(1, $dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExists($theId), $testMsg);
-            $this->assertFalse(in_array($theId, $dataTable->getUniqueIds()), $testMsg);
+            $this->assertFalse($this->inIterator($theId, $dataTable->getUniqueIds()), $testMsg);
             $newId = $dataTable->createRow([ $idColumn => $theId,
                 self::INT_COLUMN => $theId, self::STRING_COLUMN => "textvalue$theId" ]);
             $this->assertSame($theId, $newId, $testMsg);
-            $this->assertTrue(in_array($theId, $dataTable->getUniqueIds()), $testMsg);
+            $this->assertTrue($this->inIterator($theId, $dataTable->getUniqueIds()), $testMsg);
         }
+    }
+
+    private function inIterator(int $someInt, Iterator $iterator) :bool {
+
+        foreach($iterator as $value) {
+            if ($someInt === $value) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function testFindSingle()
@@ -382,7 +393,6 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws RowDoesNotExist
      * @throws InvalidArgumentException
      * @throws InvalidRowForUpdate
      */
@@ -402,6 +412,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $theId = $theRow[$idColumn];
             $dataTable->updateRow([$idColumn=>$theId,  self::STRING_COLUMN => $newTextValue]);
             $theRow2 = $dataTable->getRow($theId);
+            $this->assertNotNull($theRow2);
             $this->assertEquals(
                 $newTextValue,
                 $theRow2[self::STRING_COLUMN],
@@ -417,9 +428,8 @@ abstract class DataTableReferenceTestCase extends TestCase
         $dataTable = $this->getTestDataTable();
         $this->assertFalse($dataTable->rowExists(1));
 
-        try {
-            $dataTable->getRow(1);
-        } catch (InvalidArgumentException) {}
+        $row = $dataTable->getRow(1);
+        $this->assertNull($row);
 
         $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
@@ -454,6 +464,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertEquals(DataTable::ERROR_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
         $row = $dataTable->getRow(1);
+        $this->assertNotNull($row);
         $this->assertEquals('test', $row[self::STRING_COLUMN_2]);
 
         // invalid ID: a new one must be generated
@@ -469,7 +480,6 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
-     * @throws RowDoesNotExist
      */
     public function testUpdateRow()
     {
@@ -477,12 +487,14 @@ abstract class DataTableReferenceTestCase extends TestCase
         $idColumn = $dataTable->getIdColumnName();
         $theRow = [
             $idColumn => 1,
-            self::STRING_COLUMN_2 => 'test',
+            self::STRING_COLUMN_2 => 'updateRowTest',
             self::INT_COLUMN => 0,
-            self::STRING_COLUMN => 0
+            self::STRING_COLUMN => '0'
         ];
         $res = $dataTable->createRow($theRow);
         $this->assertEquals(1, $res);
+        $createdRow = $dataTable->getRow(1);
+        $this->assertEquals($theRow, $createdRow);
         
         // No id in row
         $exceptionCaught = false;
@@ -593,7 +605,6 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
-     * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
      */
     public function testEscaping()
@@ -603,12 +614,14 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         $rowId = $dataTable->createRow([self::INT_COLUMN => 120]);
         $theRow = $dataTable->getRow($rowId);
+        $this->assertNotNull($theRow);
         $this->assertSame($rowId, $theRow[$idColumn]);
         $this->assertEquals(120, $theRow[self::INT_COLUMN]);
         $this->assertFalse(isset($theRow[self::STRING_COLUMN]));
         $dataTable->updateRow([$idColumn => $rowId, self::INT_COLUMN => null,
             self::STRING_COLUMN => 'Some string']);
         $theRow2 = $dataTable->getRow($rowId);
+        $this->assertNotNull($theRow2);
         $this->assertTrue(is_null($theRow2[self::INT_COLUMN]));
         $this->assertEquals('Some string', $theRow2[self::STRING_COLUMN]);
 

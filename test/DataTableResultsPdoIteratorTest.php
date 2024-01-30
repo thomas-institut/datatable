@@ -8,14 +8,16 @@ require '../vendor/autoload.php';
 require_once 'config.php';
 require_once 'DataTableResultsIteratorReferenceTestCase.php';
 
-class DataTestCaseTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceTestCase
+class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceTestCase
 {
+
+    const AUTO_INC = false;
 
     const TEST_TABLE_NAME = 'iterator_dt';
     public function createDataTable() : DataTable {
         $pdo = $this->getPdo();
         $this->setupDatabase($pdo);
-        return new MySqlDataTable($pdo, self::TEST_TABLE_NAME, true);
+        return new MySqlDataTable($pdo, self::TEST_TABLE_NAME, self::AUTO_INC);
     }
 
 
@@ -29,8 +31,8 @@ class DataTestCaseTableResultsPdoIteratorTest extends DataTableResultsIteratorRe
 
     private function setupDatabase(PDO $pdo) : void {
         $testTableName = self::TEST_TABLE_NAME;
-        $autoIncrement = 'AUTO_INCREMENT';
-        $idCol = 'id';
+        $autoIncrement = self::AUTO_INC ? 'AUTO_INCREMENT' : '';
+        $idCol = DataTable::DEFAULT_ID_COLUMN_NAME;
         $intCol = self::INT_COLUM;
 
         $tableSetupSQL =<<<EOD

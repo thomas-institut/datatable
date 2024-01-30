@@ -39,7 +39,7 @@ use RuntimeException;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class MySqlDataTableReferenceTest extends DataTableReferenceTestCase
+class MySqlDataTableTest extends DataTableReferenceTestCase
 {
     
     public int $numRows = 100;
@@ -312,13 +312,8 @@ EOD;
         $dataTable = $this->getTestDataTable();
         
         for ($i = 1; $i < 100; $i++) {
-            $exceptionCaught = false;
-            try {
-                $dataTable->getRow($i);
-            } catch (RowDoesNotExist) {
-                $exceptionCaught = true;
-            }
-            $this->assertTrue($exceptionCaught);
+            $row = $dataTable->getRow($i);
+            $this->assertNull($row);
             $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST,
                 $dataTable->getErrorCode());
             $this->assertNotEquals('', $dataTable->getErrorMessage());

@@ -6,7 +6,7 @@ require '../vendor/autoload.php';
 require_once 'config.php';
 require_once 'DataTableResultsIteratorReferenceTestCase.php';
 
-class DataTestCaseTableResultsArrayIteratorTest extends DataTableResultsIteratorReferenceTestCase
+class DataTableResultsArrayIteratorTest extends DataTableResultsIteratorReferenceTestCase
 {
     public function createDataTable() : DataTable {
         return new InMemoryDataTable();

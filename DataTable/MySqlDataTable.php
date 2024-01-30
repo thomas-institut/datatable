@@ -25,6 +25,7 @@
  */
 namespace ThomasInstitut\DataTable;
 
+use Iterator;
 use LogicException;
 use PDO;
 use PDOException;
@@ -199,7 +200,6 @@ class MySqlDataTable extends GenericDataTable
             $values[] = $this->quoteValue($theRow[$key]);
         }
         $sql .= '(' . implode(',', $values) . ');';
-
         return $sql;
     }
 
@@ -303,24 +303,14 @@ class MySqlDataTable extends GenericDataTable
 
 
 
-    public function getRow(int $rowId) : array
+    public function getRow(int $rowId) : ?array
     {
-        try {
-            $r = $this->select('*', $this->idColumnName . '=' . $rowId, 1, '', 'getRow');
-        } catch (InvalidWhereClauseException) {
-            // should never happen
+        $rows = $this->findRows([$this->idColumnName => $rowId]);
+        if ($rows->count() === 0) {
+            $this->setError("Row $rowId does not exist", self::ERROR_ROW_DOES_NOT_EXIST);
+            return null;
         }
-        if (!isset($r)) {
-            throw new RuntimeException("Unknown error while getting Row", self::ERROR_UNKNOWN_ERROR);
-        }
-
-        $res = $r->fetch(PDO::FETCH_ASSOC);
-        if ($res === false) {
-            $this->setError('The row with id ' . $rowId . ' does not exist',self::ERROR_ROW_DOES_NOT_EXIST );
-            throw new RowDoesNotExist($this->getErrorMessage(), $this->getErrorCode());
-        }
-        $res[$this->idColumnName] = (int) $res[$this->idColumnName];
-        return $res;
+        return $rows->getFirst();
     }
 
     /**
@@ -401,14 +391,12 @@ class MySqlDataTable extends GenericDataTable
         return $r;
     }
 
-    public function getUniqueIds(): array
+    public function getUniqueIds(): Iterator
     {
         $tableName = $this->tableName;
         $idColumn = $this->idColumnName;
         $result = $this->doQuery("SELECT DISTINCT($idColumn) FROM `$tableName` ORDER BY `$tableName`.`$idColumn`", "getUniqueIds");
-        $ids = array_map( function ($row) use ($idColumn): int { return intval($row[$idColumn]);}, $result->fetchAll());
-        sort($ids, SORT_NUMERIC);
-        return $ids;
+        return new PdoUniqueIdsIterator($result);
     }
 
 

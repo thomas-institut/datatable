@@ -3,6 +3,7 @@
 namespace ThomasInstitut\DataTable;
 
 use Iterator;
+use PDO;
 use PDOStatement;
 
 /**
@@ -23,13 +24,14 @@ class DataTableResultsPdoIterator implements DataTableResultsIterator
     public function __construct(PDOStatement $statement, string $idColumnName)
     {
         $this->statement = $statement;
+        $this->statement->setFetchMode(PDO::FETCH_ASSOC);
         $this->source = $statement->getIterator();
         $this->idColumnName = $idColumnName;
         $this->first = null;
         $this->currentKey = 0;
     }
 
-    private function forceIntId(array $row) : array {
+    private function normalizeResultRowArray(array $row) : array {
         $row[$this->idColumnName] = intval($row[$this->idColumnName]);
         return $row;
     }
@@ -37,7 +39,7 @@ class DataTableResultsPdoIterator implements DataTableResultsIterator
     public function current(): ?array
     {
         $current = $this->source->current();
-        return isset($current) ? $this->forceIntId($current) : null;
+        return isset($current) ? $this->normalizeResultRowArray($current) : null;
 
     }
 
@@ -75,7 +77,7 @@ class DataTableResultsPdoIterator implements DataTableResultsIterator
         }
         if ($this->first === null) {
             $this->rewind();
-            $this->first = $this->forceIntId($this->current());
+            $this->first = $this->normalizeResultRowArray($this->current());
         }
         return $this->first;
     }

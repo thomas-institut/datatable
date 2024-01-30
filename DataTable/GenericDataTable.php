@@ -25,7 +25,9 @@
  */
 namespace ThomasInstitut\DataTable;
 
+use ArrayIterator;
 use Exception;
+use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Traversable;
@@ -105,7 +107,7 @@ abstract class GenericDataTable implements DataTable
         return $this->getAllRows();
     }
 
-    public function getUniqueIds(): array
+    public function getUniqueIds(): Iterator
     {
         $rowIterator = $this->getAllRows();
         $allIds = [];
@@ -114,7 +116,7 @@ abstract class GenericDataTable implements DataTable
         }
         $ids = array_unique($allIds, SORT_NUMERIC);
         sort($ids, SORT_NUMERIC);
-        return $ids;
+        return new ArrayIterator($ids);
     }
 
     abstract public function rowExists(int $rowId) : bool;
@@ -134,12 +136,7 @@ abstract class GenericDataTable implements DataTable
 
     public function offsetGet(mixed $offset): ?array
     {
-        try {
-            $row = $this->getRow(intval($offset));
-        } catch (RowDoesNotExist) {
-            return null;
-        }
-        return $row;
+        return $this->getRow(intval($offset));
     }
 
 
@@ -212,7 +209,7 @@ abstract class GenericDataTable implements DataTable
         return false;
     }
 
-    abstract public function getRow(int $rowId) : array;
+    abstract public function getRow(int $rowId) : ?array;
 
     abstract public function getAllRows() : DataTableResultsIterator;
 
