@@ -92,12 +92,12 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         parent::__construct($dbConnection, $tableName, false, $idColumnName);
 
         // Check additional columns
-        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_FROM, 'datetime')) {
+        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_FROM, ['datetime'])) {
             // error message and code set by isMySqlTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_UNTIL, 'datetime')) {
+        if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_UNTIL, ['datetime'])) {
             // error message and code set by isMySqlTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }

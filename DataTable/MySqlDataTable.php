@@ -85,7 +85,7 @@ class MySqlDataTable extends GenericDataTable
         $this->mySqlAutoInc = $useMySqlAutoInc;
         $this->inTransaction = false;
         
-        if (!$this->isMySqlTableColumnValid($this->idColumnName, 'int')) {
+        if (!$this->isMySqlTableColumnValid($this->idColumnName, ['int', 'bigint'])) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         
@@ -110,7 +110,17 @@ class MySqlDataTable extends GenericDataTable
     }
 
 
-    protected function isMySqlTableColumnValid(string $columnName, string $type) : bool
+    /**
+     * Checks a MySql column.
+     *
+     * Returns false if the column or table does not exist or if its type is not
+     * one in the given list.
+     *
+     * @param string $columnName
+     * @param string[] $requiredTypes
+     * @return bool
+     */
+    protected function isMySqlTableColumnValid(string $columnName, array $requiredTypes) : bool
     {
         try {
             $r = $this->dbConn->query(
@@ -145,12 +155,19 @@ class MySqlDataTable extends GenericDataTable
         }
          
         $columnInfo = $r->fetch(PDO::FETCH_ASSOC);
-        
-        $preg = '/^' . $type . '/';
-        if (!preg_match($preg, $columnInfo['Type'])) {
+
+        $columnHasGoodType = false;
+        foreach ($requiredTypes as $requiredType) {
+            $preg = '/^' . $requiredType . '/';
+            if (preg_match($preg, $columnInfo['Type'])) {
+                $columnHasGoodType = true;
+                break;
+            }
+        }
+        if (!$columnHasGoodType) {
             $this->setError('Wrong MySQL column type for  '
                 . $this->tableName . '::' . $columnName
-                . ', required=\'' . $type
+                . ', required=\'' . implode(' or ', $requiredTypes)
                 . '\', actual=\'' . $columnInfo['Type'] . '\'',
                 self::ERROR_WRONG_COLUMN_TYPE);
             return false;

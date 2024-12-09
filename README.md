@@ -3,8 +3,8 @@
 [![Latest Stable Version](https://poser.pugx.org/thomas-institut/datatable/v/stable)](https://packagist.org/packages/thomas-institut/datatable)
 [![License](https://poser.pugx.org/thomas-institut/datatable/license)](https://packagist.org/packages/thomas-institut/datatable)
 
-This package defines an interface to abstract data access and manipulation of SQL-like tables made out of rows with a unique integer id as 
-its key and provides in-memory and MySQL implementations. The purpose is to decouple basic data functions
+This package defines abstract data access and manipulation of SQL-like tables (tables made out of rows with a unique integer id as 
+its key), and provides in-memory and MySQL implementations of that abstraction. The purpose is to decouple basic data functions
 from actual database details and to allow for faster testing by using in-memory tables.
 
 ## Installation 
@@ -18,7 +18,7 @@ $ composer require thomas-institut/datatable
 ## Usage
 
 ### DataTable 
-The main component is the `DataTable` interface, which captures the basic functionality
+The main component of this package is the `DataTable` interface, which captures the basic functionality
 of an SQL table with unique integer ids. Implementations deal with the underlying storage,
 which can be shared among different DataTable instances. Basic id generation mechanisms are
 provided as alternatives to sequential ids. 
@@ -300,7 +300,7 @@ $dt = new MySqlDataTable($pdoDatabaseConnection, $mySqlTableName, $useAutoInc, $
 ```
 
 `MySqlDataTable` assumes that there is a table setup with at least
-an integer `id` column with the given name (`$idColumnName`, which defaults to 'id'). 
+an int or bigint `id` column with the given name (`$idColumnName`, which defaults to 'id'). 
 
 If `$useAutoInc` is true, `MySqlDataTable` assumes that the `id` column has 
 the `AUTO_INCREMENT` attribute and will create rows so that MySQL will take care 
