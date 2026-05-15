@@ -30,6 +30,7 @@ use Exception;
 use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
 use Traversable;
 
 
