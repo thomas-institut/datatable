@@ -210,6 +210,24 @@ EOD;
         $this->assertTrue($result);
     }
 
+    /**
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testDbConnectionProvider(): void
+    {
+        $pdo = $this->getPdo();
+        $provider = new SimplePdoProvider($pdo);
+        $dataTable = new MySqlDataTable($provider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        $rowId = 101;
+        $row = [self::ID_COLUMN_NAME => $rowId, self::STRING_COLUMN => 'test'];
+        $dataTable->createRow($row);
+
+        $this->assertTrue($dataTable->rowExists($rowId));
+        $this->assertEquals('test', $dataTable->getRow($rowId)[self::STRING_COLUMN]);
+    }
+
     #[Test]
     public function testEscaping(): void
     {

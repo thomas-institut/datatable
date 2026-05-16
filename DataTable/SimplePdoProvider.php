@@ -4,12 +4,12 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 
-readonly class PassThroughDbConnectionProvider implements DbConnectionProviderInterface
+readonly class SimplePdoProvider implements PdoProvider
 {
     public function __construct(private PDO $pdo)
     {
     }
-    public function getDbConnection(): PDO
+    public function getPdo(): PDO
     {
         return $this->pdo;
     }

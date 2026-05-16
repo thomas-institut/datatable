@@ -26,6 +26,7 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use ThomasInstitut\DataTable\PdoProvider;
 
 /**
  * Class MySqlDataTableWithRandomIds
@@ -44,15 +45,15 @@ class MySqlDataTableWithRandomIds extends MySqlDataTable
      * $min and $max should be carefully chosen so that
      * the method to get new unused id doesn't take too
      * long.
-     * @param PDO $dbConnection
+     * @param PDO|PdoProvider $pdoOrProvider
      * @param string $tableName
      * @param int $min
      * @param int $max
      * @param string $idColumnName
      */
-    public function __construct(PDO $dbConnection, string $tableName, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
-        parent::__construct($dbConnection, $tableName, false, $idColumnName);
+        parent::__construct($pdoOrProvider, $tableName, false, $idColumnName);
         $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
     }
 

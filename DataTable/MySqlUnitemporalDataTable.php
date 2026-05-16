@@ -84,13 +84,14 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
 
     /**
      *
-     * @param PDO $dbConnection initialized PDO connection
+     * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
+     * @param string $idColumnName
      */
-    public function __construct(PDO $dbConnection, string $tableName, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
 
-        parent::__construct($dbConnection, $tableName, false, $idColumnName);
+        parent::__construct($pdoOrProvider, $tableName, false, $idColumnName);
 
         // Check additional columns
         if (!$this->isMySqlTableColumnValid(self::FIELD_VALID_FROM, ['datetime'])) {
@@ -106,7 +107,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         // Override rowExistsById statement
         try {
             $this->statements['rowExistsById'] =
-                $this->dbConn->prepare("SELECT `$this->idColumnName` FROM " . $this->tableName .
+                $this->pdoProvider->getPdo()->prepare("SELECT `$this->idColumnName` FROM " . $this->tableName .
                     " WHERE `$this->idColumnName`= :id AND `" . self::FIELD_VALID_UNTIL . '`=' .
                     $this->quoteValue(TimeString::END_OF_TIMES));
         } catch (PDOException $e) { // @codeCoverageIgnore
@@ -541,7 +542,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             }
             $c = $key . '=';
             if (is_string($theRow[$key])) {
-                $c .= $this->dbConn->quote($theRow[$key]);
+                $c .= $this->pdoProvider->getPdo()->quote($theRow[$key]);
             } else {
                 $c .= $theRow[$key];
             }
@@ -558,7 +559,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         }
 
         try {
-            $r = $this->dbConn->query($sql);
+            $r = $this->pdoProvider->getPdo()->query($sql);
         } catch (PDOException $e) {
             if ($e->getCode() === '42000') {
                 // The exception was thrown because of an SQL syntax error, but

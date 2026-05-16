@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace ThomasInstitut\DataTable;
 
 use Iterator;
@@ -52,12 +53,12 @@ class MySqlDataTable extends GenericDataTable
 
     public const int ERROR_TABLE_ALREADY_IN_TRANSACTION = 1100;
     public const int ERROR_MYSQL_ALREADY_IN_TRANSACTION = 1101;
-    public const int ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION =  1102;
+    public const int ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION = 1102;
     public const int ERROR_TABLE_NOT_IN_TRANSACTION = 1103;
     public const int ERROR_MYSQL_COULD_NOT_COMMIT = 1104;
     public const int ERROR_MYSQL_COULD_NOT_ROLLBACK = 1105;
 
-    protected PDO $dbConn;
+    protected PdoProvider $pdoProvider;
 
     /**
      * @var PDOStatement[]
@@ -71,34 +72,38 @@ class MySqlDataTable extends GenericDataTable
 
     /**
      *
-     * @param PDO $dbConnection initialized PDO connection
+     * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
-          */
-    public function __construct(PDO $dbConnection, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+     */
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
-        
+
         parent::__construct();
-        
+
         $this->tableName = $tableName;
         $this->idColumnName = $idColumnName;
-        $this->dbConn = $dbConnection;
+        if ($pdoOrProvider instanceof PDO) {
+            $this->pdoProvider = new SimplePdoProvider($pdoOrProvider);
+        } else {
+            $this->pdoProvider = $pdoOrProvider;
+        }
         $this->mySqlAutoInc = $useMySqlAutoInc;
         $this->inTransaction = false;
-        
+
         if (!$this->isMySqlTableColumnValid($this->idColumnName, ['int', 'bigint'])) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
-        
-        $this->dbConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-       
+
+        $this->pdoProvider->getPdo()->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
         // Pre-prepare common statements
         try {
             $this->statements['rowExistsById'] =
-                $this->dbConn->prepare('SELECT `' . $this->idColumnName .  '` FROM `' . $this->tableName
-                        . '` WHERE '. $this->idColumnName .  '= :id');
+                $this->pdoProvider->getPdo()->prepare('SELECT `' . $this->idColumnName . '` FROM `' . $this->tableName
+                    . '` WHERE ' . $this->idColumnName . '= :id');
             $this->statements['deleteRow'] =
-                $this->dbConn->prepare('DELETE FROM `' . $this->tableName
-                    . '` WHERE `'. $this->idColumnName .  '`= :id');
+                $this->pdoProvider->getPdo()->prepare('DELETE FROM `' . $this->tableName
+                    . '` WHERE `' . $this->idColumnName . '`= :id');
         } catch (PDOException $e) { // @codeCoverageIgnore
             // @codeCoverageIgnoreStart
             $msg = "Could not prepare statements in constructor, " . $e->getMessage();
@@ -120,12 +125,12 @@ class MySqlDataTable extends GenericDataTable
      * @param string[] $requiredTypes
      * @return bool
      */
-    protected function isMySqlTableColumnValid(string $columnName, array $requiredTypes) : bool
+    protected function isMySqlTableColumnValid(string $columnName, array $requiredTypes): bool
     {
         try {
-            $r = $this->dbConn->query(
-                'SHOW COLUMNS FROM ' . $this->tableName 
-                    . ' LIKE \'' . $columnName . '\''
+            $r = $this->pdoProvider->getPdo()->query(
+                'SHOW COLUMNS FROM ' . $this->tableName
+                . ' LIKE \'' . $columnName . '\''
             );
         } catch (PDOException $e) { // @codeCoverageIgnore
             if ($e->getCode() === '42S02') {
@@ -135,25 +140,25 @@ class MySqlDataTable extends GenericDataTable
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error checking MySQL column '
-                    . $this->tableName . '::' . $columnName . ' : MySql Error Code ' . $e->getCode() . ", msg = ". $e->getMessage(),
+                . $this->tableName . '::' . $columnName . ' : MySql Error Code ' . $e->getCode() . ", msg = " . $e->getMessage(),
                 self::ERROR_MYSQL_QUERY_ERROR);
             return false;
             // @codeCoverageIgnoreEnd
         }
-        
-        
+
+
         if ($r === false) {
             $this->setError('Table ' . $this->tableName . ' not found',
                 self::ERROR_TABLE_NOT_FOUND);
             return false;
         }
-        
+
         if ($r->rowCount() != 1) {
-            $this->setError('Required column ' . $columnName  . ' not found in table ' . $this->tableName,
+            $this->setError('Required column ' . $columnName . ' not found in table ' . $this->tableName,
                 self::ERROR_REQUIRED_COLUMN_NOT_FOUND);
             return false;
         }
-         
+
         $columnInfo = $r->fetch(PDO::FETCH_ASSOC);
 
         $columnHasGoodType = false;
@@ -178,7 +183,7 @@ class MySqlDataTable extends GenericDataTable
     /**
      * @throws RuntimeException
      */
-    public function rowExists(int $rowId) : bool
+    public function rowExists(int $rowId): bool
     {
         $this->resetError();
         $this->executeStatement('rowExistsById', ['id' => $rowId]);
@@ -188,7 +193,8 @@ class MySqlDataTable extends GenericDataTable
         return true;
     }
 
-     public function createRow(array $theRow) : int {
+    public function createRow(array $theRow): int
+    {
         if (!$this->mySqlAutoInc) {
             // use regular id creator
             return parent::createRow($theRow);
@@ -198,13 +204,13 @@ class MySqlDataTable extends GenericDataTable
         }
         if ($theRow[$this->idColumnName] !== 0) {
             if ($this->rowExists($theRow[$this->idColumnName])) {
-                $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
+                $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
                 throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
             }
         }
         $this->doQuery($this->getMySqlInsertQuery($theRow), 'createRow_MySQL_auto_inc');
-        return $this->dbConn->lastInsertId();
+        return $this->pdoProvider->getPdo()->lastInsertId();
     }
 
     private function getMySqlInsertQuery(array $theRow): string
@@ -220,19 +226,19 @@ class MySqlDataTable extends GenericDataTable
         return $sql;
     }
 
-    public function realCreateRow(array $theRow) : int
+    public function realCreateRow(array $theRow): int
     {
         $this->doQuery($this->getMySqlInsertQuery($theRow), 'realCreateRow');
-        return (int) $theRow[$this->idColumnName];
+        return (int)$theRow[$this->idColumnName];
     }
 
 
-    public function realUpdateRow(array $theRow) : void
+    public function realUpdateRow(array $theRow): void
     {
 
         if (!$this->rowExists($theRow[$this->idColumnName])) {
             $this->setError('Id ' . $theRow[$this->idColumnName] . ' does not exist, cannot update',
-                self::ERROR_ROW_DOES_NOT_EXIST );
+                self::ERROR_ROW_DOES_NOT_EXIST);
             throw new RowDoesNotExist($this->getErrorMessage(), $this->getErrorCode());
         }
         $keys = array_keys($theRow);
@@ -244,8 +250,8 @@ class MySqlDataTable extends GenericDataTable
             $sets[] = $key . '=' . $this->quoteValue($theRow[$key]);
         }
         $sql = 'UPDATE `' . $this->tableName . '` SET '
-                . implode(',', $sets) . ' WHERE `' . $this->idColumnName . '`=' . $theRow[$this->idColumnName];
-        
+            . implode(',', $sets) . ' WHERE `' . $this->idColumnName . '`=' . $theRow[$this->idColumnName];
+
         $this->doQuery($sql, 'realUpdateRow');
     }
 
@@ -255,20 +261,20 @@ class MySqlDataTable extends GenericDataTable
      * @param $var
      * @return string
      */
-    public function quoteValue($var) : string
+    public function quoteValue($var): string
     {
         if (is_string($var)) {
-            return $this->dbConn->quote($var);
+            return $this->pdoProvider->getPdo()->quote($var);
         }
         if (is_null($var)) {
             return 'NULL';
         }
-        return (string) $var;
+        return (string)$var;
     }
 
-    public function getAllRows() : DataTableResultsIterator
+    public function getAllRows(): DataTableResultsIterator
     {
-        $sql  = 'SELECT * FROM ' . $this->tableName;
+        $sql = 'SELECT * FROM ' . $this->tableName;
         return new DataTableResultsPdoIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
 
     }
@@ -297,17 +303,18 @@ class MySqlDataTable extends GenericDataTable
      * @see DataTable::search()  Preferred alternative
      * @see DataTable::findRows() Preferred alternative
      */
-    public function select(string $what, string $where, int $limit, string $orderBy, string $context ) : PDOStatement {
+    public function select(string $what, string $where, int $limit, string $orderBy, string $context): PDOStatement
+    {
 
         if ($what === '') {
             $what = '*';
         }
-        if ($where ==='') {
+        if ($where === '') {
             $this->setError('Empty where clause', self::ERROR_INVALID_WHERE_CLAUSE);
             throw new InvalidWhereClauseException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        $sql = 'SELECT ' .  $what . ' FROM `' . $this->tableName . '` WHERE ' . $where;
+        $sql = 'SELECT ' . $what . ' FROM `' . $this->tableName . '` WHERE ' . $where;
         if ($limit > 0) {
             $sql .= ' LIMIT ' . $limit;
         }
@@ -319,8 +326,7 @@ class MySqlDataTable extends GenericDataTable
     }
 
 
-
-    public function getRow(int $rowId) : ?array
+    public function getRow(int $rowId): ?array
     {
         $rows = $this->findRows([$this->idColumnName => $rowId]);
         if ($rows->count() === 0) {
@@ -335,7 +341,7 @@ class MySqlDataTable extends GenericDataTable
      */
     public function getMaxValueInColumn(string $columnName): int
     {
-        $sql = 'SELECT MAX('. $columnName . ') FROM ' . $this->tableName;
+        $sql = 'SELECT MAX(' . $columnName . ') FROM ' . $this->tableName;
 
         $r = $this->doQuery($sql, 'getMaxValueInColumn');
 
@@ -343,26 +349,26 @@ class MySqlDataTable extends GenericDataTable
         if ($maxId === null) {
             return 0;
         }
-        return (int) $maxId;
+        return (int)$maxId;
     }
 
-    public function getMaxId() : int
+    public function getMaxId(): int
     {
         return $this->getMaxValueInColumn($this->idColumnName);
 
     }
-    
-    public function getIdForKeyValue(string $key, mixed $value) : int
+
+    public function getIdForKeyValue(string $key, mixed $value): int
     {
         $rows = $this->findRows([$key => $value], 1);
         if ($rows->count() === 0) {
-            $this->setError('Value ' . $value . ' for key ' . $key .  'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
+            $this->setError('Value ' . $value . ' for key ' . $key . 'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
         return $rows->getFirst()[$this->idColumnName];
     }
 
-    public function deleteRow(int $rowId) : int
+    public function deleteRow(int $rowId): int
     {
         $this->executeStatement('deleteRow', ['id' => $rowId]);
 
@@ -371,30 +377,28 @@ class MySqlDataTable extends GenericDataTable
             return 0;
         }
         return 1;
-
-
     }
-    
+
     protected function forceIntIds($theRows)
     {
         $rows = $theRows;
         for ($i = 0; $i < count($rows); $i++) {
             if (!is_int($rows[$i][$this->idColumnName])) {
-                $rows[$i][$this->idColumnName] = (int) $rows[$i][$this->idColumnName];
+                $rows[$i][$this->idColumnName] = (int)$rows[$i][$this->idColumnName];
             }
         }
         return $rows;
     }
 
-    protected function doQuery(string $sql, string $context) : PDOStatement
+    protected function doQuery(string $sql, string $context): PDOStatement
     {
         try {
-            $r = $this->dbConn->query($sql);
-         } catch (PDOException $e) {
+            $r = $this->pdoProvider->getPdo()->query($sql);
+        } catch (PDOException $e) {
             $this->setError('Query error in "' . $context . '" : "'
                 . $e->getMessage() . '", query = "' . $sql . '"',
                 self::ERROR_MYSQL_QUERY_ERROR
-                );
+            );
             throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         if ($r === false) {
@@ -404,7 +408,7 @@ class MySqlDataTable extends GenericDataTable
             throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
-        
+
         return $r;
     }
 
@@ -419,12 +423,12 @@ class MySqlDataTable extends GenericDataTable
 
     /**
      * Executes a named prepared statement,
-     * if there's any problem throws a Runtime exception
+     * if there's any problem, throws a Runtime exception
      *
      * @param string $statement
      * @param array $param
      */
-    protected function executeStatement(string $statement, array $param) : void
+    protected function executeStatement(string $statement, array $param): void
     {
         try {
             $result = $this->statements[$statement]->execute($param);
@@ -434,11 +438,11 @@ class MySqlDataTable extends GenericDataTable
                 . $e->getMessage(), self::ERROR_MYSQL_QUERY_ERROR);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
-        
+
         if ($result === false) {
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error when executing ' .
-                'prepared statement "' . $statement . '"',self::ERROR_EXECUTING_STATEMENT );
+                'prepared statement "' . $statement . '"', self::ERROR_EXECUTING_STATEMENT);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
@@ -453,19 +457,20 @@ class MySqlDataTable extends GenericDataTable
      * @param int $maxResults
      * @return string
      */
-    protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults) : string {
+    protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
+    {
 
         $conditions = [];
         foreach ($searchSpecArray as $spec) {
             $conditions[] = $this->getSqlConditionFromSpec($spec);
         }
 
-        $sqlLogicalOperator  = 'AND';
+        $sqlLogicalOperator = 'AND';
         if ($searchType == self::SEARCH_OR) {
             $sqlLogicalOperator = 'OR';
         }
         $sql = 'SELECT * FROM `' . $this->tableName . '` WHERE '
-            .  implode(' ' . $sqlLogicalOperator . ' ', $conditions);
+            . implode(' ' . $sqlLogicalOperator . ' ', $conditions);
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
         }
@@ -478,15 +483,15 @@ class MySqlDataTable extends GenericDataTable
      */
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
     {
-       $this->checkSpec($searchSpecArray, $searchType);
+        $this->checkSpec($searchSpecArray, $searchType);
 
 
         $sql = $this->getSearchSqlQuery($searchSpecArray, $searchType, $maxResults);
 
         try {
-            $r = $this->dbConn->query($sql);
+            $r = $this->pdoProvider->getPdo()->query($sql);
         } catch (PDOException $e) {
-            if ( $e->getCode() === '42000' || $e->getCode() === '42S22') {
+            if ($e->getCode() === '42000' || $e->getCode() === '42S22') {
                 // The exception was thrown because of an SQL syntax error but
                 // this should only happen when one of the keys does not exist
                 // or is of the wrong type. This just means that the search
@@ -516,7 +521,8 @@ class MySqlDataTable extends GenericDataTable
         return new DataTableResultsPdoIterator($r, $this->idColumnName);
     }
 
-    protected function  getSqlConditionFromSpec(array $spec) : string {
+    protected function getSqlConditionFromSpec(array $spec): string
+    {
         $column = $spec['column'];
         $quotedValue = $this->quoteValue($spec['value']);
 
@@ -540,8 +546,8 @@ class MySqlDataTable extends GenericDataTable
                 return "`$column`>=" . $quotedValue;
         }
         // @codeCoverageIgnoreStart
-        // This should never happen, if it does there's programming mistake!
-        $this->setError(__METHOD__  . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
+        // This should never happen, if it does, there's programming mistake!
+        $this->setError(__METHOD__ . ' got into an invalid state, line ' . __LINE__, self::ERROR_UNKNOWN_ERROR);
         throw new LogicException($this->getErrorMessage(), $this->getErrorCode());
         // @codeCoverageIgnoreEnd
     }
@@ -566,7 +572,7 @@ class MySqlDataTable extends GenericDataTable
      * Starts a MySql transaction.
      *
      * Care must be taken when using transactions in the context of DataTable operations.
-     * In particular, a MySql transactions apply to the database connection as a whole, so starting
+     * In particular, a MySql transaction applies to the database connection as a whole, so starting
      * a transaction in a MySqlDataTable will also start a transaction in all other MySqlDataTables that
      * share the same database connection. This might be desirable, but it can also be dangerous.
      *
@@ -585,11 +591,11 @@ class MySqlDataTable extends GenericDataTable
             $this->setError("Current table already in a transaction", self::ERROR_TABLE_ALREADY_IN_TRANSACTION);
             return false;
         }
-        if ($this->dbConn->inTransaction()) {
+        if ($this->pdoProvider->getPdo()->inTransaction()) {
             $this->setError("Current table already in a transaction", self::ERROR_MYSQL_ALREADY_IN_TRANSACTION);
             return false;
         }
-        $this->inTransaction = $this->dbConn->beginTransaction();
+        $this->inTransaction = $this->pdoProvider->getPdo()->beginTransaction();
         if (!$this->inTransaction) {
             $this->setError("MySql could not begin transaction", self::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION);
             return false;
@@ -614,7 +620,7 @@ class MySqlDataTable extends GenericDataTable
             $this->setError("Table not in a transaction, commit not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
             return false;
         }
-        if ($this->dbConn->commit()) {
+        if ($this->pdoProvider->getPdo()->commit()) {
             $this->inTransaction = false;
             return true;
         }
@@ -631,7 +637,7 @@ class MySqlDataTable extends GenericDataTable
             $this->setError("Table not in a transaction, rollBack not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
             return false;
         }
-        if ($this->dbConn->rollBack()) {
+        if ($this->pdoProvider->getPdo()->rollBack()) {
             $this->inTransaction = false;
             return true;
         }
@@ -641,14 +647,13 @@ class MySqlDataTable extends GenericDataTable
         return false;
     }
 
-    public function isInTransaction() : bool
+    public function isInTransaction(): bool
     {
         return $this->inTransaction;
-
     }
 
     public function isUnderlyingDatabaseInTransaction(): bool
     {
-        return $this->dbConn->inTransaction();
+        return $this->pdoProvider->getPdo()->inTransaction();
     }
 }
