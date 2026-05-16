@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 namespace ThomasInstitut\DataTable;
-require '../vendor/autoload.php';
+
 
 require_once 'DataTableReferenceTestCase.php';
 
@@ -54,8 +54,6 @@ class InMemoryDataTableAltIdReferenceTest extends DataTableReferenceTestCase
         if ($resetTable) {
             self::$theData = [];
         }
-        $dt->setLogger($this->getLogger()->withName('InMemoryDT'));
-
         return $dt;
     }
 

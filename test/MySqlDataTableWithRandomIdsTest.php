@@ -27,7 +27,6 @@
 namespace ThomasInstitut\DataTable;
 use PDO;
 
-require '../vendor/autoload.php';
 
 require_once 'MySqlDataTableTest.php';
 

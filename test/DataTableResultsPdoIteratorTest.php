@@ -4,16 +4,14 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 
-require '../vendor/autoload.php';
-require_once 'config.php';
+
 require_once 'DataTableResultsIteratorReferenceTestCase.php';
 
 class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceTestCase
 {
 
-    const AUTO_INC = false;
-
-    const TEST_TABLE_NAME = 'iterator_dt';
+    const bool AUTO_INC = false;
+    const string TEST_TABLE_NAME = 'iterator_dt';
     public function createDataTable() : DataTable {
         $pdo = $this->getPdo();
         $this->setupDatabase($pdo);
@@ -23,10 +21,9 @@ class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceT
 
     protected function getPdo() : PDO
     {
-        global $config;
-
-        $dsn = 'mysql:dbname=' . $config['db'] . ';host=' . $config['host'];
-        return new PDO($dsn,$config['user'],$config['pwd']);
+        $db = MySqlDataTableTest::DB;
+        $dsn = "mysql:dbname=$db;host=mysql";
+        return new PDO($dsn, 'root', 'root');
     }
 
     private function setupDatabase(PDO $pdo) : void {
@@ -38,8 +35,8 @@ class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceT
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$testTableName`;
             CREATE TABLE IF NOT EXISTS `$testTableName` (
-              `$idCol` int(11) UNSIGNED NOT NULL $autoIncrement,
-              `$intCol` int(11) DEFAULT NULL,
+              $idCol int(11) UNSIGNED NOT NULL $autoIncrement,
+              $intCol int(11) DEFAULT NULL,
               PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;

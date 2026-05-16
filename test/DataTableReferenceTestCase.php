@@ -29,11 +29,9 @@ use Iterator;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
-
-
-require '../vendor/autoload.php';
-
+use Psr\Log\NullLogger;
 
 
 /**
@@ -52,9 +50,9 @@ require '../vendor/autoload.php';
 abstract class DataTableReferenceTestCase extends TestCase
 {
 
-    const INT_COLUMN = 'the_int';
-    const STRING_COLUMN = 'a_string';
-    const STRING_COLUMN_2 = 'another_string';
+    const string INT_COLUMN = 'the_int';
+    const string STRING_COLUMN = 'a_string';
+    const string STRING_COLUMN_2 = 'another_string';
     
     public int $numRows = 10;
     public int $numIterations = 5;
@@ -767,11 +765,8 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
 
-    protected function getLogger() : Logger {
-        $logger = new Logger('Test');
-
-        $logStream = new StreamHandler('test.log', LogLevel::DEBUG);
-        $logger->pushHandler($logStream);
-        return $logger;
+    protected function getLogger() : LoggerInterface
+    {
+        return new NullLogger();
     }
 }

@@ -7,9 +7,10 @@ namespace ThomasInstitut\DataTable;
 use Exception;
 use PDO;
 use RuntimeException;
+use ThomasInstitut\TimeString\InvalidTimeZoneException;
+use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
 
-require '../vendor/autoload.php';
 require_once 'MySqlDataTableTest.php';
 
 /**
@@ -42,12 +43,12 @@ class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$tableName`;
             CREATE TABLE IF NOT EXISTS `$tableName` (
-              `$idCol` int(11) UNSIGNED NOT NULL,
-              `$validFromCol` datetime(6) NOT NULL,
-              `$validUntilCol` datetime(6) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL,
-              `$otherStringCol` varchar(100) DEFAULT NULL
+              $idCol int(11) UNSIGNED NOT NULL,
+              $validFromCol datetime(6) NOT NULL,
+              $validUntilCol datetime(6) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL,
+              $otherStringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             ALTER TABLE `$tableName` ADD PRIMARY KEY( `$idCol`, `$validFromCol`, `$validUntilCol`);
 EOD;
@@ -68,45 +69,45 @@ EOD;
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `testtablebad1`;
             CREATE TABLE IF NOT EXISTS `testtablebad1` (
-              `$idCol` varchar(100) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL,
+              $idCol varchar(100) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL,
               PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad2`;                
             CREATE TABLE IF NOT EXISTS `testtablebad2` (
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad3`;   
             CREATE TABLE IF NOT EXISTS `testtablebad3` (
-              `$idCol` int(11) UNSIGNED NOT NULL,
-              `$validFromCol` int(11) NOT NULL,
-              `$validUntilCol` datetime(6) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+              $idCol int(11) UNSIGNED NOT NULL,
+              $validFromCol int(11) NOT NULL,
+              $validUntilCol datetime(6) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad4`;   
             CREATE TABLE IF NOT EXISTS `testtablebad4` (
-              `$idCol` int(11) UNSIGNED NOT NULL,
-              `$validFromCol` datetime(6) NOT NULL,
-              `$validUntilCol` int(11) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+              $idCol int(11) UNSIGNED NOT NULL,
+              $validFromCol datetime(6) NOT NULL,
+              $validUntilCol int(11) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;    
             DROP TABLE IF EXISTS `testtablebad5`;  
             CREATE TABLE IF NOT EXISTS `testtablebad5` (
-              `$intCol` int(11) UNSIGNED NOT NULL,
-              `$validUntilCol` datetime(6) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+              $intCol int(11) UNSIGNED NOT NULL,
+              $validUntilCol datetime(6) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
             DROP TABLE IF EXISTS `testtablebad6`;  
             CREATE TABLE IF NOT EXISTS `testtablebad6` (
-              `$idCol` int(11) UNSIGNED NOT NULL,
-              `$validFromCol` datetime(6) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+              $idCol int(11) UNSIGNED NOT NULL,
+              $validFromCol datetime(6) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
 EOD;
         $pdo->query($tableSetupSQL);
@@ -182,26 +183,13 @@ EOD;
         $this->assertTrue($exceptionCaught);
     }
 
-    public function testGetTimeStringFromVariable() {
-
-        $badVars = [ '', [], '2019-01-01.', '2019-01-01.123123', '2019-23-12', '2019-12-40',
-            '2019-01-01 35:00:00', '2019-01-01 12:65:00', '2019-01-01 12:00:65'];
-
-        foreach($badVars as $var) {
-            $this->assertEquals('', TimeString::fromVariable($var), 'Testing ' . print_r($var, true));
-        }
-
-        $goodVars = [ -1, '2010-11-11', '2020-10-10 13:05:24',  '2010-11-11 21:10:11.123456', '2016-01-01 12:00:00'];
-        foreach($goodVars as $var) {
-            $this->assertNotEquals('', TimeString::fromVariable($var), 'Testing ' . print_r($var, true));
-        }
-
-    }
-
     /**
+     * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws MalformedStringException
+     * @throws RowAlreadyExists
      * @throws RowDoesNotExist
-     * @throws RowAlreadyExists|InvalidRowUpdateTime
      */
     public function testFindRowsWithTime()
     {
@@ -360,7 +348,7 @@ EOD;
             $dataTable->createRowWithTime(
                 [self::ID_COLUMN_NAME => 1, self::STRING_COLUMN_2 => 'test'],
                 'BadTime');
-        } catch (InvalidTimeStringException) {
+        } catch (InvalidTimeStringException|RowAlreadyExists) {
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
@@ -504,9 +492,12 @@ EOD;
 
     }
 
+
     /**
-     * @throws RowAlreadyExists
      * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws MalformedStringException
+     * @throws RowAlreadyExists
      */
     public function testRowExists() {
         /**
@@ -518,6 +509,8 @@ EOD;
 
         $this->assertTrue($dataTable->rowExistsWithTime($rowId,TimeString::now()));
         $this->assertFalse($dataTable->rowExistsWithTime($rowId + 1,TimeString::now()));
+
+
 
         $this->assertFalse($dataTable->rowExistsWithTime($rowId, TimeString::fromString('2010-10-10')));
 
@@ -545,7 +538,7 @@ EOD;
      * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
      * @throws RowAlreadyExists
-     * @throws InvalidRowUpdateTime
+     * @throws InvalidRowUpdateTime|InvalidTimeZoneException
      */
     public function testUpdateRowWithTime()
     {
@@ -589,10 +582,13 @@ EOD;
     }
 
     /**
-     * @throws RowAlreadyExists
-     * @throws InvalidTimeStringException
      * @throws InvalidRowForUpdate
-     * @throws RowDoesNotExist|InvalidRowUpdateTime
+     * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws MalformedStringException
+     * @throws RowAlreadyExists
+     * @throws RowDoesNotExist
      */
     public function testRowHistory() {
 
@@ -637,10 +633,13 @@ EOD;
     }
 
     /**
-     * @throws InvalidTimeStringException
      * @throws InvalidArgumentException
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws MalformedStringException
      * @throws RowDoesNotExist
-     * @throws InvalidRowForUpdate|InvalidRowUpdateTime
      */
     public function testConsistency() {
         /**

@@ -40,8 +40,8 @@ namespace ThomasInstitut\DataTable;
 interface UnitemporalDataTable extends DataTable
 {
 
-    const ERROR_INVALID_ROW_UPDATE_TIME = 2001;
-    const ERROR_INVALID_TIME = 2002;
+    const int ERROR_INVALID_ROW_UPDATE_TIME = 2001;
+    const int ERROR_INVALID_TIME = 2002;
 
 
     /**

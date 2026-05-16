@@ -26,8 +26,6 @@
 
 namespace ThomasInstitut\DataTable;
 
-require '../vendor/autoload.php';
-require_once 'config.php';
 require_once 'DataTableReferenceTestCase.php';
 
 
@@ -41,34 +39,49 @@ use RuntimeException;
  */
 class MySqlDataTableTest extends DataTableReferenceTestCase
 {
-    
+
     public int $numRows = 100;
-    
-    const TABLE_NAME  = 'test_table_mysql_dt';
 
+    const string DB = 'dt';
+    const string TABLE_NAME = 'dt_test_table';
+    const string BAD_TABLE_NAME_1 = 'bad_table_1';
+    const string BAD_TABLE_NAME_2 = 'bad_table_2';
 
-    const ID_COLUMN_NAME = 'row_id';
-
+    const string ID_COLUMN_NAME = 'row_id';
     static private ?PDO $motherSession = null;
 
     static private int $pdoCount = 0;
+
+
+    public static function setUpBeforeClass(): void
+    {
+        // Use a temporary PDO connection with root privileges to create the user
+        $db = self::DB;
+        $dsn = "mysql:dbname=$db;host=mysql";
+        $pdo = new PDO($dsn, 'root', 'root');
+        $createUserSQL = "CREATE USER IF NOT EXISTS 'restricted'@'%' IDENTIFIED BY 'restricted';";
+        $grantPrivilegesSQL = "GRANT SELECT ON `$db`.* TO 'restricted'@'%';";
+        $pdo->exec($createUserSQL);
+        $pdo->exec($grantPrivilegesSQL);
+    }
 
     public function multipleDataAccessSessionsAvailable(): bool
     {
         return true;
     }
 
-    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+    protected function constructMySqlDataTable(PDO $pdo): MySqlDataTable
+    {
         return new MySqlDataTable($pdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
     }
 
-    protected function getLoggerNamePrefix() : string {
+    protected function getLoggerNamePrefix(): string
+    {
         return 'MySqlDataTable';
     }
-    
-    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : MySqlDataTable
+
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false): MySqlDataTable
     {
-        $pdoNumber = 1;
         if (self::$motherSession === null) {
             self::$motherSession = $this->getPdo();
             $pdo = self::$motherSession;
@@ -77,53 +90,40 @@ class MySqlDataTableTest extends DataTableReferenceTestCase
             if ($newSession) {
                 $pdo = $this->getPdo();
                 self::$pdoCount++;
-                $pdoNumber = self::$pdoCount;
             } else {
-                $pdo =  self::$motherSession;
+                $pdo = self::$motherSession;
             }
-
         }
 
         if ($resetTable) {
             $this->resetTestDb(self::$motherSession);
         }
 
-        $dt = $this->constructMySqlDataTable($pdo);
-
-        $dt->setLogger($this->getLogger()->withName($this->getLoggerNamePrefix() . "-PDO$pdoNumber"));
-        return $dt;
+        return $this->constructMySqlDataTable($pdo);
     }
 
-    public function getRestrictedDt() : MySqlDataTable
+    public function getRestrictedDt(): MySqlDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlDataTable($restrictedPdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
     }
-    
-    public function getPdo() : PDO
-    {
-        global $config;
 
-        $dsn = 'mysql:dbname=' . $config['db'] . ';host=' . $config['host'];
-//        print $dsn;
-        
-        return new PDO($dsn,$config['user'],$config['pwd']);
-    }
-    
-    public function getRestrictedPdo() : PDO
+    public function getPdo(): PDO
     {
-        global $config;
-        
-        return new PDO(
-            'mysql:dbname=' . $config['db'] . ';host=' . $config['host'],
-            $config['restricteduser'],
-            $config['restricteduserpwd']
-        );
+        $db = self::DB;
+        $dsn = "mysql:dbname=$db;host=mysql";
+        return new PDO($dsn, 'root', 'root');
+    }
+
+    public function getRestrictedPdo(): PDO
+    {
+        $db = self::DB;
+        $dsn = "mysql:dbname=$db;host=mysql";
+        return new PDO($dsn, 'restricted', 'restricted');
     }
 
     public function resetTestDb(PDO $pdo, bool $autoInc = false): void
     {
-
         $idCol = self::ID_COLUMN_NAME;
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
@@ -132,38 +132,41 @@ class MySqlDataTableTest extends DataTableReferenceTestCase
 
         $autoIncrement = $autoInc ? 'AUTO_INCREMENT' : '';
 
-        $tableSetupSQL =<<<EOD
+        $tableSetupSQL = <<<EOD
             DROP TABLE IF EXISTS `$testTableName`;
             CREATE TABLE IF NOT EXISTS `$testTableName` (
-              `$idCol` int(11) UNSIGNED NOT NULL $autoIncrement,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL,
-              `$otherStringCol` varchar(100) DEFAULT NULL,
+              $idCol int(11) UNSIGNED NOT NULL $autoIncrement,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL,
+              $otherStringCol varchar(100) DEFAULT NULL,
               PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
     }
-    
+
     public function resetTestDbWithBadTables(PDO $pdo): void
     {
         $idCol = self::ID_COLUMN_NAME;
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
 
+        $badTableName1 = self::BAD_TABLE_NAME_1;
+        $badTableName2 = self::BAD_TABLE_NAME_2;
 
-        $tableSetupSQL =<<<EOD
-            DROP TABLE IF EXISTS `testtablebad1`;
-            CREATE TABLE IF NOT EXISTS `testtablebad1` (
-              `$idCol` varchar(100) NOT NULL,
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL,
-              PRIMARY KEY (`$idCol`)
+
+        $tableSetupSQL = <<<EOD
+            DROP TABLE IF EXISTS `$badTableName1`;
+            CREATE TABLE IF NOT EXISTS `$badTableName1` (
+              $idCol varchar(100) NOT NULL,
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL,
+              PRIMARY KEY ($idCol)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            DROP TABLE IF EXISTS `testtablebad2`;                
-            CREATE TABLE IF NOT EXISTS `testtablebad2` (
-              `$intCol` int(11) DEFAULT NULL,
-              `$stringCol` varchar(100) DEFAULT NULL
+            DROP TABLE IF EXISTS `$badTableName2`;                
+            CREATE TABLE IF NOT EXISTS `$badTableName2` (
+              $intCol int(11) DEFAULT NULL,
+              $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 EOD;
         $pdo->query($tableSetupSQL);
@@ -188,7 +191,7 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
-        
+
         $rowId = $dataTable->createRow([$stringCol => 25]);
         $this->assertNotFalse($rowId);
         $this->assertEquals(DataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
@@ -201,25 +204,23 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
-        
-        
+
+
         $rows = $restrictedDataTable->getAllRows();
         $this->assertEquals(1, $rows->count());
         $this->assertEquals($rowId, $rows->getFirst()[self::ID_COLUMN_NAME]);
-        
+
         $result = $restrictedDataTable->rowExists($rowId);
         $this->assertTrue($result);
-        
     }
-    
+
     public function testEscaping()
     {
         parent::testEscaping();
-        
+
         $pdo = $this->getPdo();
         $dataTable = new MySqlDataTable($pdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
 
-        // somekey is supposed to be an integer
         $exceptionCaught = false;
         try {
             $dataTable->createRow([self::INT_COLUMN => 'A string']);
@@ -228,7 +229,7 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
     }
-   
+
     public function testBadTables()
     {
         $pdo = $this->getPdo();
@@ -236,8 +237,8 @@ EOD;
         $exceptionCaught = false;
         $errorCode = -1;
         try {
-            new MySqlDataTable($pdo, 'testtablebad1', false, self::ID_COLUMN_NAME);
-        } catch(RuntimeException $exception) {
+            new MySqlDataTable($pdo, self::BAD_TABLE_NAME_1, false, self::ID_COLUMN_NAME);
+        } catch (RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
         }
@@ -248,8 +249,8 @@ EOD;
         $exceptionCaught = false;
         $errorCode = -1;
         try {
-            new MySqlDataTable($pdo, 'testtablebad2', false, self::ID_COLUMN_NAME);
-        } catch(RuntimeException $exception) {
+            new MySqlDataTable($pdo, self::BAD_TABLE_NAME_2, false, self::ID_COLUMN_NAME);
+        } catch (RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
         }
@@ -261,7 +262,7 @@ EOD;
         $errorCode = -1;
         try {
             new MySqlDataTable($pdo, 'non_existent_table', false, self::ID_COLUMN_NAME);
-        } catch(RuntimeException $exception) {
+        } catch (RuntimeException $exception) {
             $exceptionCaught = true;
             $errorCode = $exception->getCode();
         }
@@ -277,11 +278,11 @@ EOD;
     public function testUpdateRow()
     {
         parent::testUpdateRow();
-        
+
         $pdo = $this->getPdo();
         $dataTable = new MySqlDataTable($pdo, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
 
-        
+
         // INT_COLUMN should be an int
         $exceptionCaught = false;
         try {
@@ -291,26 +292,25 @@ EOD;
         }
         $this->assertTrue($exceptionCaught);
         $this->assertEquals(MySqlDataTable::ERROR_MYSQL_QUERY_ERROR,
-                $dataTable->getErrorCode());
+            $dataTable->getErrorCode());
         $this->assertNotEquals('', $dataTable->getErrorMessage());
-        
+
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
         try {
-            $dataTable->updateRow([self::ID_COLUMN_NAME => 1,  self::STRING_COLUMN_2 => null]);
-        }
-        catch (RuntimeException) {
+            $dataTable->updateRow([self::ID_COLUMN_NAME => 1, self::STRING_COLUMN_2 => null]);
+        } catch (RuntimeException) {
             $exceptionCaught = true;
         }
         $this->assertFalse($exceptionCaught);
     }
-    
-    public function testNonExistentRows() 
+
+    public function testNonExistentRows()
     {
         parent::testNonExistentRows();
-        
+
         $dataTable = $this->getTestDataTable();
-        
+
         for ($i = 1; $i < 100; $i++) {
             $row = $dataTable->getRow($i);
             $this->assertNull($row);
@@ -320,16 +320,14 @@ EOD;
         }
     }
 
-    public function testSelect() {
+    public function testSelect()
+    {
 
-        /**
-         * @var MySqlDataTable $dataTable
-         */
-        $dataTable= $this->getTestDataTable();
+        $dataTable = $this->getTestDataTable();
 
         $exceptionCaught = false;
         try {
-            $dataTable->select('*','', 0, '', 'testSelect');
+            $dataTable->select('*', '', 0, '', 'testSelect');
         } catch (InvalidWhereClauseException) {
             $exceptionCaught = true;
         }

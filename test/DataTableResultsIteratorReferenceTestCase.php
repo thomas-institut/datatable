@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 
 
-require '../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 
 /**
@@ -18,8 +18,8 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
 {
 
 
-    const INT_COLUM = 'value';
-    const NUM_ROWS = 10;
+    const string INT_COLUM = 'value';
+    const int NUM_ROWS = 10;
 
     static ?DataTable $dataTable = null;
 
