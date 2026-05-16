@@ -37,7 +37,7 @@ use PDO;
 class MySqlDataTableWithRandomIds extends MySqlDataTable
 {
 
-    const MAX_ATTEMPTS = 1000;
+    public const int MAX_ATTEMPTS = 1000;
 
     /**
      *

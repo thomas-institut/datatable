@@ -2,8 +2,6 @@
 
 namespace ThomasInstitut\DataTable;
 
-use ArrayIterator;
-
 class DataTableResultsArrayIterator implements DataTableResultsIterator
 {
     private int $count;

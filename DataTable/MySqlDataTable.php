@@ -39,23 +39,23 @@ use RuntimeException;
  */
 class MySqlDataTable extends GenericDataTable
 {
-    
-    // CONSTANTS
-    
-    const ERROR_MYSQL_QUERY_ERROR = 1010;
-    const ERROR_REQUIRED_COLUMN_NOT_FOUND = 1020;
-    const ERROR_WRONG_COLUMN_TYPE = 1030;
-    const ERROR_TABLE_NOT_FOUND = 1040;
-    const ERROR_PREPARING_STATEMENTS = 1070;
-    const ERROR_EXECUTING_STATEMENT = 1080;
-    const ERROR_INVALID_WHERE_CLAUSE = 1090;
 
-    const ERROR_TABLE_ALREADY_IN_TRANSACTION = 1100;
-    const ERROR_MYSQL_ALREADY_IN_TRANSACTION = 1101;
-    const ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION =  1102;
-    const ERROR_TABLE_NOT_IN_TRANSACTION = 1103;
-    const ERROR_MYSQL_COULD_NOT_COMMIT = 1104;
-    const ERROR_MYSQL_COULD_NOT_ROLLBACK = 1105;
+    // CONSTANTS
+
+    public const int ERROR_MYSQL_QUERY_ERROR = 1010;
+    public const int ERROR_REQUIRED_COLUMN_NOT_FOUND = 1020;
+    public const int ERROR_WRONG_COLUMN_TYPE = 1030;
+    public const int ERROR_TABLE_NOT_FOUND = 1040;
+    public const int ERROR_PREPARING_STATEMENTS = 1070;
+    public const int ERROR_EXECUTING_STATEMENT = 1080;
+    public const int ERROR_INVALID_WHERE_CLAUSE = 1090;
+
+    public const int ERROR_TABLE_ALREADY_IN_TRANSACTION = 1100;
+    public const int ERROR_MYSQL_ALREADY_IN_TRANSACTION = 1101;
+    public const int ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION =  1102;
+    public const int ERROR_TABLE_NOT_IN_TRANSACTION = 1103;
+    public const int ERROR_MYSQL_COULD_NOT_COMMIT = 1104;
+    public const int ERROR_MYSQL_COULD_NOT_ROLLBACK = 1105;
 
     protected PDO $dbConn;
 

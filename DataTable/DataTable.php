@@ -50,54 +50,54 @@ use Psr\Log\LoggerAwareInterface;
  */
 interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface, ErrorReporter
 {
-    const NULL_ROW_ID = -1;
+    public const int NULL_ROW_ID = -1;
 
-    const DEFAULT_ID_COLUMN_NAME = 'id';
+    public const string DEFAULT_ID_COLUMN_NAME = 'id';
 
-    const SEARCH_AND = 0;
-    const SEARCH_OR = 1;
+    public const int SEARCH_AND = 0;
+    public const int SEARCH_OR = 1;
 
     /**
      * Search spec fields
      */
 
-    const SEARCH_SPEC_COLUMN = 'column';
-    const SEARCH_SPEC_CONDITION = 'condition';
-    const SEARCH_SPEC_VALUE = 'value';
+    public const string SEARCH_SPEC_COLUMN = 'column';
+    public const string SEARCH_SPEC_CONDITION = 'condition';
+    public const string SEARCH_SPEC_VALUE = 'value';
 
     /**
      * Search condition types
      */
 
-    const COND_EQUAL_TO = 0;
-    const COND_NOT_EQUAL_TO = 1;
-    const COND_LESS_THAN = 2;
-    const COND_LESS_OR_EQUAL_TO = 3;
-    const COND_GREATER_THAN = 4;
-    const COND_GREATER_OR_EQUAL_TO = 5;
+    public const int COND_EQUAL_TO = 0;
+    public const int COND_NOT_EQUAL_TO = 1;
+    public const int COND_LESS_THAN = 2;
+    public const int COND_LESS_OR_EQUAL_TO = 3;
+    public const int COND_GREATER_THAN = 4;
+    public const int COND_GREATER_OR_EQUAL_TO = 5;
 
     /**
      * Error code constants
      */
-    const ERROR_NO_ERROR = 0;
-    const ERROR_UNKNOWN_ERROR = 1;
-    const ERROR_ROW_DOES_NOT_EXIST = 102;
-    const ERROR_ROW_ALREADY_EXISTS = 103;
-    const ERROR_ID_NOT_INTEGER = 104;
-    const ERROR_ID_NOT_SET = 105;
-    const ERROR_ID_IS_ZERO = 106;
-    const ERROR_EMPTY_RESULT_SET = 107;
-    const ERROR_KEY_VALUE_NOT_FOUND = 108;
-    const ERROR_INVALID_SEARCH_TYPE = 109;
+    public const int ERROR_NO_ERROR = 0;
+    public const int ERROR_UNKNOWN_ERROR = 1;
+    public const int ERROR_ROW_DOES_NOT_EXIST = 102;
+    public const int ERROR_ROW_ALREADY_EXISTS = 103;
+    public const int ERROR_ID_NOT_INTEGER = 104;
+    public const int ERROR_ID_NOT_SET = 105;
+    public const int ERROR_ID_IS_ZERO = 106;
+    public const int ERROR_EMPTY_RESULT_SET = 107;
+    public const int ERROR_KEY_VALUE_NOT_FOUND = 108;
+    public const int ERROR_INVALID_SEARCH_TYPE = 109;
 
-    const ERROR_INVALID_SPEC_ARRAY = 110;
-    const ERROR_SPEC_ARRAY_IS_EMPTY = 111;
-    const ERROR_SPEC_INVALID_COLUMN = 112;
-    const ERROR_SPEC_NO_VALUE = 113;
-    const ERROR_SPEC_INVALID_CONDITION = 114;
+    public const int ERROR_INVALID_SPEC_ARRAY = 110;
+    public const int ERROR_SPEC_ARRAY_IS_EMPTY = 111;
+    public const int ERROR_SPEC_INVALID_COLUMN = 112;
+    public const int ERROR_SPEC_NO_VALUE = 113;
+    public const int ERROR_SPEC_INVALID_CONDITION = 114;
 
-    const ERROR_TRANSACTIONS_NOT_SUPPORTED = 115;
-    const ERROR_NOT_IMPLEMENTED = 116;
+    public const int ERROR_TRANSACTIONS_NOT_SUPPORTED = 115;
+    public const int ERROR_NOT_IMPLEMENTED = 116;
 
     /**
      * Assigns an IdGenerator to the DataTable

@@ -32,8 +32,8 @@ use RuntimeException;
 class RandomIdGenerator implements IdGenerator
 {
 
-    const ERROR_RANDOM_NUMBER_GENERATOR_ERROR = 1001;
-    const ERROR_MAX_ATTEMPTS_REACHED = 1002;
+    public const int ERROR_RANDOM_NUMBER_GENERATOR_ERROR = 1001;
+    public const int ERROR_MAX_ATTEMPTS_REACHED = 1002;
 
     /**
      * @var int
