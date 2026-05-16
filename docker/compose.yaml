@@ -1,0 +1,18 @@
+name: dt-dev
+
+services:
+  shared-php:
+    container_name: dt-dev-php
+    build: .
+    image: dt-dev-php
+    volumes:
+      - ../:/app
+
+  mysql:
+    container_name: dt-dev-mysql
+    image: mysql:8.0
+    ports:
+      - "6306:3306" # so that it can be accessed from the host machine!
+    environment:
+      MYSQL_DATABASE: dt
+      MYSQL_ROOT_PASSWORD: root

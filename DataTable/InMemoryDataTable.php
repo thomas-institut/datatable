@@ -33,7 +33,7 @@ class InMemoryDataTable extends GenericDataTable
     
     private array $theData;
 
-    public function __construct(array &$data = null, IdGenerator $idGenerator = null)
+    public function __construct(array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
         parent::__construct($idGenerator);
         if ($data === null) {

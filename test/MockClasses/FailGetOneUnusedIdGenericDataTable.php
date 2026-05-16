@@ -27,7 +27,7 @@
 
 namespace ThomasInstitut\DataTable\Test;
 
-include '../DataTable/DataTable.php';
+include __DIR__ . '/../../DataTable/DataTable.php';
 
 
 use RunTimeException;

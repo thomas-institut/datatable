@@ -1,8 +1,7 @@
 nbproject/
 vendor/
-/test/config.php
-/test/coverage/
+/build/coverage/
 .idea/
 test/.phpunit.cache
 scratch/
-/test/test.log
+test.log

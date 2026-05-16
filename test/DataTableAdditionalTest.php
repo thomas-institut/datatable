@@ -24,11 +24,11 @@
  * THE SOFTWARE.
  */
 namespace ThomasInstitut\DataTable;
-require '../vendor/autoload.php';
 
 require 'MockClasses/FailGetOneUnusedIdGenericDataTable.php';
 
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 
 /**
@@ -49,7 +49,7 @@ class DataTableAdditionalTest extends TestCase
 
         try {
             $r = $dt->createRow([]);
-        } catch (\RuntimeException $e){
+        } catch (RuntimeException $e){
             $exceptionCaught = true;
         }
         
