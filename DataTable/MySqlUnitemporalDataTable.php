@@ -429,7 +429,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
         $sql .= " AND `$validUntilColumn`='$eot'";
 
         if ($maxResults > 0) {
-            $sql .= ' LIMIT ' . $maxResults; // TODO Junie: add a test case to cover this (i.e., maxResults > 0) { Junie says: done 2026-05-16 19:40:00}
+            $sql .= ' LIMIT ' . $maxResults;
         }
 
         return $sql;
@@ -474,7 +474,7 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
             $theRow = $this->getRowWithTime($rowId, TimeString::now());
         } catch (InvalidTimeStringException) { // @codeCoverageIgnore
             // impossible if TimeString::now() is working
-            throw new RuntimeException('getRow should never throw an exception');
+            throw new RuntimeException('getRow should never throw an exception'); // @codeCoverageIgnore
         }
         if (!isset($theRow)) {
             return null;
@@ -595,8 +595,8 @@ class MySqlUnitemporalDataTable extends MySqlDataTable implements UnitemporalDat
     {
         try {
             return $this->deleteRowWithTime($rowId, TimeString::now());
-        } catch (InvalidTimeStringException) {
-            throw new RuntimeException('deleteRow should never throw an exception');
+        } catch (InvalidTimeStringException) { // @codeCoverageIgnore
+            throw new RuntimeException('deleteRow should never throw an exception'); // @codeCoverageIgnore
         }
     }
 

@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -395,5 +396,88 @@ EOD;
         $this->assertEquals(MySqlDataTable::ERROR_MYSQL_ALREADY_IN_TRANSACTION, $dt2->getErrorCode());
 
         $this->assertTrue($dt1->commit());
+    }
+
+    #[Test]
+    #[AllowMockObjectsWithoutExpectations]
+    public function testTransactionFailures(): void
+    {
+        $pdo = $this->createStub(PDO::class);
+        $pdoProvider = $this->createStub(PdoProvider::class);
+        $pdoProvider->method('getPdo')->willReturn($pdo);
+
+        // Mock column check
+        $stmt = $this->createStub(\PDOStatement::class);
+        $stmt->method('rowCount')->willReturn(1);
+        $stmt->method('fetch')->willReturn(['Type' => 'int']);
+        $pdo->method('query')->willReturn($stmt);
+
+        $dataTable = new MySqlDataTable($pdoProvider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        // Test startTransaction failure
+        $pdo->method('inTransaction')->willReturn(false);
+        $pdo->method('beginTransaction')->willReturn(false);
+        $this->assertFalse($dataTable->startTransaction());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION, $dataTable->getErrorCode());
+
+        // Test commit failure
+        $pdo = $this->createStub(PDO::class); // Fresh stub for fresh state
+        $pdo->method('query')->willReturn($stmt);
+        $pdoProvider = $this->createStub(PdoProvider::class);
+        $pdoProvider->method('getPdo')->willReturn($pdo);
+        $dataTable = new MySqlDataTable($pdoProvider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        $pdo->method('beginTransaction')->willReturn(true);
+        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, true);
+        $this->assertTrue($dataTable->startTransaction());
+        $pdo->method('commit')->willReturn(false);
+        $this->assertFalse($dataTable->commit());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
+        $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
+
+        // Test commit failure where transaction ended
+        $pdo = $this->createStub(PDO::class); // Fresh stub for fresh state
+        $pdo->method('query')->willReturn($stmt);
+        $pdoProvider = $this->createStub(PdoProvider::class);
+        $pdoProvider->method('getPdo')->willReturn($pdo);
+        $dataTable = new MySqlDataTable($pdoProvider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        $pdo->method('beginTransaction')->willReturn(true);
+        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
+        $this->assertTrue($dataTable->startTransaction());
+        $pdo->method('commit')->willReturn(false);
+        $this->assertFalse($dataTable->commit());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
+        $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
+
+        // Test rollBack failure
+        $pdo = $this->createStub(PDO::class); // Fresh stub for fresh state
+        $pdo->method('query')->willReturn($stmt);
+        $pdoProvider = $this->createStub(PdoProvider::class);
+        $pdoProvider->method('getPdo')->willReturn($pdo);
+        $dataTable = new MySqlDataTable($pdoProvider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        $pdo->method('beginTransaction')->willReturn(true);
+        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, true);
+        $this->assertTrue($dataTable->startTransaction());
+        $pdo->method('rollBack')->willReturn(false);
+        $this->assertFalse($dataTable->rollBack());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
+        $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
+
+        // Test rollBack failure where transaction ended
+        $pdo = $this->createStub(PDO::class); // Fresh stub for fresh state
+        $pdo->method('query')->willReturn($stmt);
+        $pdoProvider = $this->createStub(PdoProvider::class);
+        $pdoProvider->method('getPdo')->willReturn($pdo);
+        $dataTable = new MySqlDataTable($pdoProvider, self::TABLE_NAME, false, self::ID_COLUMN_NAME);
+
+        $pdo->method('beginTransaction')->willReturn(true);
+        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
+        $this->assertTrue($dataTable->startTransaction());
+        $pdo->method('rollBack')->willReturn(false);
+        $this->assertFalse($dataTable->rollBack());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
+        $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
     }
 }

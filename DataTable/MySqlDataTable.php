@@ -586,7 +586,6 @@ class MySqlDataTable extends GenericDataTable
 
     public function startTransaction(): bool
     {
-        // TODO Junie: add test cases to cover all cases where this method returns false { Junie says: done 2026-05-16 19:35:00}
         $this->resetError();
         if ($this->inTransaction) {
             $this->setError("Current table already in a transaction", self::ERROR_TABLE_ALREADY_IN_TRANSACTION);
@@ -616,7 +615,6 @@ class MySqlDataTable extends GenericDataTable
      */
     public function commit(): bool
     {
-        // TODO Junie: add test cases to cover all cases where this method returns false { Junie says: done 2026-05-16 19:35:00}
         $this->resetError();
         if (!$this->inTransaction) {
             $this->setError("Table not in a transaction, commit not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);
@@ -634,7 +632,6 @@ class MySqlDataTable extends GenericDataTable
 
     public function rollBack(): bool
     {
-        // TODO Junie: add test cases to cover all cases where this method returns false { Junie says: done 2026-05-16 19:35:00}
         $this->resetError();
         if (!$this->inTransaction) {
             $this->setError("Table not in a transaction, rollBack not possible", self::ERROR_TABLE_NOT_IN_TRANSACTION);

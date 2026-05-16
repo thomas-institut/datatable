@@ -6,6 +6,7 @@ namespace ThomasInstitut\DataTable;
 
 use Exception;
 use PDO;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
@@ -664,10 +665,9 @@ EOD;
      * @throws InvalidRowUpdateTime
      */
     #[Test]
+    #[AllowMockObjectsWithoutExpectations]
     public function testConsistency(): void
     {
-        // TODO Junie: revise this test. It does not cover all the cases that generate issues in testConsistency(). Besides, I guess the test can just mock up getRowHistory() instead of getting data from a real database. { Junie says: revised 2026-05-16 19:45:00}
-
         $dataTable = $this->getMockBuilder(MySqlUnitemporalDataTable::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['getUniqueIdsWithTime', 'getRowHistory'])
