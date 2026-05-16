@@ -59,4 +59,13 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
          $dataTable = new InMemoryDataTable();
         $this->assertEquals(0, $dataTable->getAllRows()->count());
     }
+
+    public function testIdGeneratorInitialization(): void
+    {
+        $idGenerator = new SequentialIdGenerator();
+        $data = [];
+        $dataTable = new InMemoryDataTable($data, $idGenerator);
+        $rowId = $dataTable->createRow(['name' => 'test']);
+        $this->assertEquals(1, $rowId);
+    }
 }

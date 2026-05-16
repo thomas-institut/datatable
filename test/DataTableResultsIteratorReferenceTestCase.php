@@ -17,7 +17,7 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
     const string INT_COLUM = 'value';
     const int NUM_ROWS = 10;
 
-    static ?DataTable $dataTable = null;
+    protected ?DataTable $dataTable = null;
 
 
     abstract public function createDataTable() : DataTable;
@@ -26,15 +26,15 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
      */
     private function getDataTable() : DataTable {
 
-        if (self::$dataTable === null) {
+        if ($this->dataTable === null) {
 
-            self::$dataTable = $this->createDataTable();
+            $this->dataTable = $this->createDataTable();
 
             for ($i = 0; $i < self::NUM_ROWS; $i++) {
-                self::$dataTable->createRow([ self::INT_COLUM => $i]);
+                $this->dataTable->createRow([ self::INT_COLUM => $i]);
             }
         }
-        return self::$dataTable;
+        return $this->dataTable;
     }
 
 

@@ -362,4 +362,38 @@ EOD;
     }
 
 
+    #[Test]
+    public function testTransactionErrors(): void
+    {
+        $dataTable = $this->getTestDataTable();
+        if (!$dataTable->supportsTransactions()) {
+            $this->markTestSkipped('Database does not support transactions');
+        }
+
+        // Test startTransaction when already in transaction
+        $this->assertTrue($dataTable->startTransaction());
+        $this->assertFalse($dataTable->startTransaction());
+        $this->assertEquals(MySqlDataTable::ERROR_TABLE_ALREADY_IN_TRANSACTION, $dataTable->getErrorCode());
+
+        $this->assertTrue($dataTable->commit());
+
+        // Test commit when not in transaction
+        $this->assertFalse($dataTable->commit());
+        $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
+
+        // Test rollBack when not in transaction
+        $this->assertFalse($dataTable->rollBack());
+        $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
+
+        // Test startTransaction when underlying PDO is already in transaction
+        $pdo = $this->getPdo();
+        $dt1 = $this->constructMySqlDataTable($pdo);
+        $dt2 = $this->constructMySqlDataTable($pdo);
+
+        $this->assertTrue($dt1->startTransaction());
+        $this->assertFalse($dt2->startTransaction());
+        $this->assertEquals(MySqlDataTable::ERROR_MYSQL_ALREADY_IN_TRANSACTION, $dt2->getErrorCode());
+
+        $this->assertTrue($dt1->commit());
+    }
 }

@@ -57,7 +57,7 @@ abstract class GenericDataTable implements DataTable
         if ($idGenerator === null) {
             $this->setIdGenerator(new SequentialIdGenerator());
         } else {
-            $this->setIdGenerator($idGenerator);
+            $this->setIdGenerator($idGenerator); // TODO Junie: add test cases to cover this case (non-null idGenerator passed to the constructor). A simple check with InMemoryDataTable should suffice. { Junie says: done 2026-05-16 19:27:00}
         }
         $this->resetError();
         $this->setLogger(new NullLogger());

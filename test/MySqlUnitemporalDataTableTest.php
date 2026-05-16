@@ -666,30 +666,106 @@ EOD;
     #[Test]
     public function testConsistency(): void
     {
-        /**
-         * @var MySqlUnitemporalDataTable $dataTable
-         */
-        $dataTable = $this->getTestDataTable();
-//        $initialIntValue = 0;
-        $initialYear = 1971;
-        $lastYear = 1975;
-        $rowId = 1;
-        for ($i = $initialYear; $i <= $lastYear; $i++) {
-            $time = "$i-01-01";
-            if ($i === $initialYear) {
-                try {
-                    $rowId = $dataTable->createRowWithTime([self::INT_COLUMN => $i], TimeString::fromString($time));
-                } catch (Exception $e) {
-                    print ("Exception: " . $e->getMessage());
-                }
-                //print ("Row ID is $rowId\n");
-            } else {
-                $dataTable->updateRowWithTime(
-                    [self::ID_COLUMN_NAME => $rowId, self::INT_COLUMN => $i],
-                    TimeString::fromString($time));
-            }
-        }
-        $issues = $dataTable->checkConsistency();
+        // TODO Junie: revise this test. It does not cover all the cases that generate issues in testConsistency(). Besides, I guess the test can just mock up getRowHistory() instead of getting data from a real database. { Junie says: revised 2026-05-16 19:45:00}
+
+        $dataTable = $this->getMockBuilder(MySqlUnitemporalDataTable::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getUniqueIdsWithTime', 'getRowHistory'])
+            ->getMock();
+
+        $dataTable->expects($this->any())->method('getUniqueIdsWithTime')->willReturn(new \ArrayIterator([1]));
+
+        // 1. Valid history
+        $dataTable->expects($this->any())->method('getRowHistory')
+            ->willReturnOnConsecutiveCalls(
+                [
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                    ],
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                    ]
+                ],
+                // 2. Invalid range (until < from)
+                [
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
+                    ]
+                ],
+                // 3. Zero range (until == from)
+                [
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
+                    ]
+                ],
+                // 4. Overlap
+                [
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                    ],
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-15 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                    ]
+                ],
+                // 5. Gap
+                [
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                    ],
+                    [
+                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-03-01 00:00:00.000000',
+                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                    ]
+                ]
+            );
+
+        // 1. Valid
+        $issues = $dataTable->checkConsistency([1]);
         $this->assertCount(0, $issues);
+
+        // 2. Invalid range
+        $issues = $dataTable->checkConsistency([1]);
+        $this->assertCount(1, $issues);
+        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_ERROR_INVALID_TIME_RANGE, $issues[0]['code']);
+
+        // 3. Zero range
+        $issues = $dataTable->checkConsistency([1]);
+        $this->assertCount(1, $issues);
+        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_WARNING_ZERO_TIME_RANGE, $issues[0]['code']);
+
+        // 4. Overlap
+        $issues = $dataTable->checkConsistency([1]);
+        $this->assertCount(1, $issues);
+        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_ERROR_OVERLAPPING_VERSIONS, $issues[0]['code']);
+
+        // 5. Gap
+        $issues = $dataTable->checkConsistency([1]);
+        $this->assertCount(1, $issues);
+        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_INFO_GAP, $issues[0]['code']);
+    }
+    #[Test]
+    public function testSearchAndFindWithMaxResults(): void
+    {
+        $dataTable = $this->getTestDataTable();
+        $dataTable->createRow([self::INT_COLUMN => 10, self::STRING_COLUMN => 'test']);
+        $dataTable->createRow([self::INT_COLUMN => 20, self::STRING_COLUMN => 'test']);
+        $dataTable->createRow([self::INT_COLUMN => 30, self::STRING_COLUMN => 'test']);
+
+        $spec = [
+            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'test']
+        ];
+
+        $results = $dataTable->search($spec, DataTable::SEARCH_AND, 2);
+        $this->assertEquals(2, $results->count());
+
+        $results = $dataTable->findRows([self::STRING_COLUMN => 'test'], 1);
+        $this->assertEquals(1, $results->count());
     }
 }
