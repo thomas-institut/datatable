@@ -59,6 +59,9 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         );
     }
 
+    /**
+     * @throws RowAlreadyExists
+     */
     #[Test]
     public function testRandomIds(): void
     {
@@ -69,7 +72,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         $nRows = 10;
         for ($i = 0; $i < $nRows; $i++) {
             $newId = $dataTable->createRow([ self::INT_COLUMN => $i,
-                self::STRING_COLUMN => "textvalue$i"]);
+                self::STRING_COLUMN => "textValue$i"]);
             $this->assertGreaterThanOrEqual($this->minId, $newId);
             $this->assertLessThanOrEqual($this->maxId, $newId);
         }
@@ -78,7 +81,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         $nRows = $this->numRows;
         for ($i = 0; $i < $nRows; $i++) {
             $newId = $dataTable->createRow([self::ID_COLUMN_NAME => $i+1, self::INT_COLUMN => $i,
-                self::STRING_COLUMN => "textvalue$i"]);
+                self::STRING_COLUMN => "textValue$i"]);
             $this->assertEquals($i+1, $newId);
         }
         
@@ -94,7 +97,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         );
         for ($i = 0; $i < $nRows; $i++) {
             $newID = $dt2->createRow([ self::INT_COLUMN => $i,
-                self::STRING_COLUMN => "textvalue$i"]);
+                self::STRING_COLUMN => "textValue$i"]);
             $this->assertIsInt($newID);
             $this->assertGreaterThan($this->numRows, $newID);
         }

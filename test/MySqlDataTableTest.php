@@ -268,6 +268,11 @@ EOD;
         $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_FOUND, $errorCode);
     }
 
+    /**
+     * @throws RowAlreadyExists
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     */
     #[Test]
     public function testUpdateRow(): void
     {

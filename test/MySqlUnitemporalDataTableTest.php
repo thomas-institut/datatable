@@ -9,6 +9,8 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use ThomasInstitut\TimeString\InvalidTimeZoneException;
+use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
 
 #[CoversClass(MySqlUnitemporalDataTable::class)]
@@ -61,43 +63,43 @@ EOD;
         $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
 
         $tableSetupSQL =<<<EOD
-            DROP TABLE IF EXISTS `testtablebad1`;
-            CREATE TABLE IF NOT EXISTS `testtablebad1` (
+            DROP TABLE IF EXISTS `test_table_bad_1`;
+            CREATE TABLE IF NOT EXISTS `test_table_bad_1` (
               $idCol varchar(100) NOT NULL,
               $intCol int(11) DEFAULT NULL,
               $stringCol varchar(100) DEFAULT NULL,
               PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            DROP TABLE IF EXISTS `testtablebad2`;                
-            CREATE TABLE IF NOT EXISTS `testtablebad2` (
+            DROP TABLE IF EXISTS `test_table_bad_2`;                
+            CREATE TABLE IF NOT EXISTS `test_table_bad_2` (
               $intCol int(11) DEFAULT NULL,
               $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            DROP TABLE IF EXISTS `testtablebad3`;   
-            CREATE TABLE IF NOT EXISTS `testtablebad3` (
+            DROP TABLE IF EXISTS `test_table_bad_3`;   
+            CREATE TABLE IF NOT EXISTS `test_table_bad_3` (
               $idCol int(11) UNSIGNED NOT NULL,
               $validFromCol int(11) NOT NULL,
               $validUntilCol datetime(6) NOT NULL,
               $intCol int(11) DEFAULT NULL,
               $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            DROP TABLE IF EXISTS `testtablebad4`;   
-            CREATE TABLE IF NOT EXISTS `testtablebad4` (
+            DROP TABLE IF EXISTS `test_table_bad_4`;   
+            CREATE TABLE IF NOT EXISTS `test_table_bad_4` (
               $idCol int(11) UNSIGNED NOT NULL,
               $validFromCol datetime(6) NOT NULL,
               $validUntilCol int(11) NOT NULL,
               $intCol int(11) DEFAULT NULL,
               $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;    
-            DROP TABLE IF EXISTS `testtablebad5`;  
-            CREATE TABLE IF NOT EXISTS `testtablebad5` (
+            DROP TABLE IF EXISTS `test_table_bad_5`;  
+            CREATE TABLE IF NOT EXISTS `test_table_bad_5` (
               $intCol int(11) UNSIGNED NOT NULL,
               $validUntilCol datetime(6) NOT NULL,
               $intCol int(11) DEFAULT NULL,
               $stringCol varchar(100) DEFAULT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-            DROP TABLE IF EXISTS `testtablebad6`;  
-            CREATE TABLE IF NOT EXISTS `testtablebad6` (
+            DROP TABLE IF EXISTS `test_table_bad_6`;  
+            CREATE TABLE IF NOT EXISTS `test_table_bad_6` (
               $idCol int(11) UNSIGNED NOT NULL,
               $validFromCol datetime(6) NOT NULL,
               $intCol int(11) DEFAULT NULL,
@@ -122,7 +124,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad1', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_1', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -131,7 +133,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad2', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_2', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -139,7 +141,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad3', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_3', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -147,7 +149,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad4', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_4', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -155,7 +157,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad5', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_5', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -163,7 +165,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'testtablebad6', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_6', self::ID_COLUMN_NAME);
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -178,6 +180,14 @@ EOD;
         $this->assertTrue($exceptionCaught);
     }
 
+    /**
+     * @throws InvalidTimeStringException
+     * @throws MalformedStringException
+     * @throws RowDoesNotExist
+     * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeZoneException
+     * @throws RowAlreadyExists
+     */
     #[Test]
     public function testFindRowsWithTime(): void
     {
@@ -319,6 +329,10 @@ EOD;
         $this->assertEquals(0, $foundRows11->count());
     }
 
+    /**
+     * @throws RowAlreadyExists
+     * @throws InvalidTimeStringException
+     */
     #[Test]
     public function testCreateRowWithTime(): void
     {
@@ -364,6 +378,10 @@ EOD;
         $this->assertEquals('test', $row[self::STRING_COLUMN_2]);
     }
 
+    /**
+     * @throws RowAlreadyExists
+     * @throws InvalidTimeStringException
+     */
     #[Test]
     public function testDeleteRowWithTime(): void
     {
@@ -391,6 +409,9 @@ EOD;
 
     }
 
+    /**
+     * @throws InvalidTimeStringException
+     */
     #[Test]
     public function testGetAllRowsWithTime(): void
     {
@@ -402,6 +423,12 @@ EOD;
         $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
     }
 
+    /**
+     * @throws RowAlreadyExists
+     * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime
+     * @throws RowDoesNotExist
+     */
     #[Test]
     public function testBadTimes(): void
     {
@@ -468,6 +495,12 @@ EOD;
     }
 
 
+    /**
+     * @throws RowAlreadyExists
+     * @throws InvalidTimeStringException
+     * @throws MalformedStringException
+     * @throws InvalidTimeZoneException
+     */
     #[Test]
     public function testRowExists(): void
     {
@@ -487,6 +520,10 @@ EOD;
 
     }
 
+    /**
+     * @throws InvalidSearchType
+     * @throws InvalidSearchSpec
+     */
     #[Test]
     public function testSearchWithTime(): void
     {
@@ -494,12 +531,20 @@ EOD;
          * @var MySqlUnitemporalDataTable $dataTable
          */
         $dataTable = $this->getTestDataTable();
-        // search not implemented yet
+        // search is not implemented yet
         $this->assertEquals(0, $dataTable->searchWithTime([], DataTable::SEARCH_AND, TimeString::now())->count());
         $this->assertEquals(DataTable::ERROR_NOT_IMPLEMENTED, $dataTable->getErrorCode());
     }
 
 
+    /**
+     * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     * @throws RowAlreadyExists
+     * @throws InvalidRowUpdateTime
+     */
     #[Test]
     public function testUpdateRowWithTime(): void
     {
@@ -542,6 +587,15 @@ EOD;
 
     }
 
+    /**
+     * @throws InvalidTimeStringException
+     * @throws InvalidTimeZoneException
+     * @throws MalformedStringException
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     * @throws RowAlreadyExists
+     * @throws InvalidRowUpdateTime
+     */
     #[Test]
     public function testRowHistory(): void
     {
@@ -585,6 +639,15 @@ EOD;
 
     }
 
+    /**
+     * @throws InvalidTimeStringException
+     * @throws InvalidArgumentException
+     * @throws MalformedStringException
+     * @throws InvalidTimeZoneException
+     * @throws RowDoesNotExist
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
+     */
     #[Test]
     public function testConsistency(): void
     {
@@ -598,7 +661,6 @@ EOD;
         $rowId = 1;
         for ($i = $initialYear; $i <= $lastYear; $i++) {
             $time = "$i-01-01";
-            //print("Creating/updating row with time $time\n");
             if ($i === $initialYear) {
                 try {
                     $rowId = $dataTable->createRowWithTime([self::INT_COLUMN => $i], TimeString::fromString($time));

@@ -38,6 +38,9 @@ use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 class DataTableAdditionalTest extends TestCase
 {
 
+    /**
+     * @throws RowAlreadyExists
+     */
     #[Test]
     public function testFailGetOneUnusedId(): void
     {
