@@ -670,6 +670,57 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
     #[Test]
+    public function testIteratorAggregate(): void
+    {
+        $dataTable = $this->getTestDataTable(true);
+        $idColumn = $dataTable->getIdColumnName();
+
+        $rows = [
+            [$idColumn => 1, self::STRING_COLUMN_2 => 'one'],
+            [$idColumn => 2, self::STRING_COLUMN_2 => 'two'],
+            [$idColumn => 3, self::STRING_COLUMN_2 => 'three'],
+        ];
+
+        foreach ($rows as $row) {
+            $dataTable->createRow($row);
+        }
+
+        $count = 0;
+        foreach ($dataTable as $rowId => $row) {
+            $this->assertArrayHasKey($idColumn, $row);
+            $this->assertEquals($rows[$count][self::STRING_COLUMN_2], $row[self::STRING_COLUMN_2]);
+            $count++;
+        }
+        $this->assertEquals(3, $count);
+    }
+
+    #[Test]
+    public function testIsUnderlyingDatabaseInTransaction(): void
+    {
+        $dataTable = $this->getTestDataTable();
+        if (!$dataTable->supportsTransactions()) {
+            $this->assertFalse($dataTable->isUnderlyingDatabaseInTransaction());
+            return;
+        }
+
+        $this->assertFalse($dataTable->isUnderlyingDatabaseInTransaction());
+        $dataTable->startTransaction();
+        $this->assertTrue($dataTable->isUnderlyingDatabaseInTransaction());
+        $dataTable->rollBack();
+        $this->assertFalse($dataTable->isUnderlyingDatabaseInTransaction());
+    }
+
+    #[Test]
+    public function testName(): void
+    {
+        $dataTable = $this->getTestDataTable();
+        $originalName = $dataTable->getName();
+        $dataTable->setName('TestTable');
+        $this->assertEquals('TestTable', $dataTable->getName());
+        $dataTable->setName($originalName);
+    }
+
+    #[Test]
     public function testTransactions(): void
     {
 

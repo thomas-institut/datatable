@@ -4,6 +4,7 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 
+// @codeCoverageIgnoreStart
 readonly class SimplePdoProvider implements PdoProvider
 {
     public function __construct(private PDO $pdo)
@@ -14,3 +15,4 @@ readonly class SimplePdoProvider implements PdoProvider
         return $this->pdo;
     }
 }
+// @codeCoverageIgnoreEnd

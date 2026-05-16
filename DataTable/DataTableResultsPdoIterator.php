@@ -13,7 +13,6 @@ use PDOStatement;
  */
 class DataTableResultsPdoIterator implements DataTableResultsIterator
 {
-
     private string $idColumnName;
     private Iterator $source;
     private PDOStatement $statement;
@@ -40,7 +39,6 @@ class DataTableResultsPdoIterator implements DataTableResultsIterator
     {
         $current = $this->source->current();
         return isset($current) ? $this->normalizeResultRowArray($current) : null;
-
     }
 
     public function next(): void

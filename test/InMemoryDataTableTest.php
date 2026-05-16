@@ -54,4 +54,9 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
         }
         return $dt;
     }
+    public function testEmptyDataInitialization(): void
+    {
+         $dataTable = new InMemoryDataTable();
+        $this->assertEquals(0, $dataTable->getAllRows()->count());
+    }
 }
