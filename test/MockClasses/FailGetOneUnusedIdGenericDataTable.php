@@ -27,8 +27,6 @@
 
 namespace ThomasInstitut\DataTable\Test;
 
-include __DIR__ . '/../../DataTable/DataTable.php';
-
 
 use RunTimeException;
 use ThomasInstitut\DataTable\DataTableResultsArrayIterator;
@@ -43,7 +41,7 @@ use ThomasInstitut\DataTable\GenericDataTable;
 class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
 
-    const ERROR_CANNOT_GET_MAX_ID = 2001;
+    const int ERROR_CANNOT_GET_MAX_ID = 2001;
     
 
 
@@ -77,8 +75,6 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
         return 0;
     }
 
-
-
     public function getMaxId(): int
     {
         $this->setError('Cannot get a max Id',self::ERROR_CANNOT_GET_MAX_ID );
@@ -95,7 +91,6 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
     }
 
-
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
     {
         return new DataTableResultsArrayIterator([]);
@@ -106,6 +101,5 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
     {
         return 0;
     }
-
 
 }

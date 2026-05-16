@@ -6,10 +6,6 @@ namespace ThomasInstitut\DataTable;
 use PHPUnit\Framework\TestCase;
 
 
-
-require __DIR__ . '/../vendor/autoload.php';
-
-
 /**
  * Reference test cases for DataTableResultsIterator implementations
  *

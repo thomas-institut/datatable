@@ -26,11 +26,9 @@
 namespace ThomasInstitut\DataTable;
 
 use Iterator;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 
 
@@ -58,12 +56,6 @@ abstract class DataTableReferenceTestCase extends TestCase
     public int $numIterations = 5;
 
 
-    /**
-     * Returns true if there can be multiple data access sessions (e.g. PDO connections) available
-     * in the test scenario.
-     *
-     * @return bool
-     */
     abstract public function multipleDataAccessSessionsAvailable() : bool;
 
     /**
@@ -82,31 +74,24 @@ abstract class DataTableReferenceTestCase extends TestCase
     abstract public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable;
 
 
-
     private function fillUpTestDataTable(DataTable $dataTable) : DataTable
     {
         for ($i = 1; $i <= $this->numRows; $i++) {
             $someRow = [ self::INT_COLUMN => $i, self::STRING_COLUMN => "textvalue$i"];
-            try {
-                $dataTable->createRow($someRow);
-            } catch (RowAlreadyExists) {
-                // should never happen
-            }
+            $dataTable->createRow($someRow);
         }
         return $dataTable;
     }
 
 
-    /**
-     * @throws RowAlreadyExists
-     */
-    public function testCreationAndDeletion()
+    #[Test]
+    public function testCreationAndDeletion(): void
     {
         
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
         
-        $this->assertSame(false, $dataTable->rowExists(1));
+        $this->assertFalse($dataTable->rowExists(1));
         
         $ids = [];
         for ($i = 1; $i <= $this->numRows; $i++) {
@@ -147,7 +132,8 @@ abstract class DataTableReferenceTestCase extends TestCase
         return false;
     }
 
-    public function testFindSingle()
+    #[Test]
+    public function testFindSingle(): void
     {
         $dataTable = $this->fillUpTestDataTable($this->getTestDataTable());
         $idColumn = $dataTable->getIdColumnName();
@@ -159,10 +145,10 @@ abstract class DataTableReferenceTestCase extends TestCase
             $someTextvalue = "textvalue$someInt";
             $testMsg = "Random searches,  iteration $i, int=$someInt";
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
-            $this->assertEquals(1, $theRows->count(), $testMsg);
-            $this->assertTrue(is_int($theRows->getFirst()[$idColumn]), $testMsg);
+            $this->assertCount(1, $theRows, $testMsg);
+            $this->assertIsInt($theRows->getFirst()[$idColumn], $testMsg);
             $theRows2 = $dataTable->findRows([self::STRING_COLUMN => $someTextvalue], 1);
-            $this->assertEquals(1, $theRows2->count(), $testMsg);
+            $this->assertCount(1, $theRows2, $testMsg);
             $this->assertEquals($theRows->getFirst()[$idColumn], $theRows2->getFirst()[$idColumn], $testMsg);
             $rowId = $dataTable->getIdForKeyValue(
                 self::STRING_COLUMN,
@@ -172,16 +158,14 @@ abstract class DataTableReferenceTestCase extends TestCase
             $this->assertEquals($theRows->getFirst()[$idColumn], $rowId);
             $theRows3 = $dataTable->findRows([self::INT_COLUMN => $someInt,
                 self::STRING_COLUMN => $someTextvalue]);
-            $this->assertEquals(1, $theRows3->count(), $testMsg);
-            $this->assertTrue(is_int($theRows3->getFirst()[$idColumn]), $testMsg);
+            $this->assertCount(1, $theRows3, $testMsg);
+            $this->assertIsInt($theRows3->getFirst()[$idColumn], $testMsg);
             $this->assertEquals($theRows->getFirst()[$idColumn], $theRows3->getFirst()[$idColumn], $testMsg);
         }
     }
 
-    /**
-     * @throws RowAlreadyExists
-     */
-    public function testFindMultiple()
+    #[Test]
+    public function testFindMultiple(): void
     {
         $dataTable = $this->getTestDataTable();
         
@@ -206,11 +190,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         return  $prefix . sprintf("%03d",$value);
     }
 
-    /**
-     * @throws InvalidSearchType
-     * @throws RowAlreadyExists
-     */
-    public function testComplexSearches() {
+    #[Test]
+    public function testComplexSearches(): void
+    {
         $dataTable = $this->getTestDataTable();
         $stringKeyName  = self::STRING_COLUMN;
         $intKeyName = self::INT_COLUMN;
@@ -319,7 +301,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         }
     }
 
-    public function testBadlyFormedSearches() {
+    #[Test]
+    public function testBadlyFormedSearches(): void
+    {
         $dataTable = $this->getTestDataTable();
         $stringKeyName  = self::STRING_COLUMN;
 
@@ -390,11 +374,8 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws InvalidRowForUpdate
-     */
-    public function testUpdate()
+    #[Test]
+    public function testUpdate(): void
     {
         $dataTable = $this->fillUpTestDataTable($this->getTestDataTable());
         $idColumn = $dataTable->getIdColumnName();
@@ -405,7 +386,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $newTextValue = "NewTextValue$someInt";
             $testMsg = "Random updates,  iteration $i, int=$someInt, new value: $newTextValue";
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
-            $this->assertEquals(1, $theRows->count(), $testMsg);
+            $this->assertCount(1, $theRows, $testMsg);
             $theRow = $theRows->getFirst();
             $theId = $theRow[$idColumn];
             $dataTable->updateRow([$idColumn=>$theId,  self::STRING_COLUMN => $newTextValue]);
@@ -421,7 +402,8 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
 
-     public function testNonExistentRows()
+     #[Test]
+    public function testNonExistentRows(): void
     {
         $dataTable = $this->getTestDataTable();
         $this->assertFalse($dataTable->rowExists(1));
@@ -439,10 +421,8 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertEquals(0, $dataTable->deleteRow(1));
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    public function testCreateRow()
+    #[Test]
+    public function testCreateRow(): void
     {
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
@@ -476,10 +456,8 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     }
 
-    /**
-     * @throws RowAlreadyExists
-     */
-    public function testUpdateRow()
+    #[Test]
+    public function testUpdateRow(): void
     {
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
@@ -567,10 +545,8 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertEquals($theRow, $updatedRow);
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    public function testRowExistsById()
+    #[Test]
+    public function testRowExistsById(): void
     {
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
@@ -583,7 +559,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertFalse($dataTable->rowExists(0));
     }
 
-    public function testArrayAccess() {
+    #[Test]
+    public function testArrayAccess(): void
+    {
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
 
@@ -601,11 +579,8 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws InvalidRowForUpdate
-     */
-    public function testEscaping()
+    #[Test]
+    public function testEscaping(): void
     {
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
@@ -625,7 +600,9 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     }
 
-    public function testSameDataAccess() {
+    #[Test]
+    public function testSameDataAccess(): void
+    {
 
         $dataTable = $this->getTestDataTable();
         $dataTableTwo = $this->getTestDataTable(false);
@@ -657,7 +634,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertEquals(1, $allRowsTwo->count());
     }
 
-    public function testTransactions() {
+    #[Test]
+    public function testTransactions(): void
+    {
 
         $dataTable = $this->getTestDataTable();
         $dataTable[20] = [ self::STRING_COLUMN => '20' ];

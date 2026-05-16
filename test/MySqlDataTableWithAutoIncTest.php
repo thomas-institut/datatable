@@ -3,9 +3,9 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use PHPUnit\Framework\Attributes\CoversClass;
 
-require_once 'MySqlDataTableTest.php';
-
+#[CoversClass(MySqlDataTable::class)]
 class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
 {
 

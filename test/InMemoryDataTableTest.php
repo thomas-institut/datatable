@@ -25,14 +25,9 @@
  */
 namespace ThomasInstitut\DataTable;
 
+use PHPUnit\Framework\Attributes\CoversClass;
 
-require_once 'DataTableReferenceTestCase.php';
-
-/**
- * Description of DataTableTest
- *
- * @author Rafael Nájera <rafael@najera.ca>
- */
+#[CoversClass(InMemoryDataTable::class)]
 class InMemoryDataTableTest extends DataTableReferenceTestCase
 {
 

@@ -6,18 +6,12 @@ namespace ThomasInstitut\DataTable;
 
 use Exception;
 use PDO;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
-use ThomasInstitut\TimeString\InvalidTimeZoneException;
-use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
 
-require_once 'MySqlDataTableTest.php';
-
-/**
- * Description of MySqlUnitemporalDataTableTest
- *
- * @author Rafael Nájera <rafael.najera@uni-koeln.de>
- */
+#[CoversClass(MySqlUnitemporalDataTable::class)]
 class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
 {
 
@@ -119,7 +113,8 @@ EOD;
         return new MySqlUnitemporalDataTable($restrictedPdo, self::TABLE_NAME, self::ID_COLUMN_NAME);
     }
     
-    public function testBadTables()
+    #[Test]
+    public function testBadTables(): void
     {
 
         $pdo = $this->getPdo();
@@ -183,15 +178,8 @@ EOD;
         $this->assertTrue($exceptionCaught);
     }
 
-    /**
-     * @throws InvalidRowUpdateTime
-     * @throws InvalidTimeStringException
-     * @throws InvalidTimeZoneException
-     * @throws MalformedStringException
-     * @throws RowAlreadyExists
-     * @throws RowDoesNotExist
-     */
-    public function testFindRowsWithTime()
+    #[Test]
+    public function testFindRowsWithTime(): void
     {
         /** @var MySqlUnitemporalDataTable $dataTable */
         $dataTable = $this->getTestDataTable();
@@ -331,11 +319,8 @@ EOD;
         $this->assertEquals(0, $foundRows11->count());
     }
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws InvalidTimeStringException
-     */
-    public function testCreateRowWithTime()
+    #[Test]
+    public function testCreateRowWithTime(): void
     {
         /** @var MySqlUnitemporalDataTable $dataTable */
         $dataTable = $this->getTestDataTable();
@@ -360,7 +345,7 @@ EOD;
         );
         $this->assertEquals(1, $id1);
 
-        // ID not integer : a new id must be generated
+        // ID is not an integer: a new id must be generated
 
         $id2 = $dataTable->createRowWithTime([self::ID_COLUMN_NAME => 'NotaNumber',self::STRING_COLUMN_2 => 'test2'],$time);
         $this->assertNotEquals($id1, $id2);
@@ -379,11 +364,8 @@ EOD;
         $this->assertEquals('test', $row[self::STRING_COLUMN_2]);
     }
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws InvalidTimeStringException
-     */
-    public function testDeleteRowWithTime()
+    #[Test]
+    public function testDeleteRowWithTime(): void
     {
         /** @var MySqlUnitemporalDataTable $dataTable */
         $dataTable = $this->getTestDataTable();
@@ -409,27 +391,20 @@ EOD;
 
     }
 
-    /**
-     * @throws InvalidTimeStringException
-     */
-    public function testGetAllRowsWithTime() {
-
+    #[Test]
+    public function testGetAllRowsWithTime(): void
+    {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
          */
         $dataTable = $this->getTestDataTable();
 
         $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
-
-
     }
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws InvalidTimeStringException
-     * @throws RowDoesNotExist|InvalidRowUpdateTime
-     */
-    public function testBadTimes() {
+    #[Test]
+    public function testBadTimes(): void
+    {
 
         /**
          * @var MySqlUnitemporalDataTable $dataTable
@@ -493,13 +468,9 @@ EOD;
     }
 
 
-    /**
-     * @throws InvalidTimeStringException
-     * @throws InvalidTimeZoneException
-     * @throws MalformedStringException
-     * @throws RowAlreadyExists
-     */
-    public function testRowExists() {
+    #[Test]
+    public function testRowExists(): void
+    {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
          */
@@ -516,31 +487,21 @@ EOD;
 
     }
 
-    /**
-     * @throws InvalidSearchType
-     * @throws InvalidSearchSpec
-     */
-    public function testSearchWithTime() {
-
+    #[Test]
+    public function testSearchWithTime(): void
+    {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
          */
         $dataTable = $this->getTestDataTable();
         // search not implemented yet
-
         $this->assertEquals(0, $dataTable->searchWithTime([], DataTable::SEARCH_AND, TimeString::now())->count());
         $this->assertEquals(DataTable::ERROR_NOT_IMPLEMENTED, $dataTable->getErrorCode());
     }
 
 
-    /**
-     * @throws InvalidTimeStringException
-     * @throws RowDoesNotExist
-     * @throws InvalidRowForUpdate
-     * @throws RowAlreadyExists
-     * @throws InvalidRowUpdateTime|InvalidTimeZoneException
-     */
-    public function testUpdateRowWithTime()
+    #[Test]
+    public function testUpdateRowWithTime(): void
     {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
@@ -581,17 +542,9 @@ EOD;
 
     }
 
-    /**
-     * @throws InvalidRowForUpdate
-     * @throws InvalidRowUpdateTime
-     * @throws InvalidTimeStringException
-     * @throws InvalidTimeZoneException
-     * @throws MalformedStringException
-     * @throws RowAlreadyExists
-     * @throws RowDoesNotExist
-     */
-    public function testRowHistory() {
-
+    #[Test]
+    public function testRowHistory(): void
+    {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
          */
@@ -632,16 +585,9 @@ EOD;
 
     }
 
-    /**
-     * @throws InvalidArgumentException
-     * @throws InvalidRowForUpdate
-     * @throws InvalidRowUpdateTime
-     * @throws InvalidTimeStringException
-     * @throws InvalidTimeZoneException
-     * @throws MalformedStringException
-     * @throws RowDoesNotExist
-     */
-    public function testConsistency() {
+    #[Test]
+    public function testConsistency(): void
+    {
         /**
          * @var MySqlUnitemporalDataTable $dataTable
          */
@@ -668,9 +614,5 @@ EOD;
         }
         $issues = $dataTable->checkConsistency();
         $this->assertCount(0, $issues);
-
-
     }
-
-
 }

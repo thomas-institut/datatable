@@ -25,8 +25,7 @@
  */
 namespace ThomasInstitut\DataTable;
 
-require 'MockClasses/FailGetOneUnusedIdGenericDataTable.php';
-
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
@@ -38,25 +37,19 @@ use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
  */
 class DataTableAdditionalTest extends TestCase
 {
-    
-    public function testFailGetOneUnusedId()
+
+    #[Test]
+    public function testFailGetOneUnusedId(): void
     {
 
 
-        $dt = new Test\FailGetOneUnusedIdGenericDataTable();
-
-        $exceptionCaught = false;
+        $dt = new FailGetOneUnusedIdGenericDataTable();
 
         try {
-            $r = $dt->createRow([]);
-        } catch (RuntimeException $e){
-            $exceptionCaught = true;
+            $dt->createRow([]);
+        } catch (RuntimeException) {
         }
-        
 
-        $this->assertTrue($exceptionCaught);
         $this->assertEquals(FailGetOneUnusedIdGenericDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
-        
     }
-    
 }

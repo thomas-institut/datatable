@@ -26,17 +26,12 @@
 
 namespace ThomasInstitut\DataTable;
 
-require_once 'DataTableReferenceTestCase.php';
-
-
 use PDO;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 
-/**
- * Description of SQLDataTableTest
- *
- * @author Rafael Nájera <rafael.najera@uni-koeln.de>
- */
+#[CoversClass(MySqlDataTable::class)]
 class MySqlDataTableTest extends DataTableReferenceTestCase
 {
 
@@ -176,7 +171,8 @@ EOD;
     /**
      * @throws RowAlreadyExists
      */
-    public function testRestrictedPdo()
+    #[Test]
+    public function testRestrictedPdo(): void
     {
         $dataTable = $this->getTestDataTable();
         $restrictedDataTable = $this->getRestrictedDt();
@@ -214,7 +210,8 @@ EOD;
         $this->assertTrue($result);
     }
 
-    public function testEscaping()
+    #[Test]
+    public function testEscaping(): void
     {
         parent::testEscaping();
 
@@ -230,7 +227,8 @@ EOD;
         $this->assertTrue($exceptionCaught);
     }
 
-    public function testBadTables()
+    #[Test]
+    public function testBadTables(): void
     {
         $pdo = $this->getPdo();
         $this->resetTestDbWithBadTables($pdo);
@@ -270,12 +268,8 @@ EOD;
         $this->assertEquals(MySqlDataTable::ERROR_TABLE_NOT_FOUND, $errorCode);
     }
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws RowDoesNotExist
-     * @throws InvalidRowForUpdate
-     */
-    public function testUpdateRow()
+    #[Test]
+    public function testUpdateRow(): void
     {
         parent::testUpdateRow();
 
@@ -305,7 +299,8 @@ EOD;
         $this->assertFalse($exceptionCaught);
     }
 
-    public function testNonExistentRows()
+    #[Test]
+    public function testNonExistentRows(): void
     {
         parent::testNonExistentRows();
 
@@ -320,7 +315,8 @@ EOD;
         }
     }
 
-    public function testSelect()
+    #[Test]
+    public function testSelect(): void
     {
 
         $dataTable = $this->getTestDataTable();

@@ -1,8 +1,13 @@
 <?xml version="1.0"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" colors="true" processIsolation="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd" cacheDirectory=".phpunit.cache">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" colors="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/12.0/phpunit.xsd" cacheDirectory=".phpunit.cache" displayDetailsOnIncompleteTests="true" displayDetailsOnSkippedTests="true" displayDetailsOnTestsThatTriggerDeprecations="true" displayDetailsOnTestsThatTriggerErrors="true" displayDetailsOnTestsThatTriggerNotices="true" displayDetailsOnTestsThatTriggerWarnings="true">
   <testsuites>
     <testsuite name="Unit">
       <directory>test</directory>
     </testsuite>
   </testsuites>
+  <source>
+    <include>
+      <directory>DataTable</directory>
+    </include>
+  </source>
 </phpunit>

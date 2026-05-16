@@ -25,16 +25,12 @@
  */
 
 namespace ThomasInstitut\DataTable;
+
 use PDO;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 
-
-require_once 'MySqlDataTableTest.php';
-
-/**
- * Description of SQLDataTableTest
- *
- * @author Rafael Nájera <rafael.najera@uni-koeln.de>
- */
+#[CoversClass(MySqlDataTableWithRandomIds::class)]
 class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
 {
     
@@ -63,10 +59,8 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         );
     }
 
-    /**
-     * @throws RowAlreadyExists
-     */
-    public function testRandomIds()
+    #[Test]
+    public function testRandomIds(): void
     {
         
         $dataTable = $this->getTestDataTable();
@@ -101,7 +95,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
         for ($i = 0; $i < $nRows; $i++) {
             $newID = $dt2->createRow([ self::INT_COLUMN => $i,
                 self::STRING_COLUMN => "textvalue$i"]);
-            $this->assertNotSame(false, $newID);
+            $this->assertIsInt($newID);
             $this->assertGreaterThan($this->numRows, $newID);
         }
     }

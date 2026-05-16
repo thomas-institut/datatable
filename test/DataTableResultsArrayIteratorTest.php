@@ -2,8 +2,9 @@
 
 namespace ThomasInstitut\DataTable;
 
-require_once 'DataTableResultsIteratorReferenceTestCase.php';
+use PHPUnit\Framework\Attributes\CoversClass;
 
+#[CoversClass(DataTableResultsArrayIterator::class)]
 class DataTableResultsArrayIteratorTest extends DataTableResultsIteratorReferenceTestCase
 {
     public function createDataTable() : DataTable {
