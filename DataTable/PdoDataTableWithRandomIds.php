@@ -28,10 +28,14 @@ namespace ThomasInstitut\DataTable;
 use PDO;
 
 /**
- * Compatibility wrapper for PDO-based MySql tables with random ids.
+ * Utility class to construct a PDO-based table with a RandomId generator.
+ *
  */
-class MySqlDataTableWithRandomIds extends PdoDataTableWithRandomIds
+class PdoDataTableWithRandomIds extends PdoDataTable
 {
+
+    public const int MAX_ATTEMPTS = 1000;
+
     /**
      *
      * $min and $max should be carefully chosen so that
@@ -39,13 +43,15 @@ class MySqlDataTableWithRandomIds extends PdoDataTableWithRandomIds
      * long.
      * @param PDO|PdoProvider $pdoOrProvider
      * @param string $tableName
+     * @param SqlDialect $sqlDialect
      * @param int $min
      * @param int $max
      * @param string $idColumnName
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
-        parent::__construct($pdoOrProvider, $tableName, new MySqlDialect(), $min, $max, $idColumnName);
+        parent::__construct($pdoOrProvider, $tableName, $sqlDialect, false, $idColumnName);
+        $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
     }
 
 }

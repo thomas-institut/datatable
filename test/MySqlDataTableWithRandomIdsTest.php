@@ -30,6 +30,9 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 
+
+// TODO: create a DataTableWithRandomIdsTest and make this a subclass just setting up a MySql table.
+
 #[CoversClass(MySqlDataTableWithRandomIds::class)]
 class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
 {
@@ -38,7 +41,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
     public int $maxId = 200000;
 
 
-    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+    protected function constructMySqlDataTable(PDO $pdo) : PdoDataTable {
         return new MySqlDataTableWithRandomIds($pdo, self::TABLE_NAME,  $this->minId, $this->maxId, self::ID_COLUMN_NAME);
     }
 
@@ -47,7 +50,7 @@ class MySqlDataTableWithRandomIdsTest extends MySqlDataTableTest
        return 'MySqlDtWithRandomIds';
     }
 
-    public function getRestrictedDt() : MySqlDataTable
+    public function getRestrictedDt() : PdoDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlDataTableWithRandomIds(

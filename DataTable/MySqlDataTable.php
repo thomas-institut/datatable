@@ -33,6 +33,7 @@ use PDO;
  */
 class MySqlDataTable extends PdoDataTable
 {
+
     /**
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name

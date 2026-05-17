@@ -4,7 +4,7 @@
 
 namespace ThomasInstitut\DataTable;
 
-use Exception;
+use ArrayIterator;
 use PDO;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -14,11 +14,14 @@ use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
 
+
+// TODO: turn this into a PdoUnitemporalDataTable reference test and make MySqlUnitemporalDataTableTest just provide a MySql table
+
 #[CoversClass(MySqlUnitemporalDataTable::class)]
 class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
 {
 
-    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
+    protected function constructMySqlDataTable(PDO $pdo) : PdoDataTable {
         return new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME, self::ID_COLUMN_NAME);
     }
 
@@ -34,8 +37,8 @@ class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
         $otherStringCol = self::STRING_COLUMN_2;
         $tableName = self::TABLE_NAME;
         $idCol = self::ID_COLUMN_NAME;
-        $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
+        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$tableName`;
@@ -60,8 +63,8 @@ EOD;
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
         $idCol =  self::ID_COLUMN_NAME;
-        $validFromCol = MySqlUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = MySqlUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
+        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `test_table_bad_1`;
@@ -110,7 +113,7 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
     
-      public function getRestrictedDt() : MySqlDataTable
+      public function getRestrictedDt() : PdoDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlUnitemporalDataTable($restrictedPdo, self::TABLE_NAME, self::ID_COLUMN_NAME);
@@ -640,9 +643,9 @@ EOD;
         for($i=0; $i<count($rowHistory); $i++) {
             $this->assertEquals($rowId, $rowHistory[$i][self::ID_COLUMN_NAME]);
             $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INT_COLUMN]);
-            $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][MySqlUnitemporalDataTable::FIELD_VALID_FROM]);
+            $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][PdoUnitemporalDataTable::FIELD_VALID_FROM]);
         }
-        $this->assertEquals(TimeString::END_OF_TIMES,$rowHistory[count($rowHistory)-1][MySqlUnitemporalDataTable::FIELD_VALID_UNTIL]);
+        $this->assertEquals(TimeString::END_OF_TIMES,$rowHistory[count($rowHistory)-1][PdoUnitemporalDataTable::FIELD_VALID_UNTIL]);
 
         $exceptionCaught = false;
         try {
@@ -656,13 +659,9 @@ EOD;
     }
 
     /**
-     * @throws InvalidTimeStringException
      * @throws InvalidArgumentException
-     * @throws MalformedStringException
-     * @throws InvalidTimeZoneException
      * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
-     * @throws InvalidRowUpdateTime
      */
     #[Test]
     #[AllowMockObjectsWithoutExpectations]
@@ -673,55 +672,55 @@ EOD;
             ->onlyMethods(['getUniqueIdsWithTime', 'getRowHistory'])
             ->getMock();
 
-        $dataTable->expects($this->any())->method('getUniqueIdsWithTime')->willReturn(new \ArrayIterator([1]));
+        $dataTable->expects($this->any())->method('getUniqueIdsWithTime')->willReturn(new ArrayIterator([1]));
 
         // 1. Valid history
         $dataTable->expects($this->any())->method('getRowHistory')
             ->willReturnOnConsecutiveCalls(
                 [
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
                     ],
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
                     ]
                 ],
                 // 2. Invalid range (until < from)
                 [
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
                     ]
                 ],
                 // 3. Zero range (until == from)
                 [
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
                     ]
                 ],
                 // 4. Overlap
                 [
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
                     ],
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-15 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-15 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
                     ]
                 ],
                 // 5. Gap
                 [
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
                     ],
                     [
-                        MySqlUnitemporalDataTable::FIELD_VALID_FROM => '2020-03-01 00:00:00.000000',
-                        MySqlUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
+                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-03-01 00:00:00.000000',
+                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
                     ]
                 ]
             );
@@ -733,23 +732,29 @@ EOD;
         // 2. Invalid range
         $issues = $dataTable->checkConsistency([1]);
         $this->assertCount(1, $issues);
-        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_ERROR_INVALID_TIME_RANGE, $issues[0]['code']);
+        $this->assertEquals(PdoUnitemporalDataTable::REPORT_ERROR_INVALID_TIME_RANGE, $issues[0]['code']);
 
         // 3. Zero range
         $issues = $dataTable->checkConsistency([1]);
         $this->assertCount(1, $issues);
-        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_WARNING_ZERO_TIME_RANGE, $issues[0]['code']);
+        $this->assertEquals(PdoUnitemporalDataTable::REPORT_WARNING_ZERO_TIME_RANGE, $issues[0]['code']);
 
         // 4. Overlap
         $issues = $dataTable->checkConsistency([1]);
         $this->assertCount(1, $issues);
-        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_ERROR_OVERLAPPING_VERSIONS, $issues[0]['code']);
+        $this->assertEquals(PdoUnitemporalDataTable::REPORT_ERROR_OVERLAPPING_VERSIONS, $issues[0]['code']);
 
         // 5. Gap
         $issues = $dataTable->checkConsistency([1]);
         $this->assertCount(1, $issues);
-        $this->assertEquals(MySqlUnitemporalDataTable::REPORT_INFO_GAP, $issues[0]['code']);
+        $this->assertEquals(PdoUnitemporalDataTable::REPORT_INFO_GAP, $issues[0]['code']);
     }
+
+    /**
+     * @throws RowAlreadyExists
+     * @throws InvalidSearchType
+     * @throws InvalidSearchSpec
+     */
     #[Test]
     public function testSearchAndFindWithMaxResults(): void
     {
