@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use ThomasInstitut\DataTable\IdGenerator\RandomIdGenerator;
 
 #[CoversClass(RandomIdGenerator::class)]
 class RandomIdGeneratorTest extends TestCase

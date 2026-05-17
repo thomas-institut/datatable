@@ -1,8 +1,9 @@
 <?php
+
 /*
  * The MIT License
  *
- * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +23,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+namespace ThomasInstitut\DataTable\IdGenerator;
 
-namespace ThomasInstitut\DataTable;
+use ThomasInstitut\DataTable\GenericDataTable;
 
-
-class SequentialIdGenerator implements IdGenerator
+/**
+ * Interface IdGenerator
+ *
+ * Simple interface that provides a function to get one unused ID out of a DataTable
+ *
+ * @package DataTable
+ */
+interface IdGenerator
 {
-
-    public function getOneUnusedId(GenericDataTable $dataTable): int
-    {
-        return $dataTable->getMaxId() + 1;
-    }
+    /**
+     * Generates an unused ID for the given DataTable
+     * @param GenericDataTable $dataTable
+     * @return int
+     */
+    public function getOneUnusedId(GenericDataTable $dataTable) : int;
 }

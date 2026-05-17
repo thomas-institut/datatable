@@ -23,11 +23,12 @@
  * THE SOFTWARE.
  */
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\IdGenerator;
 
 
 use Exception;
 use RuntimeException;
+use ThomasInstitut\DataTable\GenericDataTable;
 
 class RandomIdGenerator implements IdGenerator
 {

@@ -32,6 +32,15 @@ use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
+use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use Traversable;
 
 
@@ -218,14 +227,14 @@ abstract class GenericDataTable implements DataTable
 
     abstract public function getRow(int $rowId): ?array;
 
-    abstract public function getAllRows(): DataTableResultsIterator;
+    abstract public function getAllRows(): ResultsIterator;
 
     abstract public function deleteRow(int $rowId): int;
 
     /**
      * @inheritdoc
      */
-    public function findRows(array $rowToMatch, int $maxResults = 0): DataTableResultsIterator
+    public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         $searchSpec = [];
 
@@ -242,7 +251,7 @@ abstract class GenericDataTable implements DataTable
         } catch (InvalidSearchSpec|InvalidSearchType) { // @codeCoverageIgnore
             // this should never happen!
         }
-        return $results ?? new DataTableResultsArrayIterator([]);
+        return $results ?? new ArrayResultsIterator([]);
     }
 
     /**
@@ -250,7 +259,7 @@ abstract class GenericDataTable implements DataTable
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator;
+    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator;
 
 
     /**

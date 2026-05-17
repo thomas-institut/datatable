@@ -1,6 +1,6 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\Exception;
 
 /**
  * Exception to get thrown when a given update time for a row is invalid:

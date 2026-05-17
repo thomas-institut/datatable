@@ -30,6 +30,17 @@ use Iterator;
 use PDO;
 use PDOException;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
+use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\SqlDialect\SqlDialect;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
@@ -443,7 +454,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $sql;
     }
 
-    public function getAllRows(): DataTableResultsIterator
+    public function getAllRows(): ResultsIterator
     {
         try {
             return $this->getAllRowsWithTime(TimeString::now());
@@ -457,7 +468,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * @throws InvalidTimeStringException
      */
-    public function getAllRowsWithTime(string $timeString): DataTableResultsIterator
+    public function getAllRowsWithTime(string $timeString): ResultsIterator
     {
         $this->resetError();
         $timeString = $this->getValidTimeString($timeString, 'getAllRowsWithTime');
@@ -466,7 +477,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             ' WHERE ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
             ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
 
-        return new DataTableResultsPdoIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
+        return new PdoResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
 
     public function getRow(int $rowId): ?array
@@ -522,7 +533,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $res;
     }
 
-    public function findRows(array $rowToMatch, int $maxResults = 0): DataTableResultsIterator
+    public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         try {
             return $this->findRowsWithTime($rowToMatch, $maxResults, TimeString::now());
@@ -536,7 +547,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * @throws InvalidTimeStringException
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString): DataTableResultsIterator
+    public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator
     {
         $this->resetError();
 
@@ -580,22 +591,22 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
                 // let's report everything in the error message
                 $this->setError('Query error in realFindRowsWithTime (reported as no results) : ' .
                     $e->getMessage() . ' :: query = ' . $sql, self::ERROR_EMPTY_RESULT_SET);
-                return new DataTableResultsArrayIterator([]);
+                return new ArrayResultsIterator([]);
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRowsWithTime: ' . $e->getMessage() . ' :: query = ' . $sql,
                 self::ERROR_MYSQL_QUERY_ERROR);
-            return new DataTableResultsArrayIterator([]);
+            return new ArrayResultsIterator([]);
             // @codeCoverageIgnoreEnd
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in realFindRowsWithTime when executing query: ' . $sql,
                 self::ERROR_UNKNOWN_ERROR);
-            return new DataTableResultsArrayIterator([]);
+            return new ArrayResultsIterator([]);
             // @codeCoverageIgnoreEnd
         }
-        return new DataTableResultsPdoIterator($r, $this->idColumnName);
+        return new PdoResultsIterator($r, $this->idColumnName);
     }
 
 
@@ -652,11 +663,11 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     }
 
-    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): DataTableResultsIterator
+    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
         // TODO: implement searchWithTime
         $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
-        return new DataTableResultsArrayIterator([]);
+        return new ArrayResultsIterator([]);
 
     }
 

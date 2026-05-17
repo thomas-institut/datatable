@@ -1,6 +1,6 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\Exception;
 
 class InvalidRowForUpdate extends InvalidArgumentException
 {

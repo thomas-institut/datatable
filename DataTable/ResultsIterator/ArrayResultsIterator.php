@@ -1,8 +1,8 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ResultsIterator;
 
-class DataTableResultsArrayIterator implements DataTableResultsIterator
+class ArrayResultsIterator implements ResultsIterator
 {
     private int $count;
     /**

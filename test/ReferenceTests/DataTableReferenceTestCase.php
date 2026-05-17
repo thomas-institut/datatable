@@ -23,7 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use Iterator;
 use PHPUnit\Framework\Attributes\Test;
@@ -31,6 +31,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 
 
 /**
@@ -73,8 +79,6 @@ abstract class DataTableReferenceTestCase extends TestCase
      * @return DataTable
      */
     abstract public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable;
-
-
 
     private function fillUpTestDataTable(DataTable $dataTable) : DataTable
     {

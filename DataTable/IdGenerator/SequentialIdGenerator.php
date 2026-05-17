@@ -1,9 +1,8 @@
 <?php
-
 /*
  * The MIT License
  *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
+ * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,35 +22,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace ThomasInstitut\DataTable;
 
-use PDO;
+namespace ThomasInstitut\DataTable\IdGenerator;
 
-/**
- * Utility class to construct a PDO-based table with a RandomId generator.
- *
- */
-class PdoDataTableWithRandomIds extends PdoDataTable
+
+use ThomasInstitut\DataTable\GenericDataTable;
+
+class SequentialIdGenerator implements IdGenerator
 {
 
-    public const int MAX_ATTEMPTS = 1000;
-
-    /**
-     *
-     * $min and $max should be carefully chosen so that
-     * the method to get new unused id doesn't take too
-     * long.
-     * @param PDO|PdoProvider $pdoOrProvider
-     * @param string $tableName
-     * @param SqlDialect $sqlDialect
-     * @param int $min
-     * @param int $max
-     * @param string $idColumnName
-     */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function getOneUnusedId(GenericDataTable $dataTable): int
     {
-        parent::__construct($pdoOrProvider, $tableName, $sqlDialect, false, $idColumnName);
-        $this->setIdGenerator(new RandomIdGenerator($min, $max, self::MAX_ATTEMPTS));
+        return $dataTable->getMaxId() + 1;
     }
-
 }

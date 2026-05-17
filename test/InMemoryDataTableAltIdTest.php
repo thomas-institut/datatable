@@ -25,27 +25,36 @@
  */
 namespace ThomasInstitut\DataTable;
 
-use PDO;
+use PHPUnit\Framework\Attributes\CoversClass;
+use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
-/**
- * Compatibility wrapper for PDO-based MySql tables with random ids.
- */
-class MySqlDataTableWithRandomIds extends PdoDataTableWithRandomIds
+#[CoversClass(InMemoryDataTable::class)]
+class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
 {
-    /**
-     *
-     * $min and $max should be carefully chosen so that
-     * the method to get new unused id doesn't take too
-     * long.
-     * @param PDO|PdoProvider $pdoOrProvider
-     * @param string $tableName
-     * @param int $min
-     * @param int $max
-     * @param string $idColumnName
-     */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, int $min = 1, int $max = PHP_INT_MAX, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+
+    static private ?InMemoryDataTable $motherTable = null;
+    static private ?array $theData = null;
+    
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : GenericDataTable
     {
-        parent::__construct($pdoOrProvider, $tableName, new MySqlDialect(), $min, $max, $idColumnName);
+        if (self::$motherTable === null) {  // first table to serve
+            self::$theData = [];
+            self::$motherTable = new InMemoryDataTable(self::$theData);
+            self::$motherTable->setIdColumnName('tid');
+            $dt = self::$motherTable;
+        } else {
+            $dt = new InMemoryDataTable(self::$theData);
+            $dt->setIdColumnName('tid');
+        }
+
+        if ($resetTable) {
+            self::$theData = [];
+        }
+        return $dt;
     }
 
+    public function multipleDataAccessSessionsAvailable(): bool
+    {
+        return false;
+    }
 }

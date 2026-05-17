@@ -1,6 +1,6 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use Iterator;
 use PDO;
@@ -11,7 +11,7 @@ use PDOStatement;
  *   * enforces the id column the result rows to be of type integer.
  *   * reports the row id as the key to each result
  */
-class DataTableResultsPdoIterator implements DataTableResultsIterator
+class PdoResultsIterator implements ResultsIterator
 {
     private string $idColumnName;
     private Iterator $source;

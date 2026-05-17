@@ -27,6 +27,8 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
+use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
 
 /**
  * Compatibility wrapper for PDO-based MySql tables.

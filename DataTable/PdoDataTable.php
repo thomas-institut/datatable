@@ -32,6 +32,15 @@ use PDO;
 use PDOException;
 use PDOStatement;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidWhereClauseException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
+use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\SqlDialect\SqlDialect;
 
 
 /**
@@ -298,10 +307,10 @@ class PdoDataTable extends GenericDataTable
         return (string)$var;
     }
 
-    public function getAllRows(): DataTableResultsIterator
+    public function getAllRows(): ResultsIterator
     {
         $sql = 'SELECT * FROM ' . $this->tableName;
-        return new DataTableResultsPdoIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
+        return new PdoResultsIterator($this->doQuery($sql, 'getAllRows'), $this->idColumnName);
 
     }
 
@@ -509,7 +518,7 @@ class PdoDataTable extends GenericDataTable
     /**
      * @inheritdoc
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
         $this->checkSpec($searchSpecArray, $searchType);
 
@@ -530,7 +539,7 @@ class PdoDataTable extends GenericDataTable
                 // TODO: add an optional full table schema check in order avoid ambiguities here
                 $this->logger->info('Query error in realFindRows (reported as no results)',
                     ['query' => $sql, 'message' => $e->getMessage(), 'code' => $e->getCode()]);
-                return new DataTableResultsArrayIterator([]);
+                return new ArrayResultsIterator([]);
             }
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
@@ -546,7 +555,7 @@ class PdoDataTable extends GenericDataTable
             throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
-        return new DataTableResultsPdoIterator($r, $this->idColumnName);
+        return new PdoResultsIterator($r, $this->idColumnName);
     }
 
     protected function getSqlConditionFromSpec(array $spec): string

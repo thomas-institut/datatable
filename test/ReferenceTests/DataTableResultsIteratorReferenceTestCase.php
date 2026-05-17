@@ -1,9 +1,12 @@
 <?php
 
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use PHPUnit\Framework\TestCase;
+use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
 
 /**
@@ -41,7 +44,7 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
     /**
      * @throws RowAlreadyExists
      */
-    function getNonEmptyIterator(): DataTableResultsIterator
+    function getNonEmptyIterator(): ResultsIterator
     {
         return $this->getDataTable()->getAllRows();
     }
@@ -49,7 +52,7 @@ abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
     /**
      * @throws RowAlreadyExists
      */
-    function getEmptyIterator(): DataTableResultsIterator
+    function getEmptyIterator(): ResultsIterator
     {
         return $this->getDataTable()->findRows([ self::INT_COLUM => self::NUM_ROWS + 20]);
     }

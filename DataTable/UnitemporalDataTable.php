@@ -27,6 +27,15 @@
 
 namespace ThomasInstitut\DataTable;
 
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+
 /**
  * Defines a class that provides the same methods as a DataTable but with a
  * time indication.
@@ -82,9 +91,9 @@ interface UnitemporalDataTable extends DataTable
      * @param $theRow
      * @param $maxResults
      * @param string $timeString
-     * @return DataTableResultsIterator
+     * @return ResultsIterator
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString) : DataTableResultsIterator;
+    public function findRowsWithTime($theRow, $maxResults, string $timeString) : ResultsIterator;
 
     /**
      * Searches the datatable for rows that match the given $searchSpec array and $searchType
@@ -94,11 +103,11 @@ interface UnitemporalDataTable extends DataTable
      * @param int $searchType
      * @param string $timeString
      * @param int $maxResults
-     * @return DataTableResultsIterator
+     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): DataTableResultsIterator;
+    public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator;
 
     /**
      * Creates a new version of the given row that is valid from the given time.

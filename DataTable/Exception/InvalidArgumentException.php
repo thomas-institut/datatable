@@ -1,6 +1,6 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\Exception;
 
 /**
  * Exception thrown when an invalid argument has been given to a method

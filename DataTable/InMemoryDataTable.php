@@ -27,6 +27,12 @@
 namespace ThomasInstitut\DataTable;
 
 use LogicException;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
 class InMemoryDataTable extends GenericDataTable
 {
@@ -44,9 +50,9 @@ class InMemoryDataTable extends GenericDataTable
     }
 
 
-    public function getAllRows() : DataTableResultsIterator
+    public function getAllRows() : ResultsIterator
     {
-        return new DataTableResultsArrayIterator($this->theData);
+        return new ArrayResultsIterator($this->theData);
     }
     
     public function rowExists(int $rowId) : bool
@@ -133,7 +139,7 @@ class InMemoryDataTable extends GenericDataTable
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
         $this->checkSpec($searchSpecArray, $searchType);
 
@@ -142,11 +148,11 @@ class InMemoryDataTable extends GenericDataTable
             if ($this->matchSearchSpec($dataRow, $searchSpecArray, $searchType)) {
                 $results[] = $dataRow;
                 if ($maxResults > 0 && count($results) === $maxResults) {
-                    return new DataTableResultsArrayIterator($results);
+                    return new ArrayResultsIterator($results);
                 }
             }
         }
-        return new DataTableResultsArrayIterator($results);
+        return new ArrayResultsIterator($results);
     }
 
     /**

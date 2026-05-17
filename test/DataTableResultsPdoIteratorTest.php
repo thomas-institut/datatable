@@ -4,8 +4,10 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
+use ThomasInstitut\DataTable\ReferenceTests\DataTableResultsIteratorReferenceTestCase;
+use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
 
-#[CoversClass(DataTableResultsPdoIterator::class)]
+#[CoversClass(PdoResultsIterator::class)]
 class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceTestCase
 {
 

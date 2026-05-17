@@ -28,6 +28,7 @@ namespace ThomasInstitut\DataTable;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
 
 /**

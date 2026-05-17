@@ -29,9 +29,9 @@ namespace ThomasInstitut\DataTable\Test;
 
 
 use RunTimeException;
-use ThomasInstitut\DataTable\DataTableResultsArrayIterator;
-use ThomasInstitut\DataTable\DataTableResultsIterator;
 use ThomasInstitut\DataTable\GenericDataTable;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
 /**
  * Mockup class that fails to return new Ids for rows
@@ -45,9 +45,9 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
     
 
 
-    public function findRows(array $rowToMatch, int $maxResults = 0): DataTableResultsIterator
+    public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
-        return new DataTableResultsArrayIterator([]);
+        return new ArrayResultsIterator([]);
     }
 
     public function deleteRow(int $rowId): int
@@ -60,9 +60,9 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
        return false;
     }
 
-    public function getAllRows(): DataTableResultsIterator
+    public function getAllRows(): ResultsIterator
     {
-        return new DataTableResultsArrayIterator([]);
+        return new ArrayResultsIterator([]);
     }
 
     public function getRow(int $rowId): array
@@ -91,9 +91,9 @@ class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
 
     }
 
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): DataTableResultsIterator
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
-        return new DataTableResultsArrayIterator([]);
+        return new ArrayResultsIterator([]);
     }
 
 

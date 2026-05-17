@@ -29,6 +29,12 @@ use ArrayAccess;
 use Iterator;
 use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
 /**
  * An interface to a table made out of associative array rows addressable by a unique integer and that is normally
@@ -133,7 +139,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     /**
      * Returns the row with the given row ID.
      *
-     * If the row does not exist returns null
+     * If the row does not exist, returns null
      *
      * @param int $rowId
      * @return array|null
@@ -143,9 +149,9 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     /**
      * Returns an iterator with all rows in the table
      *
-     * @return DataTableResultsIterator
+     * @return ResultsIterator
      */
-    public function getAllRows() : DataTableResultsIterator;
+    public function getAllRows() : ResultsIterator;
 
     /**
      * Deletes the row with the given ID.
@@ -170,9 +176,9 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @param array $rowToMatch
      * @param int $maxResults
-     * @return DataTableResultsIterator
+     * @return ResultsIterator
      */
-    function findRows(array $rowToMatch, int $maxResults = 0) : DataTableResultsIterator;
+    function findRows(array $rowToMatch, int $maxResults = 0) : ResultsIterator;
 
 
     /**
@@ -207,11 +213,11 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param array $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
-     * @return DataTableResultsIterator
+     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : DataTableResultsIterator;
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : ResultsIterator;
 
     /**
      * Updates the table with the given row, which must contain an id

@@ -26,6 +26,8 @@
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
+use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
 class InMemoryDataTableTest extends DataTableReferenceTestCase

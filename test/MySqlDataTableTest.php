@@ -32,6 +32,13 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidWhereClauseException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
+use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
+use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 // TODO: change this into a PdoDataTable reference test and make MySqlDataTableTest a subclass just setting up a MySql table.
 

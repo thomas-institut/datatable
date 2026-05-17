@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use Countable;
 use Iterator;
@@ -47,7 +47,7 @@ use Iterator;
  * for example, MySql, cannot be rewound.
  *
  */
-interface DataTableResultsIterator extends Iterator, Countable
+interface ResultsIterator extends Iterator, Countable
 {
 
     /**
