@@ -72,7 +72,7 @@ Do not use the local machine's PHP. The user must have started a development con
 version. Use the scripts in `scripts`:
 
 - **Run all tests**: `scripts/dev-php-test`
-- **Run phpunit** with arbitrary arguments:  `scripts/dev-phptunit arg1 arg2 ...`
+- **Run phpunit** with arbitrary options:  `scripts/dev-phpunit --option1 --option2 ... test`
 
 ## Task Completion Requirements
 
