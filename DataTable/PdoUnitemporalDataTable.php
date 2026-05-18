@@ -274,7 +274,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * row's id
      *
      * @param array $theRow
-     * @param string $timeString in MySql format, e.g., '2010-09-20 18:25:25'
+     * @param string $timeString
      * @return int
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
@@ -289,7 +289,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Actual creation of a row
      *
-     * Uses MySqlDataTable's realCreateRow to create a row since that method does
+     * Uses PdoDataTable's realCreateRow to create a row since that method does
      * not check for already used Ids
      *
      * @param array $theRow
