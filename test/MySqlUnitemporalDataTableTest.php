@@ -30,12 +30,8 @@ use ThomasInstitut\TimeString\TimeString;
 class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
 {
 
-    protected function constructMySqlDataTable(PDO $pdo) : PdoDataTable {
-        return new MySqlUnitemporalDataTable($pdo, self::TABLE_NAME, self::ID_COLUMN_NAME);
-    }
-
-    protected function getLoggerNamePrefix() : string {
-        return 'MySqlUnitemporalDt';
+    protected function constructPdoDataTable(PDO $pdo) : PdoDataTable {
+        return new MySqlUnitemporalDataTable($pdo, $this->getTableName(), $this->getIdColumnName());
     }
 
     public function resetTestDb(PDO $pdo, bool $autoInc = false) : void
@@ -44,8 +40,8 @@ class MySqlUnitemporalDataTableTest extends MySqlDataTableTest
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
         $otherStringCol = self::STRING_COLUMN_2;
-        $tableName = self::TABLE_NAME;
-        $idCol = self::ID_COLUMN_NAME;
+        $tableName = $this->getTableName();
+        $idCol = $this->getIdColumnName();
         $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
         $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
 
@@ -71,7 +67,7 @@ EOD;
 
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
-        $idCol =  self::ID_COLUMN_NAME;
+        $idCol =  $this->getIdColumnName();
         $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
         $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
 
@@ -125,7 +121,7 @@ EOD;
       public function getRestrictedDt() : PdoDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
-        return new MySqlUnitemporalDataTable($restrictedPdo, self::TABLE_NAME, self::ID_COLUMN_NAME);
+        return new MySqlUnitemporalDataTable($restrictedPdo, $this->getTableName(), $this->getIdColumnName());
     }
     
     #[Test]
@@ -133,10 +129,10 @@ EOD;
     {
         $pdo = $this->getPdo();
         $provider = new SimplePdoProvider($pdo);
-        $dataTable = new MySqlUnitemporalDataTable($provider, self::TABLE_NAME, self::ID_COLUMN_NAME);
+        $dataTable = new MySqlUnitemporalDataTable($provider, $this->getTableName(), $this->getIdColumnName());
 
         $rowId = 101;
-        $row = [self::ID_COLUMN_NAME => $rowId, self::STRING_COLUMN => 'test'];
+        $row = [$this->getIdColumnName() => $rowId, self::STRING_COLUMN => 'test'];
         $dataTable->createRow($row);
 
         $this->assertTrue($dataTable->rowExists($rowId));
@@ -152,7 +148,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_1', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_1', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -161,7 +157,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_2', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_2', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -169,7 +165,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_3', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_3', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -177,7 +173,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_4', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_4', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -185,7 +181,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_5', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_5', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -193,7 +189,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_6', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'test_table_bad_6', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -201,7 +197,7 @@ EOD;
 
         $exceptionCaught = false;
         try {
-            new MySqlUnitemporalDataTable($pdo, 'non_existent_table', self::ID_COLUMN_NAME);
+            new MySqlUnitemporalDataTable($pdo, 'non_existent_table', $this->getIdColumnName());
         } catch(RuntimeException) {
             $exceptionCaught = true;
         }
@@ -242,7 +238,7 @@ EOD;
             $timesCount = 1;
             foreach ($times as $t) {
                 $t = TimeString::fromVariable($t);
-                $dataTable->realUpdateRowWithTime([self::ID_COLUMN_NAME => $rowId,
+                $dataTable->realUpdateRowWithTime([$this->getIdColumnName() => $rowId,
                     self::STRING_COLUMN => 'Value' .
                     $timesCount++], $t);
             }
@@ -373,7 +369,7 @@ EOD;
         $exceptionCaught = false;
         try{
             $dataTable->createRowWithTime(
-                [self::ID_COLUMN_NAME => 1, self::STRING_COLUMN_2 => 'test'],
+                [$this->getIdColumnName() => 1, self::STRING_COLUMN_2 => 'test'],
                 'BadTime');
         } catch (InvalidTimeStringException|RowAlreadyExists) {
             $exceptionCaught = true;
@@ -382,20 +378,20 @@ EOD;
         $this->assertEquals(UnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
 
         $id1 = $dataTable->createRowWithTime(
-            [self::ID_COLUMN_NAME => 1, self::STRING_COLUMN_2 => 'test'],
+            [$this->getIdColumnName() => 1, self::STRING_COLUMN_2 => 'test'],
             $time
         );
         $this->assertEquals(1, $id1);
 
         // ID is not an integer: a new id must be generated
 
-        $id2 = $dataTable->createRowWithTime([self::ID_COLUMN_NAME => 'NotaNumber',self::STRING_COLUMN_2 => 'test2'],$time);
+        $id2 = $dataTable->createRowWithTime([$this->getIdColumnName() => 'NotaNumber',self::STRING_COLUMN_2 => 'test2'],$time);
         $this->assertNotEquals($id1, $id2);
 
         // Trying to create an existing row
         $exceptionCaught = false;
         try {
-            $dataTable->createRowWithTime([self::ID_COLUMN_NAME => 1,
+            $dataTable->createRowWithTime([$this->getIdColumnName() => 1,
                 self::STRING_COLUMN_2 => 'AnotherValue'], $time);
         } catch(RowAlreadyExists) {
             $exceptionCaught = true;
@@ -495,7 +491,7 @@ EOD;
         // update row
         $exceptionCaught = false;
         try {
-            $dataTable->realUpdateRowWithTime([ self::ID_COLUMN_NAME => $newId, self::INT_COLUMN => 1001], 'BadTime');
+            $dataTable->realUpdateRowWithTime([ $this->getIdColumnName() => $newId, self::INT_COLUMN => 1001], 'BadTime');
         } catch (InvalidTimeStringException) {
             $exceptionCaught = true;
         }
@@ -643,14 +639,14 @@ EOD;
         $rowId = $dataTable->createRowWithTime([ self::INT_COLUMN => 1000], TimeString::fromString($times[0]));
         for($i = 1; $i < count($times); $i++){
             $dataTable->updateRowWithTime(
-                [ self::ID_COLUMN_NAME => $rowId, self::INT_COLUMN => $initialIntValue+$i ],
+                [ $this->getIdColumnName() => $rowId, self::INT_COLUMN => $initialIntValue+$i ],
                 TimeString::fromString($times[$i]));
         }
 
         $rowHistory = $dataTable->getRowHistory($rowId);
         $this->assertCount(4, $rowHistory);
         for($i=0; $i<count($rowHistory); $i++) {
-            $this->assertEquals($rowId, $rowHistory[$i][self::ID_COLUMN_NAME]);
+            $this->assertEquals($rowId, $rowHistory[$i][$this->getIdColumnName()]);
             $this->assertEquals($initialIntValue+$i, $rowHistory[$i][self::INT_COLUMN]);
             $this->assertEquals(TimeString::fromString($times[$i]),$rowHistory[$i][PdoUnitemporalDataTable::FIELD_VALID_FROM]);
         }

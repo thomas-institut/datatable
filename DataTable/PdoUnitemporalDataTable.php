@@ -44,6 +44,7 @@ use ThomasInstitut\DataTable\SqlDialect\SqlDialect;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
+use Throwable;
 
 /**
  * Implements a PDO-based data table that keeps different versions
@@ -400,16 +401,26 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             $usingTransaction = $this->startTransaction();
         }
 
-        $this->makeRowInvalid($currentRow, $timeString);
-        foreach (array_keys($currentRow) as $key) {
-            if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
-                continue;
+        try {
+            $this->makeRowInvalid($currentRow, $timeString);
+            foreach (array_keys($currentRow) as $key) {
+                if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
+                    continue;
+                }
+                if (!array_key_exists($key, $theRow)) {
+                    $theRow[$key] = $currentRow[$key];
+                }
             }
-            if (!array_key_exists($key, $theRow)) {
-                $theRow[$key] = $currentRow[$key];
+            $this->realCreateRowWithTime($theRow, $timeString);
+        } catch (Throwable $e) {
+            if ($usingTransaction) {
+                $errorCode = $this->getErrorCode();
+                $errorMessage = $this->getErrorMessage();
+                $this->rollBack();
+                $this->setError($errorMessage, $errorCode);
             }
+            throw new RuntimeException('realUpdateRowWithTime caught an unexpected exception', 0, $e);
         }
-        $this->realCreateRowWithTime($theRow, $timeString);
 
         if ($usingTransaction) {
             $result = $this->commit();

@@ -9,12 +9,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
 {
 
-    protected function constructMySqlDataTable(PDO $pdo) : MySqlDataTable {
-        return new MySqlDataTable($pdo, self::TABLE_NAME, true, self::ID_COLUMN_NAME);
-    }
-
-    protected function getLoggerNamePrefix() : string {
-        return 'MySqlDataTableAutoInc';
+    protected function constructPdoDataTable(PDO $pdo): PdoDataTable
+    {
+        return new MySqlDataTable($pdo, $this->getTableName(), true, $this->getIdColumnName());
     }
 
     public function resetTestDb(PDO $pdo, bool $autoInc = false): void
