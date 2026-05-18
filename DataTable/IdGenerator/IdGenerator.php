@@ -3,7 +3,7 @@
 /*
  * The MIT License
  *
- * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
+ * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,25 +23,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+namespace ThomasInstitut\DataTable\IdGenerator;
 
-namespace ThomasInstitut\DataTable;
-
-use PDO;
-use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
-use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
+use ThomasInstitut\DataTable\DataTable;
 
 /**
- * Compatibility wrapper for PDO-based MySql tables.
+ * Interface IdGenerator
+ *
+ * Simple interface that provides a function to get one unused ID out of a DataTable
+ *
+ * @package DataTable
  */
-class MySqlDataTable extends PdoDataTable
+interface IdGenerator
 {
-
     /**
-     * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
-     * @param string $tableName SQL table name
+     * Generates an unused ID for the given DataTable
+     * @param DataTable $dataTable
+     * @return int
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
-    {
-        parent::__construct($pdoOrProvider, $tableName, new MySqlDialect(), $useMySqlAutoInc, $idColumnName);
-    }
+    public function getOneUnusedId(DataTable $dataTable) : int;
 }

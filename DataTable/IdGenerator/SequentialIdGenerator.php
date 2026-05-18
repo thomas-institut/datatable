@@ -1,9 +1,8 @@
 <?php
-
 /*
  * The MIT License
  *
- * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
+ * Copyright 2017-19 Rafael Nájera <rafael@najera.ca>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,24 +23,16 @@
  * THE SOFTWARE.
  */
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\IdGenerator;
 
-use PDO;
-use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
-use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
 
-/**
- * Compatibility wrapper for PDO-based MySql tables.
- */
-class MySqlDataTable extends PdoDataTable
+use ThomasInstitut\DataTable\DataTable;
+
+class SequentialIdGenerator implements IdGenerator
 {
 
-    /**
-     * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
-     * @param string $tableName SQL table name
-     */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function getOneUnusedId(DataTable $dataTable): int
     {
-        parent::__construct($pdoOrProvider, $tableName, new MySqlDialect(), $useMySqlAutoInc, $idColumnName);
+        return $dataTable->getMaxId() + 1;
     }
 }

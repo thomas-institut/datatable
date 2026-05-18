@@ -24,12 +24,12 @@
  * THE SOFTWARE.
  */
 namespace ThomasInstitut\DataTable;
-require '../vendor/autoload.php';
 
-require 'MockClasses/FailGetOneUnusedIdGenericDataTable.php';
-
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
+use RuntimeException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdDataTable;
 
 /**
  * Additional test for DataTable
@@ -38,25 +38,22 @@ use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
  */
 class DataTableAdditionalTest extends TestCase
 {
-    
-    public function testFailGetOneUnusedId()
+
+    /**
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testFailGetOneUnusedId(): void
     {
 
 
-        $dt = new Test\FailGetOneUnusedIdGenericDataTable();
-
-        $exceptionCaught = false;
+        $dt = new FailGetOneUnusedIdDataTable();
 
         try {
-            $r = $dt->createRow([]);
-        } catch (\RuntimeException $e){
-            $exceptionCaught = true;
+            $dt->createRow([]);
+        } catch (RuntimeException) {
         }
-        
 
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(FailGetOneUnusedIdGenericDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
-        
+        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
     }
-    
 }

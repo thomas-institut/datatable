@@ -26,29 +26,25 @@
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\CoversClass;
-use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
-class InMemoryDataTableTest extends DataTableReferenceTestCase
+class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
     static private ?array $theData = null;
-
-    public function multipleDataAccessSessionsAvailable(): bool
-    {
-        return false;
-    }
-
+    
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
     {
         if (self::$motherTable === null) {  // first table to serve
             self::$theData = [];
             self::$motherTable = new InMemoryDataTable(self::$theData);
+            self::$motherTable->setIdColumnName('tid');
             $dt = self::$motherTable;
         } else {
             $dt = new InMemoryDataTable(self::$theData);
+            $dt->setIdColumnName('tid');
         }
 
         if ($resetTable) {
@@ -56,18 +52,9 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
         }
         return $dt;
     }
-    public function testEmptyDataInitialization(): void
-    {
-         $dataTable = new InMemoryDataTable();
-        $this->assertEquals(0, $dataTable->getAllRows()->count());
-    }
 
-    public function testIdGeneratorInitialization(): void
+    public function multipleDataAccessSessionsAvailable(): bool
     {
-        $idGenerator = new SequentialIdGenerator();
-        $data = [];
-        $dataTable = new InMemoryDataTable($data, $idGenerator);
-        $rowId = $dataTable->createRow(['name' => 'test']);
-        $this->assertEquals(1, $rowId);
+        return false;
     }
 }

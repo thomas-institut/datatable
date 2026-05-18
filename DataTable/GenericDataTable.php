@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace ThomasInstitut\DataTable;
 
 use ArrayIterator;
@@ -30,6 +31,16 @@ use Exception;
 use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Psr\Log\NullLogger;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
+use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
+use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use Traversable;
 
 
@@ -46,26 +57,31 @@ abstract class GenericDataTable implements DataTable
     /** *********************************************************************
      * PUBLIC METHODS
      ************************************************************************/
-    
+
     /**
      * Constructor
      */
-    public function __construct(IdGenerator $idGenerator = null) {
+    public function __construct(?IdGenerator $idGenerator = null)
+    {
+
         if ($idGenerator === null) {
-            $this->setIdGenerator(new SequentialIdGenerator());
+            $this->idGenerator = new SequentialIdGenerator();
         } else {
-            $this->setIdGenerator($idGenerator);
+            $this->idGenerator = $idGenerator;
         }
         $this->resetError();
         $this->setLogger(new NullLogger());
         $this->idColumnName = self::DEFAULT_ID_COLUMN_NAME;
+        $this->tableName = '';
     }
 
-    public function setIdColumnName(string $columnName) : void {
+    public function setIdColumnName(string $columnName): void
+    {
         $this->idColumnName = $columnName;
     }
 
-    public function getIdColumnName() : string {
+    public function getIdColumnName(): string
+    {
         return $this->idColumnName;
     }
 
@@ -74,22 +90,23 @@ abstract class GenericDataTable implements DataTable
         return $this->tableName;
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name): void
     {
         $this->tableName = $name;
     }
 
-    public function setIdGenerator(IdGenerator $ig) : void {
+    public function setIdGenerator(IdGenerator $ig): void
+    {
         $this->idGenerator = $ig;
     }
 
-    public function setLogger(LoggerInterface $logger):void
+    public function setLogger(LoggerInterface $logger): void
     {
         $this->logger = $logger;
     }
 
 
-    public function getErrorMessage() : string
+    public function getErrorMessage(): string
     {
         return $this->errorMessage;
     }
@@ -97,7 +114,7 @@ abstract class GenericDataTable implements DataTable
     /**
      * @return int
      */
-    public function getErrorCode() : int
+    public function getErrorCode(): int
     {
         return $this->errorCode;
     }
@@ -111,7 +128,7 @@ abstract class GenericDataTable implements DataTable
     {
         $rowIterator = $this->getAllRows();
         $allIds = [];
-        foreach($rowIterator as $row) {
+        foreach ($rowIterator as $row) {
             $allIds[] = $row[$this->idColumnName];
         }
         $ids = array_unique($allIds, SORT_NUMERIC);
@@ -119,9 +136,9 @@ abstract class GenericDataTable implements DataTable
         return new ArrayIterator($ids);
     }
 
-    abstract public function rowExists(int $rowId) : bool;
+    abstract public function rowExists(int $rowId): bool;
 
-    public function createRow(array $theRow) : int
+    public function createRow(array $theRow): int
     {
         $this->resetError();
         $preparedRow = $this->getRowWithGoodIdForCreation($theRow);
@@ -156,13 +173,13 @@ abstract class GenericDataTable implements DataTable
         if ($this->rowExists($id)) {
             try {
                 $this->updateRow($value);
-            } catch(RowDoesNotExist) {
+            } catch (RowDoesNotExist) { // @codeCoverageIgnore
                 // this should never happen
             }
         } else {
             try {
                 $this->createRow($value);
-            } catch (RowAlreadyExists) {
+            } catch (RowAlreadyExists) { // @codeCoverageIgnore
                 // this should never happen
             }
 
@@ -191,7 +208,7 @@ abstract class GenericDataTable implements DataTable
         return false;
     }
 
-    public function isUnderlyingDatabaseInTransaction() : bool
+    public function isUnderlyingDatabaseInTransaction(): bool
     {
         $this->setError("Transactions not supported", self::ERROR_TRANSACTIONS_NOT_SUPPORTED);
         return false;
@@ -209,16 +226,16 @@ abstract class GenericDataTable implements DataTable
         return false;
     }
 
-    abstract public function getRow(int $rowId) : ?array;
+    abstract public function getRow(int $rowId): ?array;
 
-    abstract public function getAllRows() : DataTableResultsIterator;
+    abstract public function getAllRows(): ResultsIterator;
 
-    abstract public function deleteRow(int $rowId) : int;
+    abstract public function deleteRow(int $rowId): int;
 
     /**
      * @inheritdoc
      */
-    public function findRows(array $rowToMatch, int $maxResults = 0) : DataTableResultsIterator
+    public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         $searchSpec = [];
 
@@ -232,10 +249,10 @@ abstract class GenericDataTable implements DataTable
         }
         try {
             $results = $this->search($searchSpec, self::SEARCH_AND, $maxResults);
-        } catch (InvalidSearchSpec|InvalidSearchType ) {
+        } catch (InvalidSearchSpec|InvalidSearchType) { // @codeCoverageIgnore
             // this should never happen!
         }
-        return $results ?? new DataTableResultsArrayIterator([]);
+        return $results ?? new ArrayResultsIterator([]);
     }
 
     /**
@@ -243,14 +260,14 @@ abstract class GenericDataTable implements DataTable
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : DataTableResultsIterator;
+    abstract public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator;
 
 
     /**
      * @throws InvalidRowForUpdate
      * @throws RowDoesNotExist
      */
-    public function updateRow(array $theRow) : void
+    public function updateRow(array $theRow): void
     {
         $this->resetError();
         if (!$this->isRowIdGoodForRowUpdate($theRow, 'DataTable updateRow')) {
@@ -265,22 +282,21 @@ abstract class GenericDataTable implements DataTable
      * @deprecated Use search functions
      */
 
-    abstract public function getIdForKeyValue(string $key, mixed $value) : int;
+    abstract public function getIdForKeyValue(string $key, mixed $value): int;
 
 
-    abstract public function getMaxValueInColumn(string $columnName) : int;
+    abstract public function getMaxValueInColumn(string $columnName): int;
 
 
     /**
      * @return int the max id in the table
      */
-    abstract public function getMaxId() : int;
+    abstract public function getMaxId(): int;
 
 
     /** *********************************************************************
      * ABSTRACT PROTECTED METHODS
      ************************************************************************/
-
 
 
     /**
@@ -290,7 +306,7 @@ abstract class GenericDataTable implements DataTable
      * @param array $theRow
      * @return int
      */
-    abstract protected function realCreateRow(array $theRow) : int;
+    abstract protected function realCreateRow(array $theRow): int;
 
     /**
      * Updates the given row, which must have a valid ID.
@@ -302,7 +318,7 @@ abstract class GenericDataTable implements DataTable
      * @return void
      * @throws RowDoesNotExist
      */
-    abstract protected function realUpdateRow(array $theRow) : void;
+    abstract protected function realUpdateRow(array $theRow): void;
 
 
     /**
@@ -320,31 +336,31 @@ abstract class GenericDataTable implements DataTable
      * @return array
      * @throws RowAlreadyExists
      */
-    protected function getRowWithGoodIdForCreation(array $theRow) : array
+    protected function getRowWithGoodIdForCreation(array $theRow): array
     {
-        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName]<=0) {
+        if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName] <= 0) {
             $theRow[$this->idColumnName] = $this->getOneUnusedId();
         } else {
             if ($this->rowExists($theRow[$this->idColumnName])) {
-                $this->setError('The row with given id ('. $theRow[$this->idColumnName] . ') already exists, cannot create',
+                $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
                     self::ERROR_ROW_ALREADY_EXISTS);
                 throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
             }
         }
         return $theRow;
     }
-    
-     /**
-      * Returns a unique ID that does not exist in the table,
-      * defaults to a sequential id if the idGenerator cannot
-      * come up with one
-      *
+
+    /**
+     * Returns a unique ID that does not exist in the table,
+     * defaults to a sequential id if the idGenerator cannot
+     * come up with one
+     *
      * @return int
      *
      */
-    protected function getOneUnusedId() : int
+    protected function getOneUnusedId(): int
     {
-        try{
+        try {
             $unusedId = $this->idGenerator->getOneUnusedId($this);
         } catch (Exception $e) {
             $this->logWarning('Id generator error: ' . $e->getMessage() .
@@ -365,7 +381,8 @@ abstract class GenericDataTable implements DataTable
      * @param array $specArray
      * @return array
      */
-    protected function checkSearchSpecArrayValidity(array $specArray) : array  {
+    protected function checkSearchSpecArrayValidity(array $specArray): array
+    {
 
         $problems = [];
 
@@ -374,7 +391,7 @@ abstract class GenericDataTable implements DataTable
             return $problems;
         }
 
-        for($i=0; $i < count($specArray); $i++) {
+        for ($i = 0; $i < count($specArray); $i++) {
             $spec = $specArray[$i];
             if (!isset($spec['column']) || !is_string($spec['column'])) {
                 $problems[] = [
@@ -387,7 +404,7 @@ abstract class GenericDataTable implements DataTable
             if (!isset($spec['value'])) {
                 $problems[] = [
                     'specIndex' => $i,
-                    'msg' =>'Invalid search condition, value to match not found' ,
+                    'msg' => 'Invalid search condition, value to match not found',
                     'code' => self::ERROR_SPEC_NO_VALUE
                 ];
             }
@@ -395,7 +412,7 @@ abstract class GenericDataTable implements DataTable
             if (!isset($spec['condition']) || !is_int($spec['condition'])) {
                 $problems[] = [
                     'specIndex' => $i,
-                    'msg' =>'Invalid search condition, no actual condition found' ,
+                    'msg' => 'Invalid search condition, no actual condition found',
                     'code' => self::ERROR_SPEC_INVALID_CONDITION
                 ];
             } else {
@@ -413,7 +430,7 @@ abstract class GenericDataTable implements DataTable
                             'specIndex' => $i,
                             'msg' => 'Invalid condition type : ' . $spec['condition'],
                             'code' => self::ERROR_SPEC_INVALID_CONDITION
-                            ];
+                        ];
                 }
             }
         }
@@ -425,7 +442,8 @@ abstract class GenericDataTable implements DataTable
      * @throws InvalidSearchType
      * @throws InvalidSearchSpec
      */
-    protected function checkSpec(array $searchSpecArray, int $searchType) : void {
+    protected function checkSpec(array $searchSpecArray, int $searchType): void
+    {
         $this->resetError();
         $searchSpecCheck = $this->checkSearchSpecArrayValidity($searchSpecArray);
         if ($searchSpecCheck !== []) {
@@ -458,7 +476,7 @@ abstract class GenericDataTable implements DataTable
 
     protected function log(string $logLevel, string $msg, int $code, array $otherContext): void
     {
-        $this->logger->log($logLevel, $msg, array_merge([ 'code' => $code], $otherContext));
+        $this->logger->log($logLevel, $msg, array_merge(['code' => $code], $otherContext));
     }
 
     protected function logWarning(string $msg, int $code, array $otherContext = []): void
@@ -496,7 +514,7 @@ abstract class GenericDataTable implements DataTable
     /**
      * @param string $message
      */
-    private function setErrorMessage(string $message) : void
+    private function setErrorMessage(string $message): void
     {
         $this->errorMessage = $message;
     }
@@ -504,7 +522,7 @@ abstract class GenericDataTable implements DataTable
     /**
      * @param int $code
      */
-    private function setErrorCode(int $code) : void
+    private function setErrorCode(int $code): void
     {
         $this->errorCode = $code;
     }
@@ -518,8 +536,9 @@ abstract class GenericDataTable implements DataTable
      * @param string $context
      * @return bool
      */
-    protected function isRowIdGoodForRowUpdate($theRow, string $context) : bool {
-        if (!isset($theRow[$this->idColumnName]))  {
+    protected function isRowIdGoodForRowUpdate($theRow, string $context): bool
+    {
+        if (!isset($theRow[$this->idColumnName])) {
             $this->setError('Id not set in given row' . " ($context)", self::ERROR_ID_NOT_SET);
             return false;
         }
