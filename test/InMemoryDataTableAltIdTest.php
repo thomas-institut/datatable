@@ -35,7 +35,7 @@ class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
     static private ?InMemoryDataTable $motherTable = null;
     static private ?array $theData = null;
     
-    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : GenericDataTable
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
     {
         if (self::$motherTable === null) {  // first table to serve
             self::$theData = [];

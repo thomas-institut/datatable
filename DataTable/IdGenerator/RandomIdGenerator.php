@@ -28,7 +28,7 @@ namespace ThomasInstitut\DataTable\IdGenerator;
 
 use Exception;
 use RuntimeException;
-use ThomasInstitut\DataTable\GenericDataTable;
+use ThomasInstitut\DataTable\DataTable;
 
 class RandomIdGenerator implements IdGenerator
 {
@@ -58,7 +58,7 @@ class RandomIdGenerator implements IdGenerator
         $this->maxAttempts = $maxAttempts;
     }
 
-    public function getOneUnusedId(GenericDataTable $dataTable): int
+    public function getOneUnusedId(DataTable $dataTable): int
     {
         for ($i = 0; $i < $this->maxAttempts; $i++) {
             try {

@@ -26,12 +26,12 @@
 namespace ThomasInstitut\DataTable\IdGenerator;
 
 
-use ThomasInstitut\DataTable\GenericDataTable;
+use ThomasInstitut\DataTable\DataTable;
 
 class SequentialIdGenerator implements IdGenerator
 {
 
-    public function getOneUnusedId(GenericDataTable $dataTable): int
+    public function getOneUnusedId(DataTable $dataTable): int
     {
         return $dataTable->getMaxId() + 1;
     }

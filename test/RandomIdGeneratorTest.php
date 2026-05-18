@@ -18,7 +18,7 @@ class RandomIdGeneratorTest extends TestCase
         $max = 20;
         $generator = new RandomIdGenerator($min, $max);
 
-        $dataTable = $this->createMock(GenericDataTable::class);
+        $dataTable = $this->createMock(DataTable::class);
         $dataTable->method('rowExists')
             ->willReturnCallback(fn($id) => $id === 15);
 
@@ -34,7 +34,7 @@ class RandomIdGeneratorTest extends TestCase
     {
         $generator = new RandomIdGenerator(1, 1, 10);
 
-        $dataTable = $this->createMock(GenericDataTable::class);
+        $dataTable = $this->createMock(DataTable::class);
         $dataTable->method('rowExists')->willReturn(true);
 
         $this->expectException(RuntimeException::class);

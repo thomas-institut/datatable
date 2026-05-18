@@ -13,7 +13,7 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
  * Reference test cases for DataTableResultsIterator implementations
  *
  */
-abstract class DataTableResultsIteratorReferenceTestCase extends TestCase
+abstract class ResultsIteratorReferenceTestCase extends TestCase
 {
 
 

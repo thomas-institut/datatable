@@ -25,7 +25,7 @@
  */
 namespace ThomasInstitut\DataTable\IdGenerator;
 
-use ThomasInstitut\DataTable\GenericDataTable;
+use ThomasInstitut\DataTable\DataTable;
 
 /**
  * Interface IdGenerator
@@ -38,8 +38,8 @@ interface IdGenerator
 {
     /**
      * Generates an unused ID for the given DataTable
-     * @param GenericDataTable $dataTable
+     * @param DataTable $dataTable
      * @return int
      */
-    public function getOneUnusedId(GenericDataTable $dataTable) : int;
+    public function getOneUnusedId(DataTable $dataTable) : int;
 }

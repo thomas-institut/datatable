@@ -63,10 +63,11 @@ abstract class GenericDataTable implements DataTable
      */
     public function __construct(?IdGenerator $idGenerator = null)
     {
+
         if ($idGenerator === null) {
-            $this->setIdGenerator(new SequentialIdGenerator());
+            $this->idGenerator = new SequentialIdGenerator();
         } else {
-            $this->setIdGenerator($idGenerator);
+            $this->idGenerator = $idGenerator;
         }
         $this->resetError();
         $this->setLogger(new NullLogger());

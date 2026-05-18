@@ -29,7 +29,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
-use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdGenericDataTable;
+use ThomasInstitut\DataTable\Test\FailGetOneUnusedIdDataTable;
 
 /**
  * Additional test for DataTable
@@ -47,13 +47,13 @@ class DataTableAdditionalTest extends TestCase
     {
 
 
-        $dt = new FailGetOneUnusedIdGenericDataTable();
+        $dt = new FailGetOneUnusedIdDataTable();
 
         try {
             $dt->createRow([]);
         } catch (RuntimeException) {
         }
 
-        $this->assertEquals(FailGetOneUnusedIdGenericDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
+        $this->assertEquals(FailGetOneUnusedIdDataTable::ERROR_CANNOT_GET_MAX_ID, $dt->getErrorCode());
     }
 }

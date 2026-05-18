@@ -32,9 +32,11 @@ use PDO;
 use PDOException;
 use PDOStatement;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidWhereClauseException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
 use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
@@ -73,7 +75,7 @@ class PdoDataTable extends GenericDataTable
      */
     protected array $statements;
     protected SqlDialect $sqlDialect;
-    private bool $mySqlAutoInc;
+    private bool $useDbAutoInc;
     /**
      * @var true
      */
@@ -84,9 +86,8 @@ class PdoDataTable extends GenericDataTable
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, bool $useMySqlAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, bool $useDbAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
-
         parent::__construct();
 
         $this->tableName = $tableName;
@@ -97,10 +98,10 @@ class PdoDataTable extends GenericDataTable
         } else {
             $this->pdoProvider = $pdoOrProvider;
         }
-        $this->mySqlAutoInc = $useMySqlAutoInc;
+        $this->useDbAutoInc = $useDbAutoInc;
         $this->inTransaction = false;
 
-        if (!$this->isMySqlTableColumnValid($this->idColumnName, ['int', 'bigint'])) {
+        if (!$this->isTableColumnValid($this->idColumnName, ['int', 'bigint'])) {
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
@@ -125,6 +126,17 @@ class PdoDataTable extends GenericDataTable
             throw new RuntimeException($msg, $errorCode);
             // @codeCoverageIgnoreEnd
         }
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function setIdGenerator(IdGenerator $ig): void
+    {
+        if ($this->useDbAutoInc) {
+            throw new InvalidArgumentException('Cannot set custom ID generator when using database auto-increment');
+        }
+        parent::setIdGenerator($ig);
     }
 
 
@@ -200,18 +212,6 @@ class PdoDataTable extends GenericDataTable
     }
 
     /**
-     * Compatibility alias for subclasses that still call the old name.
-     *
-     * @param string $columnName
-     * @param string[] $requiredTypes
-     * @return bool
-     */
-    protected function isMySqlTableColumnValid(string $columnName, array $requiredTypes): bool
-    {
-        return $this->isTableColumnValid($columnName, $requiredTypes);
-    }
-
-    /**
      * @throws RuntimeException
      */
     public function rowExists(int $rowId): bool
@@ -226,7 +226,7 @@ class PdoDataTable extends GenericDataTable
 
     public function createRow(array $theRow): int
     {
-        if (!$this->mySqlAutoInc) {
+        if (!$this->useDbAutoInc) {
             // use regular id creator
             return parent::createRow($theRow);
         }
@@ -240,11 +240,11 @@ class PdoDataTable extends GenericDataTable
                 throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
             }
         }
-        $this->doQuery($this->getMySqlInsertQuery($theRow), 'createRow_MySQL_auto_inc');
+        $this->doQuery($this->getInsertQuery($theRow), 'createRow');
         return $this->pdoProvider->getPdo()->lastInsertId();
     }
 
-    protected function getMySqlInsertQuery(array $theRow): string
+    protected function getInsertQuery(array $theRow): string
     {
         $keys = array_keys($theRow);
         $quotedKeys = [];
@@ -263,7 +263,7 @@ class PdoDataTable extends GenericDataTable
 
     public function realCreateRow(array $theRow): int
     {
-        $this->doQuery($this->getMySqlInsertQuery($theRow), 'realCreateRow');
+        $this->doQuery($this->getInsertQuery($theRow), 'realCreateRow');
         return (int)$theRow[$this->idColumnName];
     }
 
@@ -317,8 +317,8 @@ class PdoDataTable extends GenericDataTable
     /**
      * Executes a general SELECT query on the data table
      *
-     * Try not to use this method directly, prefer to use search() or findRows() if possible,
-     * search is implemented by any DataTable not just by MySqlDataTable
+     * Try not to use this method directly, prefer to use search() or findRows() since
+     * search is implemented by any DataTable not just by PdoDataTable
      *
      * The method executes the following query:
      *  SELECT * FROM tableName WHERE  $where LIMIT $limit ORDER BY $orderBy
@@ -591,11 +591,7 @@ class PdoDataTable extends GenericDataTable
     }
 
     /**
-     * Returns true if the MySql table storage engine is 'InnoDB', which is the only engine that
-     * supports transactions in MySql.
-     *
-     * Since almost all tables in MySql are InnoDB, in almost all use cases it should not be necessary
-     * to run this function.
+     * Returns true if db table supports transactions.
      *
      * @return bool
      */
@@ -610,16 +606,16 @@ class PdoDataTable extends GenericDataTable
     }
 
     /**
-     * Starts a MySql transaction.
+     * Starts a db transaction.
      *
      * Care must be taken when using transactions in the context of DataTable operations.
-     * In particular, a MySql transaction applies to the database connection as a whole, so starting
-     * a transaction in a MySqlDataTable will also start a transaction in all other MySqlDataTables that
+     * In particular, a db transaction applies to the database connection as a whole, so starting
+     * a transaction in a PdoDataTable will also start a transaction in all other PdoDataTables that
      * share the same database connection. This might be desirable, but it can also be dangerous.
      *
      * Returns true if a transaction started without problems.
      *
-     * Returns false if MySql is in a transaction already or if MySql could not start the transaction.
+     * Returns false if the underlying database is in a transaction already or if it could not start the transaction.
      * The actual error can be retrieved with getErrorCode and getErrorMessage
      *
      * @return bool
@@ -649,7 +645,7 @@ class PdoDataTable extends GenericDataTable
      *
      * Will only commit if the transaction was started in this DataTable.
      *
-     * Returns false if the MySqlDataTable is not in a transaction or if MySql could not execute the commit.
+     * Returns false if the PdoDataTable is not in a transaction or if the underlying database could not execute the commit.
      * The actual error can be retrieved with getErrorCode and getErrorMessage
      *
      * @return bool

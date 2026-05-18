@@ -1,14 +1,16 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
-use ThomasInstitut\DataTable\ReferenceTests\DataTableResultsIteratorReferenceTestCase;
-use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
+use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\MySqlDataTable;
+use ThomasInstitut\DataTable\MySqlDataTableTest;
+use ThomasInstitut\DataTable\ReferenceTests\ResultsIteratorReferenceTestCase;
 
 #[CoversClass(PdoResultsIterator::class)]
-class DataTableResultsPdoIteratorTest extends DataTableResultsIteratorReferenceTestCase
+class PdoResultsIteratorTest extends ResultsIteratorReferenceTestCase
 {
 
     const bool AUTO_INC = false;

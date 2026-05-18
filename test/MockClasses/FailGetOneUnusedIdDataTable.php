@@ -29,6 +29,7 @@ namespace ThomasInstitut\DataTable\Test;
 
 
 use RunTimeException;
+use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\GenericDataTable;
 use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
@@ -38,7 +39,7 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  */
-class FailGetOneUnusedIdGenericDataTable extends GenericDataTable {
+class FailGetOneUnusedIdDataTable extends GenericDataTable {
 
 
     const int ERROR_CANNOT_GET_MAX_ID = 2001;
