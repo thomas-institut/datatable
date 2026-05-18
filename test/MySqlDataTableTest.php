@@ -30,9 +30,11 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\ReferenceTests\PdoDataTableReferenceTestCase;
+use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
 
 
 #[CoversClass(MySqlDataTable::class)]
+#[CoversClass(MySqlDialect::class)]
 class MySqlDataTableTest extends PdoDataTableReferenceTestCase
 {
 
