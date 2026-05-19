@@ -33,8 +33,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ThomasInstitut\\DataTable\\": "test",
-            "ThomasInstitut\\DataTable\\Test\\": "test/MockClasses"
+            "ThomasInstitut\\DataTable\\": "test"
         }
     }
 }
