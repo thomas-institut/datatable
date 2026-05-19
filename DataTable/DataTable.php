@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 namespace ThomasInstitut\DataTable;
 
 use ArrayAccess;
@@ -53,6 +54,9 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
  * @see https://github.com/thomas-institut/datatable
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
+ *
+ * @extends ArrayAccess<int, array<string, mixed>>
+ * @extends IteratorAggregate<int, array<string, mixed>>
  */
 interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface, ErrorReporter
 {
@@ -111,7 +115,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param IdGenerator $ig
      * @return void
      */
-    public function setIdGenerator(IdGenerator $ig) : void;
+    public function setIdGenerator(IdGenerator $ig): void;
 
     /**
      * Returns true if the row with the given ID exists
@@ -119,21 +123,21 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param int $rowId
      * @return bool
      */
-    public function rowExists(int $rowId) : bool;
+    public function rowExists(int $rowId): bool;
 
     /**
      * Creates a new row in the table.
      *
      * If the given row array does not have a value for the DataTable's ID column, that value is not an integer, or the
-     * value is less or equal to zero a new unique ID will be assigned.
+     * value is less or equal to zero, a new unique ID will be assigned.
      *
-     * Otherwise, if the given ID already exists in the table the function will throw an exception.
+     * Otherwise, if the given ID already exists in the table, the function will throw an exception.
      *
-     * @param array $theRow
+     * @param array<string, mixed> $theRow
      * @return int
      * @throws RowAlreadyExists
      */
-    public function createRow(array $theRow) : int;
+    public function createRow(array $theRow): int;
 
 
     /**
@@ -142,16 +146,16 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * If the row does not exist, returns null
      *
      * @param int $rowId
-     * @return array|null
+     * @return array<string, mixed>|null
      */
-    public function getRow(int $rowId) : ?array;
+    public function getRow(int $rowId): ?array;
 
     /**
      * Returns an iterator with all rows in the table
      *
      * @return ResultsIterator
      */
-    public function getAllRows() : ResultsIterator;
+    public function getAllRows(): ResultsIterator;
 
     /**
      * Deletes the row with the given ID.
@@ -163,7 +167,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param int $rowId
      * @return int
      */
-    public function deleteRow(int $rowId) : int;
+    public function deleteRow(int $rowId): int;
 
     /**
      * Finds rows in the data table that match the values in $rowToMatch
@@ -171,14 +175,14 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * A row in the data table matches $rowToMatch if for every field
      * in $rowToMatch the row has exactly that same value.
      *
-     * if $maxResults > 0, an iterator of max $maxResults will be returned
+     * If $maxResults > 0, an iterator of max $maxResults will be returned;
      * if $maxResults <= 0, all results will be returned
      *
-     * @param array $rowToMatch
+     * @param array<string, mixed> $rowToMatch
      * @param int $maxResults
      * @return ResultsIterator
      */
-    function findRows(array $rowToMatch, int $maxResults = 0) : ResultsIterator;
+    function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator;
 
 
     /**
@@ -189,7 +193,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * If $searchType is SEARCH_AND, the row must satisfy:
      *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
      *
-     * if  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     * If  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
      *
      *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
      *
@@ -207,17 +211,17 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *      LESS_THAN  <==>  GREATER_OR_EQUAL_TO
      *      LESS_OR_EQUAL_TO <==> GREATER_THAN
      *
-     * if $maxResults > 0, an iterator of max $maxResults will be returned
+     * If $maxResults > 0, an iterator of max $maxResults will be returned;
      * if $maxResults <= 0, an iterator with all results will be returned
      *
-     * @param array $searchSpecArray
+     * @param array<int, array<string, mixed>> $searchSpecArray
      * @param int $searchType
      * @param int $maxResults
      * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
-    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0) : ResultsIterator;
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator;
 
     /**
      * Updates the table with the given row, which must contain an id
@@ -233,11 +237,11 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *  have default values for the non-given keys)
      *
      *
-     * @param array $theRow
+     * @param array<string, mixed> $theRow
      * @return void
      * @throws InvalidRowForUpdate
      */
-    public function updateRow(array $theRow) : void;
+    public function updateRow(array $theRow): void;
 
 
     /**
@@ -246,11 +250,11 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * If transactions are supported, any updates to the table (row creation/update/delete) after
      * a call to startTransaction() will not take effect until commit() is called.
      *
-     * If transaction are not supported startTransaction() and commit() will do nothing.
+     * If transactions are not supported, startTransaction() and commit() will do nothing.
      *
      * @return bool
      */
-    public function supportsTransactions() : bool;
+    public function supportsTransactions(): bool;
 
 
     /**
@@ -264,7 +268,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @return bool
      */
-    public function startTransaction() : bool;
+    public function startTransaction(): bool;
 
     /**
      * If transactions are supported, commits all changes since the last call to startTransaction()
@@ -288,7 +292,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @return bool
      */
-    public function rollBack() : bool;
+    public function rollBack(): bool;
 
 
     /**
@@ -298,7 +302,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @return bool
      */
-    public function isInTransaction() : bool;
+    public function isInTransaction(): bool;
 
 
     /**
@@ -309,7 +313,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @return bool
      */
-    public function isUnderlyingDatabaseInTransaction() : bool;
+    public function isUnderlyingDatabaseInTransaction(): bool;
 
     /**
      * Returns the id of one row in which $row[$key] === $value
@@ -320,7 +324,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @return int
      * @deprecated Use normal search functions
      */
-    public function getIdForKeyValue(string $key, mixed $value) : int;
+    public function getIdForKeyValue(string $key, mixed $value): int;
 
     /**
      * Returns the max value in the given column.
@@ -332,21 +336,21 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param string $columnName
      * @return int
      */
-    public function getMaxValueInColumn(string $columnName) : int;
+    public function getMaxValueInColumn(string $columnName): int;
 
     /**
      * Returns the max id in the table
      *
      * @return int
      */
-    public function getMaxId() : int;
+    public function getMaxId(): int;
 
     /**
      * Returns an iterator with all the unique row ids in the table in ascending order.
      *
      * @return Iterator
      */
-    public function getUniqueIds() : Iterator;
+    public function getUniqueIds(): Iterator;
 
 
     /**
@@ -354,7 +358,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * @return string
      */
-    public function getName() : string;
+    public function getName(): string;
 
     /**
      * Sets the table's name.
@@ -362,7 +366,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param string $name
      * @return void
      */
-    public function setName(string $name) : void;
+    public function setName(string $name): void;
 
     /**
      * Sets the name of the id column in the table to reflect the actual name used in the underlying database table.
@@ -373,13 +377,13 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * @param string $columnName
      * @return void
      */
-    public function setIdColumnName(string $columnName) : void;
+    public function setIdColumnName(string $columnName): void;
 
 
     /**
      * Returns the current id column name used in the DataTable object.
      * @return string
      */
-    public function getIdColumnName() : string;
+    public function getIdColumnName(): string;
 
 }

@@ -30,10 +30,12 @@ use PDO;
 use PDOStatement;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\Exception;
 use RuntimeException;
 use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidWhereClauseException;
+use ThomasInstitut\DataTable\Exception\LastInsertIdNotAvailableException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\PdoDataTable;
@@ -135,6 +137,8 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $exceptionCaught = false;
         try {
             $restrictedDataTable->createRow([$stringCol => 25]);
+        } catch (LastInsertIdNotAvailableException) {
+            // should not happen here
         } catch (RuntimeException) {
             $exceptionCaught = true;
         }
@@ -348,6 +352,9 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $this->assertTrue($dt1->commit());
     }
 
+    /**
+     * @throws Exception
+     */
     #[Test]
     #[AllowMockObjectsWithoutExpectations]
     public function testTransactionFailures(): void

@@ -12,13 +12,11 @@ use ThomasInstitut\DataTable\ReferenceTests\ResultsIteratorReferenceTestCase;
 #[CoversClass(PdoResultsIterator::class)]
 class PdoResultsIteratorTest extends ResultsIteratorReferenceTestCase
 {
-
-    const bool AUTO_INC = false;
     const string TEST_TABLE_NAME = 'iterator_dt';
     public function createDataTable() : DataTable {
         $pdo = $this->getPdo();
         $this->setupDatabase($pdo);
-        return new MySqlDataTable($pdo, self::TEST_TABLE_NAME, self::AUTO_INC);
+        return new MySqlDataTable($pdo, self::TEST_TABLE_NAME, false);
     }
 
 
@@ -31,14 +29,13 @@ class PdoResultsIteratorTest extends ResultsIteratorReferenceTestCase
 
     private function setupDatabase(PDO $pdo) : void {
         $testTableName = self::TEST_TABLE_NAME;
-        $autoIncrement = self::AUTO_INC ? 'AUTO_INCREMENT' : '';
         $idCol = DataTable::DEFAULT_ID_COLUMN_NAME;
         $intCol = self::INT_COLUM;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$testTableName`;
             CREATE TABLE IF NOT EXISTS `$testTableName` (
-              $idCol int(11) UNSIGNED NOT NULL $autoIncrement,
+              $idCol int(11) UNSIGNED NOT NULL,
               $intCol int(11) DEFAULT NULL,
               PRIMARY KEY (`$idCol`)
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

@@ -96,7 +96,6 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
         $iterator = $this->getNonEmptyIterator();
         $numIterations = 0;
         foreach($iterator as $index => $row) {
-            $this->assertIsInt($index);
             $this->assertValidResultRow($row, __FUNCTION__);
             $numIterations++;
         }

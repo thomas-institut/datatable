@@ -93,42 +93,6 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends PdoDataTableRefe
      */
     abstract protected function getMockDatetimeColumnInfoResponse(): array;
 
-    /**
-     * Helper: create a mock PDOStatement that returns the given column info responses
-     * in sequence (one per isTableColumnValid call).
-     */
-    private function createColumnCheckStmt(array ...$columnInfoResponses): PDOStatement
-    {
-        $stmt = $this->createStub(PDOStatement::class);
-        $stmt->method('rowCount')->willReturn(1);
-        $stmt->method('fetch')->willReturnOnConsecutiveCalls(...$columnInfoResponses);
-        return $stmt;
-    }
-
-    /**
-     * Helper: create a mock PDO that returns proper column info for unitemporal tables
-     * (id column int + valid_from datetime + valid_until datetime) for each construction,
-     * plus an additional prepare() stub for the rowExistsById statement.
-     */
-    private function createUnitemporalMockPdoAndProvider(): array
-    {
-        $intResp = $this->getMockColumnInfoResponse();
-        $dtResp = $this->getMockDatetimeColumnInfoResponse();
-
-        $pdo = $this->createStub(PDO::class);
-        $pdoProvider = $this->createStub(PdoProvider::class);
-        $pdoProvider->method('getPdo')->willReturn($pdo);
-
-        // Each constructPdoDataTableWithProvider call triggers 3 query() calls
-        // for column validation (id, valid_from, valid_until), plus a prepare() call.
-        $stmt1 = $this->createColumnCheckStmt($intResp, $dtResp, $dtResp);
-        $prepareStmt = $this->createStub(PDOStatement::class);
-        $pdo->method('query')->willReturn($stmt1);
-        $pdo->method('prepare')->willReturn($prepareStmt);
-
-        return [$pdo, $pdoProvider];
-    }
-
     #[Test]
     #[AllowMockObjectsWithoutExpectations]
     public function testTransactionFailures(): void

@@ -303,7 +303,7 @@ abstract class GenericDataTable implements DataTable
      * Creates a row in the table, returns the id of the newly created
      * row.
      *
-     * @param array $theRow
+     * @param array<string, mixed> $theRow
      * @return int
      */
     abstract protected function realCreateRow(array $theRow): int;
@@ -314,7 +314,7 @@ abstract class GenericDataTable implements DataTable
      *
      * Must throw a Runtime Exception if the row was not updated
      *
-     * @param array $theRow
+     * @param array<string, mixed> $theRow
      * @return void
      * @throws RowDoesNotExist
      */
@@ -332,8 +332,8 @@ abstract class GenericDataTable implements DataTable
      * in the given row, the given ID is negative or 0, or not an integer, the id is set to
      * an unused ID
      *
-     * @param array $theRow
-     * @return array
+     * @param array<string, mixed> $theRow
+     * @return array<string, mixed>
      * @throws RowAlreadyExists
      */
     protected function getRowWithGoodIdForCreation(array $theRow): array
@@ -378,8 +378,8 @@ abstract class GenericDataTable implements DataTable
      *  'msg' :  a string describing the problem
      *  'code' : an error code associated with the problem
      *
-     * @param array $specArray
-     * @return array
+     * @param array<int, array<string, mixed>> $specArray
+     * @return array<int, array<string, mixed>>
      */
     protected function checkSearchSpecArrayValidity(array $specArray): array
     {
@@ -439,6 +439,8 @@ abstract class GenericDataTable implements DataTable
 
 
     /**
+     * @param array<int, array<string, mixed>> $searchSpecArray
+     * @param int $searchType
      * @throws InvalidSearchType
      * @throws InvalidSearchSpec
      */
@@ -459,7 +461,7 @@ abstract class GenericDataTable implements DataTable
     /**
      * @param string $msg
      * @param int $code
-     * @param array $otherContext
+     * @param array<string|int, mixed> $otherContext
      */
     protected function setError(string $msg, int $code, array $otherContext = []): void
     {
@@ -474,11 +476,24 @@ abstract class GenericDataTable implements DataTable
         $this->setErrorMessage('');
     }
 
+    /**
+     * @param string $logLevel
+     * @param string $msg
+     * @param int $code
+     * @param array<string|int, mixed> $otherContext
+     * @return void
+     */
     protected function log(string $logLevel, string $msg, int $code, array $otherContext): void
     {
         $this->logger->log($logLevel, $msg, array_merge(['code' => $code], $otherContext));
     }
 
+    /**
+     * @param string $msg
+     * @param int $code
+     * @param array<string|int, mixed> $otherContext
+     * @return void
+     */
     protected function logWarning(string $msg, int $code, array $otherContext = []): void
     {
         $this->log(LogLevel::WARNING, $msg, $code, $otherContext);
@@ -532,11 +547,11 @@ abstract class GenericDataTable implements DataTable
      * Checks that the given row has an id field that is a positive integer
      * If not, sets an error and returns false;
      *
-     * @param $theRow
+     * @param array<string, mixed> $theRow
      * @param string $context
      * @return bool
      */
-    protected function isRowIdGoodForRowUpdate($theRow, string $context): bool
+    protected function isRowIdGoodForRowUpdate(array $theRow, string $context): bool
     {
         if (!isset($theRow[$this->idColumnName])) {
             $this->setError('Id not set in given row' . " ($context)", self::ERROR_ID_NOT_SET);

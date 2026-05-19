@@ -36,9 +36,16 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
 class InMemoryDataTable extends GenericDataTable
 {
-    
+
+    /**
+     * @var array<int, array<string, mixed>>
+     */
     private array $theData;
 
+    /**
+     * @param array<int, array<string, mixed>>|null $data
+     * @param IdGenerator|null $idGenerator
+     */
     public function __construct(array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
         parent::__construct($idGenerator);
@@ -158,8 +165,8 @@ class InMemoryDataTable extends GenericDataTable
     /**
      * Returns true is the given $dataRow matches the given $searchSpec and $searchType
      *
-     * @param array $dataRow
-     * @param array $searchSpec
+     * @param array<string, mixed> $dataRow
+     * @param array<int, array<string, mixed>> $searchSpec
      * @param int $searchType
      * @return bool
      */
@@ -190,6 +197,13 @@ class InMemoryDataTable extends GenericDataTable
 
     }
 
+    /**
+     * Evaluates whether a given data row matches the specified condition.
+     *
+     * @param array<string, mixed> $dataRow The data row being evaluated.
+     * @param array<string, mixed> $spec The specification containing the column, value, and condition for matching.
+     * @return bool True if the data row matches the specification, false otherwise.
+     */
     private function match(array $dataRow, array $spec) : bool {
         $column = $spec['column'];
         $value = $spec['value'];

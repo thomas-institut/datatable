@@ -34,6 +34,7 @@ use PDOStatement;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidWhereClauseException;
+use ThomasInstitut\DataTable\Exception\LastInsertIdNotAvailableException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
@@ -221,6 +222,13 @@ class PdoDataTable extends GenericDataTable
         return true;
     }
 
+    /**
+     * @param array $theRow
+     * @return int
+     * @throws RowAlreadyExists
+     * @throws RuntimeException
+     * @throws LastInsertIdNotAvailableException
+     */
     public function createRow(array $theRow): int
     {
         if (!$this->useDbAutoInc) {
@@ -241,7 +249,7 @@ class PdoDataTable extends GenericDataTable
         $lastInsertId = $this->pdoProvider->getPdo()->lastInsertId();
         if ($lastInsertId === false) { // @codeCoverageIgnore
             // if this happens, it means that the database does not support lastInsertId(), which is deal-breaker for this class
-            throw new RuntimeException('Failed to retrieve last insert ID after creating row'); // @codeCoverageIgnore
+            throw new LastInsertIdNotAvailableException('Failed to retrieve last insert ID after creating row'); // @codeCoverageIgnore
         }
         return intval($lastInsertId);
     }
@@ -374,7 +382,7 @@ class PdoDataTable extends GenericDataTable
     }
 
     /**
-     * @throws RunTimeException
+     * @throws RuntimeException
      */
     public function getMaxValueInColumn(string $columnName): int
     {
@@ -436,13 +444,13 @@ class PdoDataTable extends GenericDataTable
                 . $e->getMessage() . '", query = "' . $sql . '"',
                 self::ERROR_MYSQL_QUERY_ERROR
             );
-            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in "' . $context
                 . '" when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
-            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
 
@@ -489,7 +497,7 @@ class PdoDataTable extends GenericDataTable
 
 
     /**
-     * Returns the sql query needed to the get the search results
+     * Returns the sql query needed to get the search results
      *
      * @param array $searchSpecArray
      * @param int $searchType
@@ -546,7 +554,7 @@ class PdoDataTable extends GenericDataTable
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
                 . $e->getMessage() . ' :: query = ' . $sql, self::ERROR_MYSQL_QUERY_ERROR);
-            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
 
@@ -554,7 +562,7 @@ class PdoDataTable extends GenericDataTable
             // @codeCoverageIgnoreStart
             $this->setError('Unknown error in realFindRows '
                 . 'when executing query: ' . $sql, self::ERROR_UNKNOWN_ERROR);
-            throw new RunTimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
         }
         return new PdoResultsIterator($r, $this->idColumnName);

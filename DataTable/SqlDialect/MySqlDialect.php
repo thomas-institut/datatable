@@ -48,7 +48,10 @@ class MySqlDialect implements SqlDialect
 
     public function tableSupportsTransactions(array $tableInfo): bool
     {
-        return $tableInfo['Engine'] === 'InnoDB' ?? false;
+        if (!isset($tableInfo['Engine'])) {
+            return false;
+        }
+        return $tableInfo['Engine'] === 'InnoDB';
     }
 
     public function isSearchErrorRecoverable(PDOException $e): bool

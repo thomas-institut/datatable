@@ -46,6 +46,8 @@ use Iterator;
  * not be possible to rewind the iterator. In particular, results from a PDO source,
  * for example, MySql, cannot be rewound.
  *
+ * @extends Iterator<int, array<string, mixed>>
+ *
  */
 interface ResultsIterator extends Iterator, Countable
 {
