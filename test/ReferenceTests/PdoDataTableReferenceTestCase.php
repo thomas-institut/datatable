@@ -186,6 +186,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
     }
 
     #[Test]
+    #[\Override]
     public function testEscaping(): void
     {
         parent::testEscaping();
@@ -247,6 +248,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
      * @throws RowAlreadyExists
      */
     #[Test]
+    #[\Override]
     public function testUpdateRow(): void
     {
         parent::testUpdateRow();
@@ -279,6 +281,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
     }
 
     #[Test]
+    #[\Override]
     public function testNonExistentRows(): void
     {
         parent::testNonExistentRows();

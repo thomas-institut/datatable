@@ -28,6 +28,7 @@ namespace ThomasInstitut\DataTable;
 
 use Iterator;
 use LogicException;
+use Override;
 use PDO;
 use PDOException;
 use PDOStatement;
@@ -75,8 +76,6 @@ class PdoDataTable extends GenericDataTable
      * @var PDOStatement[]
      */
     protected array $statements;
-    protected SqlDialect $sqlDialect;
-    private bool $useDbAutoInc;
     private bool $inTransaction;
 
     /**
@@ -84,19 +83,17 @@ class PdoDataTable extends GenericDataTable
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, bool $useDbAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, protected SqlDialect $sqlDialect, private readonly bool $useDbAutoInc = false, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
     {
         parent::__construct();
 
         $this->tableName = $tableName;
         $this->idColumnName = $idColumnName;
-        $this->sqlDialect = $sqlDialect;
         if ($pdoOrProvider instanceof PDO) {
             $this->pdoProvider = new SimplePdoProvider($pdoOrProvider);
         } else {
             $this->pdoProvider = $pdoOrProvider;
         }
-        $this->useDbAutoInc = $useDbAutoInc;
         $this->inTransaction = false;
 
         if (!$this->isTableColumnValid($this->idColumnName, ['int', 'bigint'])) {
@@ -129,6 +126,7 @@ class PdoDataTable extends GenericDataTable
     /**
      * @throws InvalidArgumentException
      */
+    #[Override]
     public function setIdGenerator(IdGenerator $ig): void
     {
         if ($this->useDbAutoInc) {
@@ -229,6 +227,7 @@ class PdoDataTable extends GenericDataTable
      * @throws RuntimeException
      * @throws LastInsertIdNotAvailableException
      */
+    #[Override]
     public function createRow(array $theRow): int
     {
         if (!$this->useDbAutoInc) {
@@ -457,6 +456,7 @@ class PdoDataTable extends GenericDataTable
         return $r;
     }
 
+    #[Override]
     public function getUniqueIds(): Iterator
     {
         $tableName = $this->tableName;
@@ -605,6 +605,7 @@ class PdoDataTable extends GenericDataTable
      *
      * @return bool
      */
+    #[Override]
     public function supportsTransactions(): bool
     {
         $r = $this->doQuery($this->sqlDialect->getTableStatusQuery($this->tableName), __FUNCTION__);
@@ -631,6 +632,7 @@ class PdoDataTable extends GenericDataTable
      * @return bool
      */
 
+    #[Override]
     public function startTransaction(): bool
     {
         $this->resetError();
@@ -660,6 +662,7 @@ class PdoDataTable extends GenericDataTable
      *
      * @return bool
      */
+    #[Override]
     public function commit(): bool
     {
         $this->resetError();
@@ -677,6 +680,7 @@ class PdoDataTable extends GenericDataTable
         return false;
     }
 
+    #[Override]
     public function rollBack(): bool
     {
         $this->resetError();
@@ -694,11 +698,13 @@ class PdoDataTable extends GenericDataTable
         return false;
     }
 
+    #[Override]
     public function isInTransaction(): bool
     {
         return $this->inTransaction;
     }
 
+    #[Override]
     public function isUnderlyingDatabaseInTransaction(): bool
     {
         return $this->pdoProvider->getPdo()->inTransaction();

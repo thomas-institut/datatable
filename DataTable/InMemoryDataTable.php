@@ -211,22 +211,22 @@ class InMemoryDataTable extends GenericDataTable
         if (is_string($value)) {
             switch ($spec['condition']) {
                 case self::COND_EQUAL_TO:
-                    return strcmp($dataRow[$column], $value) === 0;
+                    return strcmp((string) $dataRow[$column], $value) === 0;
 
                 case self::COND_NOT_EQUAL_TO:
-                    return strcmp($dataRow[$column], $value) !== 0;
+                    return strcmp((string) $dataRow[$column], $value) !== 0;
 
                 case self::COND_LESS_THAN:
-                    return strcmp($dataRow[$column], $value) < 0;
+                    return strcmp((string) $dataRow[$column], $value) < 0;
 
                 case self::COND_LESS_OR_EQUAL_TO:
-                    return strcmp($dataRow[$column], $value) <= 0;
+                    return strcmp((string) $dataRow[$column], $value) <= 0;
 
                 case self::COND_GREATER_THAN:
-                    return strcmp($dataRow[$column], $value) > 0;
+                    return strcmp((string) $dataRow[$column], $value) > 0;
 
                 case self::COND_GREATER_OR_EQUAL_TO:
-                    return strcmp($dataRow[$column], $value) >= 0;
+                    return strcmp((string) $dataRow[$column], $value) >= 0;
             }
         } else {
             switch ($spec['condition']) {

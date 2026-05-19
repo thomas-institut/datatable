@@ -9,15 +9,13 @@ use PDOStatement;
 class PdoUniqueIdsIterator implements Iterator
 {
 
-    private PDOStatement $statement;
-    private Iterator $source;
+    private readonly Iterator $source;
     private int $currentKey;
 
-    public function __construct(PDOStatement $statement)
+    public function __construct(private readonly PDOStatement $statement)
     {
-        $this->statement = $statement;
         $this->statement->setFetchMode(PDO::FETCH_NUM);
-        $this->source = $statement->getIterator();
+        $this->source = $this->statement->getIterator();
         $this->currentKey = 0;
     }
 

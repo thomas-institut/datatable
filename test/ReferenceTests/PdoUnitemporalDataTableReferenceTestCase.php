@@ -95,6 +95,7 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends PdoDataTableRefe
 
     #[Test]
     #[AllowMockObjectsWithoutExpectations]
+    #[\Override]
     public function testTransactionFailures(): void
     {
         $intResp = $this->getMockColumnInfoResponse();
@@ -171,6 +172,7 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends PdoDataTableRefe
     }
 
     #[Test]
+    #[\Override]
     public function testDbConnectionProvider(): void
     {
         $pdo = $this->getPdo();
@@ -186,6 +188,7 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends PdoDataTableRefe
     }
 
     #[Test]
+    #[\Override]
     public function testBadTables(): void
     {
 

@@ -251,6 +251,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
+    #[\Override]
     public function getUniqueIds(): Iterator
     {
         return $this->getUniqueIdsWithTime(TimeString::now());
@@ -264,6 +265,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @return int
      * @throws InvalidTimeStringException
      */
+    #[\Override]
     public function realCreateRow(array $theRow): int
     {
         return $this->realCreateRowWithTime($theRow, TimeString::now());
@@ -352,6 +354,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @throws InvalidRowUpdateTime
      * @throws RowDoesNotExist
      */
+    #[\Override]
     public function realUpdateRow(array $theRow): void
     {
         try {
@@ -440,6 +443,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @param int $maxResults
      * @return string
      */
+    #[\Override]
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
     {
 
@@ -465,6 +469,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $sql;
     }
 
+    #[\Override]
     public function getAllRows(): ResultsIterator
     {
         try {
@@ -491,6 +496,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return new PdoResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
 
+    #[\Override]
     public function getRow(int $rowId): ?array
     {
         $this->resetError();
@@ -544,6 +550,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $res;
     }
 
+    #[\Override]
     public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         try {
@@ -621,6 +628,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
+    #[\Override]
     public function deleteRow(int $rowId): int
     {
         try {

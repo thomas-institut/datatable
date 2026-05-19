@@ -30,6 +30,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Random\RandomException;
 use RuntimeException;
 use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
@@ -97,6 +98,7 @@ abstract class DataTableReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws RandomException
      */
     #[Test]
     public function testCreationAndDeletion(): void
@@ -122,7 +124,7 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         // Some random deletions and additions
         for ($i = 0; $i < $this->numIterations; $i++) {
-            $theId = $ids[rand(0, $this->numRows-1)];
+            $theId = $ids[random_int(0, $this->numRows-1)];
             $testMsg = "Random deletions and additions,  iteration $i, "
                     . "$idColumn=$theId";
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
@@ -146,6 +148,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         return false;
     }
 
+    /**
+     * @throws RandomException
+     */
     #[Test]
     public function testFindSingle(): void
     {
@@ -155,7 +160,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         // Random searches
         $nSearches = $this->numIterations;
         for ($i = 0; $i < $nSearches; $i++) {
-            $someInt = rand(1, $this->numRows);
+            $someInt = random_int(1, $this->numRows);
             $someTextValue = "textValue$someInt";
             $testMsg = "Random searches,  iteration $i, int=$someInt";
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
@@ -398,7 +403,7 @@ abstract class DataTableReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws InvalidRowForUpdate
+     * @throws InvalidRowForUpdate|RandomException
      */
     #[Test]
     public function testUpdate(): void
@@ -408,7 +413,7 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         $nUpdates = $this->numIterations;
         for ($i = 0; $i < $nUpdates; $i++) {
-            $someInt = rand(1, $this->numRows);
+            $someInt = random_int(1, $this->numRows);
             $newTextValue = "NewTextValue$someInt";
             $testMsg = "Random updates,  iteration $i, int=$someInt, new value: $newTextValue";
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
@@ -673,10 +678,13 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertEquals(1, $allRowsTwo->count());
     }
 
+    /**
+     * @throws RowAlreadyExists
+     */
     #[Test]
     public function testIteratorAggregate(): void
     {
-        $dataTable = $this->getTestDataTable(true);
+        $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
 
         $rows = [
@@ -690,7 +698,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         }
 
         $count = 0;
-        foreach ($dataTable as $rowId => $row) {
+        foreach ($dataTable as $row) {
             $this->assertArrayHasKey($idColumn, $row);
             $this->assertEquals($rows[$count][self::STRING_COLUMN_2], $row[self::STRING_COLUMN_2]);
             $count++;

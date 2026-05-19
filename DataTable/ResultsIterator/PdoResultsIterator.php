@@ -13,19 +13,15 @@ use PDOStatement;
  */
 class PdoResultsIterator implements ResultsIterator
 {
-    private string $idColumnName;
-    private Iterator $source;
-    private PDOStatement $statement;
+    private readonly Iterator $source;
 
     private mixed $first;
     private int $currentKey;
 
-    public function __construct(PDOStatement $statement, string $idColumnName)
+    public function __construct(private readonly PDOStatement $statement, private readonly string $idColumnName)
     {
-        $this->statement = $statement;
         $this->statement->setFetchMode(PDO::FETCH_ASSOC);
-        $this->source = $statement->getIterator();
-        $this->idColumnName = $idColumnName;
+        $this->source = $this->statement->getIterator();
         $this->first = null;
         $this->currentKey = 0;
     }

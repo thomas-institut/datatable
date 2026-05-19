@@ -36,26 +36,8 @@ class RandomIdGenerator implements IdGenerator
     public const int ERROR_RANDOM_NUMBER_GENERATOR_ERROR = 1001;
     public const int ERROR_MAX_ATTEMPTS_REACHED = 1002;
 
-    /**
-     * @var int
-     */
-    private int $minId;
-
-    /**
-     * @var int
-     */
-    private int $maxId;
-
-    /**
-     * @var int
-     */
-    private int $maxAttempts;
-
-    public function __construct(int $min = 1, int $max = PHP_INT_MAX, int $maxAttempts = 1000)
+    public function __construct(private readonly int $minId = 1, private readonly int $maxId = PHP_INT_MAX, private readonly int $maxAttempts = 1000)
     {
-        $this->minId = $min;
-        $this->maxId = $max;
-        $this->maxAttempts = $maxAttempts;
     }
 
     public function getOneUnusedId(DataTable $dataTable): int

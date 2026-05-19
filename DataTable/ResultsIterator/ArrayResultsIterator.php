@@ -4,11 +4,11 @@ namespace ThomasInstitut\DataTable\ResultsIterator;
 
 class ArrayResultsIterator implements ResultsIterator
 {
-    private int $count;
+    private readonly int $count;
     /**
      * @var mixed|null
      */
-    private mixed $first;
+    private readonly mixed $first;
     private int $currentKey;
     private array $theArray;
 
