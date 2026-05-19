@@ -1,7 +1,6 @@
-nbproject/
 vendor/
-/build/coverage/
+build/
 .idea/
-test/.phpunit.cache
-scratch/
+.phpunit.cache/
 test.log
+composer.lock
