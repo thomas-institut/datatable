@@ -10,3 +10,4 @@
 /scripts            export-ignore
 /build              export-ignore
 /rector.php         export-ignore
+/phpstan.neon       export-ignore
