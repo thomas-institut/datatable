@@ -25,7 +25,8 @@ table where each row is identified by a unique integer ID. Key features include:
   methods.
 - **InMemoryDataTable**: A non-persistent implementation (`DataTable/InMemoryDataTable.php`) using PHP arrays, ideal for
   unit testing.
-- **MySqlDataTable**: A persistent implementation (`DataTable/MySqlDataTable.php`) using PDO and MySQL.
+- **PdoDataTable**: a persistent implementation using PDO, adaptable using specific SqlDialect providers.
+- **MySqlDataTable**: a PdoDataTable using MySqlDialect
 - **MySqlDataTableWithRandomIds**: A specialization of `MySqlDataTable` that uses random ID generation.
 
 ### 3. Unitemporal Support
@@ -35,7 +36,8 @@ rows. This allows:
 
 - Retrieving versions of a row at a specific point in time (`getRowWithTime`).
 - Maintaining a history of changes instead of physically deleting rows (`deleteRowWithTime` marks them as invalid).
-- `MySqlUnitemporalDataTable` is the concrete implementation for MySQL.
+- `PdoUnitemporalDataTable`: a PDO implementation that can be adapted to specific databases with specific SqlDialect providers
+- `MySqlUnitemporalDataTable`: a PdoUnitemporalDataTable using MySqlDialect.
 
 ### 4. ID Generation
 
@@ -66,14 +68,15 @@ Methods returning multiple rows (like `getAllRows` or `search`) return a `DataTa
 The project includes a `test/` directory using PHPUnit, with mock classes to facilitate testing different
 implementations.
 
-Test should use features of PHPUnit 12
+Tests should use features of PHPUnit 12
 
-Do not use the local machine's PHP. The user must have started a development container with the appropiate PHP
+Do not use the local machine's PHP. The user must have started a development container with the appropriate PHP
 version. Use the scripts in `scripts`:
 
-- **Run all tests**: `scripts/dev-php-test`
-- **Run phpunit** with arbitrary options:  `scripts/dev-phpunit --option1 --option2 ... test`
+- **Run all tests**: `scripts/composer run-script test`
+- **Run all tests with coverage report**: `scripts/composer run-script test:coverage`
+- **Run phpunit** with arbitrary options:  `scripts/phpunit --option1 --option2 ... test`
 
 ## Task Completion Requirements
 
-Run `scripts/dev-php-test` and make sure all the tests pass. 
+Run `scripts/composer run-script test` and make sure all the tests pass without any issues.

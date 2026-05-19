@@ -76,9 +76,6 @@ class PdoDataTable extends GenericDataTable
     protected array $statements;
     protected SqlDialect $sqlDialect;
     private bool $useDbAutoInc;
-    /**
-     * @var true
-     */
     private bool $inTransaction;
 
     /**
@@ -241,7 +238,12 @@ class PdoDataTable extends GenericDataTable
             }
         }
         $this->doQuery($this->getInsertQuery($theRow), 'createRow');
-        return $this->pdoProvider->getPdo()->lastInsertId();
+        $lastInsertId = $this->pdoProvider->getPdo()->lastInsertId();
+        if ($lastInsertId === false) { // @codeCoverageIgnore
+            // if this happens, it means that the database does not support lastInsertId(), which is deal-breaker for this class
+            throw new RuntimeException('Failed to retrieve last insert ID after creating row'); // @codeCoverageIgnore
+        }
+        return intval($lastInsertId);
     }
 
     protected function getInsertQuery(array $theRow): string
