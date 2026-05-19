@@ -7,4 +7,5 @@
 /AGENTS.md          export-ignore
 /test               export-ignore
 /docker             export-ignore
+/scripts            export-ignore
 /build              export-ignore
