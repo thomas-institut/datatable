@@ -9,3 +9,4 @@
 /docker             export-ignore
 /scripts            export-ignore
 /build              export-ignore
+/rector.php         export-ignore
