@@ -20,10 +20,15 @@ readonly class GenericRowTranslator implements RowTranslator
     /**
      * @param RowValueTranslator $rowValueTranslator
      * @param array<ColumnDefinition> $columnDefinitions The definitions of the columns in the table.
+     * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
-                                array              $columnDefinitions)
+                                array                      $columnDefinitions)
     {
+        $errors = ColumnDefArrayValidator::validate($columnDefinitions);
+        if (!empty($errors)) {
+            throw new InvalidColumnDefinitionsArray();
+        }
         $this->defsByDbKey = ColumnDefArray::getDefsByDbKey($columnDefinitions);
         $this->defsByRowKey = ColumnDefArray::getDefsByRowKey($columnDefinitions);
     }
@@ -60,9 +65,9 @@ readonly class GenericRowTranslator implements RowTranslator
             }
 
             if ($fromDatabase) {
-                $translatedValuesRow[$key]  = $this->rowValueTranslator->dbValueToRowValue($value, $type);
+                $translatedValuesRow[$key] = $this->rowValueTranslator->dbValueToRowValue($value, $type);
             } else {
-                $translatedValuesRow[$key]  = $this->rowValueTranslator->rowValueToDbValue($value, $type);
+                $translatedValuesRow[$key] = $this->rowValueTranslator->rowValueToDbValue($value, $type);
             }
         }
 
