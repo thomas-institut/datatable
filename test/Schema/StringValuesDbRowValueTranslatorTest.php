@@ -22,6 +22,70 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         $this->translator = new StringValuesDbRowValueTranslator();
     }
 
+    #[DataProvider('invalidOptionsProvider')]
+    public function testInvalidOptionsAreRejected(array $optionValues, string $expectedMessage): void
+    {
+        $options = new StringValuesDbRowValueTranslatorOptions();
+        foreach ($optionValues as $option => $value) {
+            $options->$option = $value;
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        new StringValuesDbRowValueTranslator($options);
+    }
+
+    public static function invalidOptionsProvider(): array
+    {
+        return [
+            'empty literal string prefix' => [
+                ['literalStringPrefix' => ''],
+                'Literal string prefix must be a non-empty string, "" given',
+            ],
+            'blank literal string prefix' => [
+                ['literalStringPrefix' => ' '],
+                'Literal string prefix must be a non-empty string, " " given',
+            ],
+            'empty database null value' => [
+                ['dbNullValue' => ''],
+                'Null value must be a non-empty string or one of [ LitVal= ], "" given',
+            ],
+            'database null value equals literal prefix' => [
+                ['dbNullValue' => 'LitVal='],
+                'Null value must be a non-empty string or one of [ LitVal= ], "LitVal=" given',
+            ],
+            'empty false value' => [
+                ['falseValue' => ''],
+                'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "" given',
+            ],
+            'false value equals database null value' => [
+                ['dbNullValue' => 'NULL', 'falseValue' => 'NULL'],
+                'False value must be a non-empty string or one of [ LitVal=, NULL ], "NULL" given',
+            ],
+            'false value equals literal prefix' => [
+                ['falseValue' => 'LitVal='],
+                'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "LitVal=" given',
+            ],
+            'empty true value' => [
+                ['trueValue' => ''],
+                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "" given',
+            ],
+            'true value equals database null value' => [
+                ['dbNullValue' => 'NULL', 'trueValue' => 'NULL'],
+                'True value must be a non-empty string or one of [ LitVal=, NULL, 0 ], "NULL" given',
+            ],
+            'true value equals false value' => [
+                ['falseValue' => 'FALSE', 'trueValue' => 'FALSE'],
+                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, FALSE ], "FALSE" given',
+            ],
+            'true value equals literal prefix' => [
+                ['trueValue' => 'LitVal='],
+                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "LitVal=" given',
+            ],
+        ];
+    }
+
     #[DataProvider('typesProvider')]
     public function testConfiguredNullValueRoundTripsToNull(ColumnDataType $type): void
     {
