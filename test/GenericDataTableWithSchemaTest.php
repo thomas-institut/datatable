@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Random\RandomException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
@@ -19,7 +20,7 @@ class GenericDataTableWithSchemaTest extends TestCase
 
     /**
      * @throws InvalidColumnDefinitionsArray
-     * @throws RowAlreadyExists|InvalidRow
+     * @throws RowAlreadyExists|InvalidRow|RandomException
      */
     #[Test]
     public function testBasic(): void
@@ -32,7 +33,7 @@ class GenericDataTableWithSchemaTest extends TestCase
             new ColumnDefinition('metadata', ColumnDataType::Any),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true),
         ];
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), $columDefs, new StringValuesDbRowValueTranslator('___NULL___'));
+        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), $columDefs, new StringValuesDbRowValueTranslator());
 
         $numRows = 100;
         $rowsToTest = $this->makeFakeValidRows($columDefs, $numRows);
@@ -48,10 +49,10 @@ class GenericDataTableWithSchemaTest extends TestCase
         $allRows = $table->getAllRows();
         $this->assertEquals($numRows, $allRows->count());
 
-        $this->assertNull($table->getRow(9999));
-        $this->assertFalse($table->rowExists(8888));
+        $this->assertNull($table->getRow(999999999));
+        $this->assertFalse($table->rowExists(8888888));
 
-        foreach($rowIdMap as $index => $id) {
+        foreach ($rowIdMap as $index => $id) {
             $this->assertTrue($table->rowExists($id));
             $fetchedRow = $table->getRow($id);
             $originalRow = $rowsToTest[$index];
@@ -98,6 +99,7 @@ class GenericDataTableWithSchemaTest extends TestCase
      * @param array<ColumnDefinition> $columnDefinitions
      * @param int $numRows
      * @return array
+     * @throws RandomException
      */
     private function makeFakeValidRows(array $columnDefinitions, int $numRows): array
     {
@@ -126,7 +128,7 @@ class GenericDataTableWithSchemaTest extends TestCase
                         break;
 
                     case ColumnDataType::Any:
-                        $someObject = [ 'num' => random_int(0, 1000), 'str' => $this->getRandomString(1024)];
+                        $someObject = ['num' => random_int(0, 1000), 'str' => $this->getRandomString(1024)];
                         $row[$colDef->rowKey] = $someObject;
                         break;
 
@@ -142,7 +144,11 @@ class GenericDataTableWithSchemaTest extends TestCase
         return $rows;
     }
 
-    private function getRandomString(int $maxLength): string {
+    /**
+     * @throws RandomException
+     */
+    private function getRandomString(int $maxLength): string
+    {
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $length = random_int(1, $maxLength);
         $randomString = '';
@@ -152,12 +158,13 @@ class GenericDataTableWithSchemaTest extends TestCase
         return $randomString;
     }
 
-    private function getRandomBool(): bool {
+    /**
+     * @throws RandomException
+     */
+    private function getRandomBool(): bool
+    {
         return random_int(0, 1) === 1;
     }
-
-
-
 
 
 }

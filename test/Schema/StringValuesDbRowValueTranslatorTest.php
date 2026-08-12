@@ -4,6 +4,7 @@ namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\ReferenceTests\RowValueTranslatorReferenceTestCase;
 
 #[CoversClass(StringValuesDbRowValueTranslator::class)]
@@ -21,6 +22,62 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         $this->translator = new StringValuesDbRowValueTranslator();
     }
 
+    #[DataProvider('typesProvider')]
+    public function testConfiguredNullValueRoundTripsToNull(ColumnDataType $type): void
+    {
+        $translator = new StringValuesDbRowValueTranslator();
+
+        $this->assertNull(
+            $translator->dbValueToRowValue(
+                $translator->rowValueToDbValue(null, $type),
+                ColumnDataType::Any,
+            ),
+        );
+    }
+
+    public static function typesProvider(): array
+    {
+        return [
+            [ColumnDataType::Any],
+            [ColumnDataType::Text],
+            [ColumnDataType::VarChar],
+            [ColumnDataType::Boolean],
+            [ColumnDataType::Integer],
+        ];
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    #[DataProvider('problematicStringsProvider')]
+    public function testProblematicStringsPassRoundTrip(
+        ColumnDataType $type, string $stringValue
+    ): void
+    {
+        $options = new StringValuesDbRowValueTranslatorOptions();
+        $options->dbNullValue = 'NULL';
+        $options->literalStringPrefix = 'Start:';
+        $translator = new StringValuesDbRowValueTranslator($options);
+
+        $this->assertSame(
+            $stringValue,
+            $translator->dbValueToRowValue(
+                $translator->rowValueToDbValue($stringValue, $type),
+                $type,
+            ),
+        );
+    }
+
+    public static function problematicStringsProvider(): array
+    {
+        return [
+            'varchar with null' => [ColumnDataType::VarChar, 'NULL'],
+            'text with null' => [ColumnDataType::Text, 'NULL'],
+            'text with literal prefix' => [ColumnDataType::Text, 'Start:Today'],
+            'varchar with literal prefix' => [ColumnDataType::VarChar, 'Start:Tomorrow'],
+        ];
+    }
+
 
     public function testAnyRowValueIsSerialized(): void
     {
@@ -35,10 +92,11 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
     #[DataProvider('integerRowValueProvider')]
     public function testIntegerAndIdRowValuesAreConvertedToStrings(
         ColumnDataType $type,
-        int $value,
-    ): void {
+        int            $value,
+    ): void
+    {
         $this->assertSame(
-            (string) $value,
+            (string)$value,
             $this->translator->rowValueToDbValue($value, $type),
         );
     }
@@ -62,9 +120,10 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
 
     public static function booleanRowValueProvider(): array
     {
+        $defaultOptions = new StringValuesDbRowValueTranslatorOptions();
         return [
-            'true' => [true, '1'],
-            'false' => [false, '0'],
+            'true' => [true, $defaultOptions->trueValue],
+            'false' => [false, $defaultOptions->falseValue],
         ];
     }
 
@@ -95,9 +154,10 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
     #[DataProvider('integerDatabaseValueProvider')]
     public function testIntegerAndIdDatabaseValuesAreConvertedToIntegers(
         ColumnDataType $type,
-        string $value,
-        int $expected,
-    ): void {
+        string         $value,
+        int            $expected,
+    ): void
+    {
         $this->assertSame(
             $expected,
             $this->translator->dbValueToRowValue($value, $type),
