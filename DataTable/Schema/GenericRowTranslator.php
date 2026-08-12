@@ -4,6 +4,7 @@ namespace ThomasInstitut\DataTable\Schema;
 
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
+use ThomasInstitut\DataTable\Exception\InvalidRowFromDatabase;
 
 readonly class GenericRowTranslator implements RowTranslator
 {
@@ -34,7 +35,7 @@ readonly class GenericRowTranslator implements RowTranslator
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
-                                 array              $columnDefinitions)
+                                array                      $columnDefinitions)
     {
         $errors = ColumnDefArrayValidator::validate($columnDefinitions);
         if (!empty($errors)) {
@@ -47,34 +48,38 @@ readonly class GenericRowTranslator implements RowTranslator
 
 
     /**
-     * @throws InvalidRow
+     * @inheritDoc
      */
-    public function inputRowToDb(array $inputRow): array
+    public function inputRowToDb(array $inputRow, bool $failOnMissingRequired = true): array
     {
-        $this->validateInputRow($inputRow);
+        $this->validateInputRow($inputRow, $failOnMissingRequired);
         return $this->translateRow($inputRow, false);
     }
 
-    /**
-     * @throws InvalidRow
-     */
     public function dbRowToOutputRow(array $dbRow): array
     {
-        return $this->translateRow($dbRow, true);
+        try {
+            return $this->translateRow($dbRow, true);
+        } catch (InvalidRow $e) {
+            throw new InvalidRowFromDatabase($e->getMessage());
+        }
     }
 
     /**
      * @param array $inputRow
+     * @param bool $failOnMissingRequired
      * @throws InvalidRow
      */
-    private function validateInputRow(array $inputRow): void
+    private function validateInputRow(array $inputRow, bool $failOnMissingRequired): void
     {
-        foreach ($this->requiredKeys as $requiredKey) {
-            if (!array_key_exists($requiredKey, $inputRow)) {
-                throw new InvalidRow("Required column '$requiredKey' is missing in the input row");
+        if ($failOnMissingRequired) {
+            foreach ($this->requiredKeys as $requiredKey) {
+                if (!array_key_exists($requiredKey, $inputRow)) {
+                    throw new InvalidRow("Required column '$requiredKey' is missing in the input row");
+                }
             }
         }
-        foreach($inputRow as $key => $value) {
+        foreach ($inputRow as $key => $value) {
             if (!isset($this->defsByRowKey[$key])) {
                 throw new InvalidRow("Column '$key' is not defined in the schema");
             }

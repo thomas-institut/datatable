@@ -4,10 +4,10 @@ namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use ThomasInstitut\DataTable\Schema\GenericRowTranslator;
 
-class TranslatedResultsIterator implements ResultsIterator
+readonly class TranslatedResultsIterator implements ResultsIterator
 {
 
-    public function __construct(private readonly ResultsIterator $resultsIterator, private readonly GenericRowTranslator $rowTranslator)
+    public function __construct(private ResultsIterator $resultsIterator, private GenericRowTranslator $rowTranslator)
     {
     }
 

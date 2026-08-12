@@ -5,7 +5,6 @@ namespace ThomasInstitut\DataTable;
 use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
@@ -38,8 +37,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      * @param RowValueTranslator $rowValueTranslator
      * @throws InvalidColumnDefinitionsArray
      */
-    public function __construct(private readonly DataTable $dataTable,
-                                private readonly array $columnDefinitions,
+    public function __construct(private readonly DataTable          $dataTable,
+                                private readonly array              $columnDefinitions,
                                 private readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator()
     )
     {
@@ -82,6 +81,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     /**
      * @inheritDoc
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function offsetSet(mixed $offset, mixed $value): void
     {
@@ -92,12 +92,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $id = intval($offset);
         $value[$this->idKey] = $id;
         if ($this->rowExists($id)) {
-            try {
-                $this->updateRow($value);
-            } catch (InvalidRowForUpdate $e) {
-                // this should never happen?
-                throw new RuntimeException('Invalid row for update', 0, $e);
-            }
+            $this->updateRow($value);
         } else {
             try {
                 $this->createRow($value);
@@ -172,7 +167,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
-        return $this->dataTable->findRows($this->rowTranslator->inputRowToDb($rowToMatch), $maxResults);
+        return $this->dataTable->findRows($this->rowTranslator->inputRowToDb($rowToMatch, false), $maxResults);
     }
 
     /**
@@ -181,7 +176,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator
     {
         $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
-        return $this->dataTable->search(SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator), $dtSearchType, $maxResults);
+        $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator);
+        return $this->dataTable->search($dtSearchSpecArray, $dtSearchType, $maxResults);
     }
 
     /**
@@ -259,13 +255,12 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     private function getDefForColumn(string $columnName): ColumnDefinition|null
     {
-       for ($i = 0; $i < count($this->columnDefinitions); $i++) {
-           if ($this->columnDefinitions[$i]->rowKey === $columnName) {
-               return $this->columnDefinitions[$i];
-           }
-       }
-
-       return null;
+        for ($i = 0; $i < count($this->columnDefinitions); $i++) {
+            if ($this->columnDefinitions[$i]->rowKey === $columnName) {
+                return $this->columnDefinitions[$i];
+            }
+        }
+        return null;
     }
 
     /**
@@ -297,7 +292,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     public function setLogger(LoggerInterface $logger): void
     {
-       $this->logger = $logger;
-       $this->dataTable->setLogger($logger);
+        $this->logger = $logger;
+        $this->dataTable->setLogger($logger);
     }
 }

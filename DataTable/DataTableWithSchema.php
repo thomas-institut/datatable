@@ -32,7 +32,6 @@ use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
-use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
@@ -62,11 +61,6 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
  */
 interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 {
-    public const int NULL_ROW_ID = -1;
-
-    public const string DEFAULT_ID_COLUMN_NAME = 'id';
-
-
     /**
      * Assigns an IdGenerator to the DataTable
      *
@@ -140,6 +134,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * @param array<string, mixed> $rowToMatch
      * @param int $maxResults
      * @return ResultsIterator
+     * @throws InvalidRow
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator;
 
