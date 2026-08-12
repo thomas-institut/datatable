@@ -2,13 +2,13 @@
 
 namespace ThomasInstitut\DataTable;
 
-enum SearchCondition : int
+enum SearchCondition : string
 {
-    case Equals = 0;
-    case NotEquals = 1;
-    case LessThan = 2;
-    case LessThanOrEquals = 3;
-    case GreaterThan = 4;
-    case GreaterThanOrEquals = 5;
+    case Equals = 'eq';
+    case NotEquals = 'neq';
+    case LessThan = 'lt';
+    case LessThanOrEquals = 'lte';
+    case GreaterThan = 'gt';
+    case GreaterThanOrEquals = 'gte';
 
 }

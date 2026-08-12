@@ -2,10 +2,10 @@
 
 namespace ThomasInstitut\DataTable;
 
-enum SearchType : int
+enum SearchType : string
 {
 
-    case And = 0;
-    case Or = 1;
+    case And = 'AND';
+    case Or = 'OR';
 
 }

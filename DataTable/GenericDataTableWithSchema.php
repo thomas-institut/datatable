@@ -8,6 +8,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
@@ -19,6 +20,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\GenericRowTranslator;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
 use ThomasInstitut\DataTable\Schema\RowValueTranslator;
+use ThomasInstitut\DataTable\Schema\SearchSpecTranslator;
 use Traversable;
 
 class GenericDataTableWithSchema implements DataTableWithSchema
@@ -142,7 +144,11 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     public function getRow(int $rowId): ?array
     {
-        return $this->rowTranslator->dbRowToOutputRow($this->dataTable->getRow($rowId));
+        $rowFromDb = $this->dataTable->getRow($rowId);
+        if ($rowFromDb === null) {
+            return null;
+        }
+        return $this->rowTranslator->dbRowToOutputRow($rowFromDb);
     }
 
     /**
@@ -174,12 +180,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator
     {
-        // TODO: translate $searchSpecArray
-        $dtSearchType = match ($searchType) {
-            SearchType::And => DataTable::SEARCH_AND,
-            SearchType::Or => DataTable::SEARCH_OR
-        };
-        return $this->dataTable->search($searchSpecArray, $dtSearchType, $maxResults);
+        $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
+        return $this->dataTable->search(SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator), $dtSearchType, $maxResults);
     }
 
     /**
@@ -187,7 +189,11 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     public function updateRow(array $theRow): void
     {
-        $this->dataTable->updateRow($this->rowTranslator->inputRowToDb($theRow));
+        try {
+            $this->dataTable->updateRow($this->rowTranslator->inputRowToDb($theRow));
+        } catch (InvalidRowForUpdate $e) {
+            throw new InvalidRow($e->getMessage());
+        }
     }
 
     /**

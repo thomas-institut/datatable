@@ -7,7 +7,7 @@ class ColumnDefArray
     /**
      * Returns the row key of the id column or null if not found.
      *
-     * @param array<ColumnDefinition> $columnDefinitions
+     * @param array<int, ColumnDefinition> $columnDefinitions
      */
     public static function getIdKey(array $columnDefinitions): string| null {
         for ($i = 0; $i < count($columnDefinitions); $i++) {
@@ -18,10 +18,23 @@ class ColumnDefArray
         return null;
     }
 
+    /**
+     * @param array<int, ColumnDefinition> $columnDefinitions
+     * @return string|null
+     */
     public static function getIdDbColumn(array $columnDefinitions): string| null {
         for ($i = 0; $i < count($columnDefinitions); $i++) {
             if ($columnDefinitions[$i]->type === ColumnDataType::Id) {
                 return $columnDefinitions[$i]->dbColumn ?? $columnDefinitions[$i]->rowKey;
+            }
+        }
+        return null;
+    }
+
+    public static function getColumnDef(array $columnDefinitions, string $rowKey): ColumnDefinition | null {
+        for ($i = 0; $i < count($columnDefinitions); $i++) {
+            if ($columnDefinitions[$i]->rowKey === $rowKey) {
+                return $columnDefinitions[$i];
             }
         }
         return null;

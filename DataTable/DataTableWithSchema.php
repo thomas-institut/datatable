@@ -31,6 +31,7 @@ use Iterator;
 use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
@@ -93,6 +94,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * @param array<string, mixed> $theRow
      * @return int
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function createRow(array $theRow): int;
 
@@ -193,7 +195,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *
      * @param array<string, mixed> $theRow
      * @return void
-     * @throws InvalidRowForUpdate
+     * @throws InvalidRow
      */
     public function updateRow(array $theRow): void;
 

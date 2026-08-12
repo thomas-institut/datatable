@@ -2,8 +2,8 @@
 
 namespace ThomasInstitut\DataTable\Schema;
 
-use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 
 readonly class GenericRowTranslator implements RowTranslator
 {
@@ -14,7 +14,18 @@ readonly class GenericRowTranslator implements RowTranslator
      */
     private array $defsByDbKey;
 
+    /**
+     * The column definitions with the row column names as keys.
+     * @var array<string, ColumnDefinition>
+     */
     private array $defsByRowKey;
+
+
+    /**
+     * The row keys that are required.
+     * @var array<string>
+     */
+    private array $requiredKeys;
 
 
     /**
@@ -23,7 +34,7 @@ readonly class GenericRowTranslator implements RowTranslator
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
-                                array                      $columnDefinitions)
+                                 array              $columnDefinitions)
     {
         $errors = ColumnDefArrayValidator::validate($columnDefinitions);
         if (!empty($errors)) {
@@ -31,17 +42,47 @@ readonly class GenericRowTranslator implements RowTranslator
         }
         $this->defsByDbKey = ColumnDefArray::getDefsByDbKey($columnDefinitions);
         $this->defsByRowKey = ColumnDefArray::getDefsByRowKey($columnDefinitions);
+        $this->requiredKeys = $this->getRequiredKeys($columnDefinitions);
     }
 
 
+    /**
+     * @throws InvalidRow
+     */
     public function inputRowToDb(array $inputRow): array
     {
+        $this->validateInputRow($inputRow);
         return $this->translateRow($inputRow, false);
     }
 
+    /**
+     * @throws InvalidRow
+     */
     public function dbRowToOutputRow(array $dbRow): array
     {
         return $this->translateRow($dbRow, true);
+    }
+
+    /**
+     * @param array $inputRow
+     * @throws InvalidRow
+     */
+    private function validateInputRow(array $inputRow): void
+    {
+        foreach ($this->requiredKeys as $requiredKey) {
+            if (!array_key_exists($requiredKey, $inputRow)) {
+                throw new InvalidRow("Required column '$requiredKey' is missing in the input row");
+            }
+        }
+        foreach($inputRow as $key => $value) {
+            if (!isset($this->defsByRowKey[$key])) {
+                throw new InvalidRow("Column '$key' is not defined in the schema");
+            }
+            $columnDef = $this->defsByRowKey[$key];
+            if (!ColumnValueValidator::validate($value, $columnDef)) {
+                throw new InvalidRow("Invalid value for column '$key': $value");
+            }
+        }
     }
 
 
@@ -49,6 +90,7 @@ readonly class GenericRowTranslator implements RowTranslator
      * @param array $theRow
      * @param bool $fromDatabase
      * @return array
+     * @throws InvalidRow
      */
     private function translateRow(array $theRow, bool $fromDatabase): array
     {
@@ -57,7 +99,7 @@ readonly class GenericRowTranslator implements RowTranslator
 
         foreach ($theRow as $key => $value) {
             if (!isset($colDefs[$key])) {
-                throw new RuntimeException("Column '$key' is not defined in the DataTable");
+                throw new InvalidRow("Column '$key' is not defined in the DataTable");
             }
             $type = $colDefs[$key]->type;
             if ($type === ColumnDataType::Id) {
@@ -70,9 +112,7 @@ readonly class GenericRowTranslator implements RowTranslator
                 $translatedValuesRow[$key] = $this->rowValueTranslator->rowValueToDbValue($value, $type);
             }
         }
-
         $translatedRow = [];
-
         foreach ($colDefs as $key => $columnDefinition) {
             if (!array_key_exists($key, $translatedValuesRow)) {
                 continue;
@@ -82,6 +122,23 @@ readonly class GenericRowTranslator implements RowTranslator
                 : $columnDefinition->dbColumn ?? $columnDefinition->rowKey;
             $translatedRow[$translatedKey] = $translatedValuesRow[$key];
         }
+
+
         return $translatedRow;
+    }
+
+    /**
+     * @param array<ColumnDefinition> $columnDefinitions
+     * @return array<string>
+     */
+    private function getRequiredKeys(array $columnDefinitions): array
+    {
+        $requiredKeys = [];
+        foreach ($columnDefinitions as $columnDefinition) {
+            if ($columnDefinition->required) {
+                $requiredKeys[] = $columnDefinition->rowKey;
+            }
+        }
+        return $requiredKeys;
     }
 }
