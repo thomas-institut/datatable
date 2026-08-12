@@ -186,9 +186,9 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 
 
     /**
-     * Searches the datatable according to the given $searchSpec
+     * Searches the datatable according to the given $searchSpecArray
      *
-     * $searchSpec is an array of conditions.
+     * $searchSpecArray is an array of searchSpecs
      *
      * If $searchType is SEARCH_AND, the row must satisfy:
      *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
@@ -198,7 +198,7 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
      *
      *
-     * A condition is an array of the form:
+     * A searchSpec is an array of the form:
      *
      *  $condition = [
      *      'column' => 'columnName',

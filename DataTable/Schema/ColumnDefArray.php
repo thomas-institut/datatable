@@ -18,6 +18,15 @@ class ColumnDefArray
         return null;
     }
 
+    public static function getIdDbColumn(array $columnDefinitions): string| null {
+        for ($i = 0; $i < count($columnDefinitions); $i++) {
+            if ($columnDefinitions[$i]->type === ColumnDataType::Id) {
+                return $columnDefinitions[$i]->dbColumn ?? $columnDefinitions[$i]->rowKey;
+            }
+        }
+        return null;
+    }
+
     /**
      * Returns the column definitions indexed by their db column name.
      *

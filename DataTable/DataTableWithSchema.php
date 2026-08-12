@@ -30,6 +30,7 @@ use ArrayAccess;
 use Iterator;
 use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
@@ -142,9 +143,9 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
 
 
     /**
-     * Searches the datatable according to the given $searchSpec
+     * Searches the datatable according to the given $searchSpecArray
      *
-     * $searchSpec is an array of conditions.
+     * $searchSpecArray is an array of searchSpecs.
      *
      * If $searchType is SEARCH_AND, the row must satisfy:
      *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
@@ -154,13 +155,10 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
      *
      *
-     * A condition is an array of the form:
-     *
-     *  $condition = [
-     *      'column' => 'columnName',
-     *      'condition' => one of (EQUAL_TO, NOT_EQUAL_TO, LESS_THAN, LESS_OR_EQUAL_TO, GREATER_THAN, GREATER_OR_EQUAL_TO)
-     *      'value' => someValue
-     * ]
+     * A searchSpec is a class with the following properties:
+     *      $searchSpec->column  // column to which the condition applies
+     *      $searchSpec->condition // a SearchCondition
+     *      $searchSpec->value // the value to which the condition applies
      *
      * Notice that each condition type has a negation:
      *      EQUAL_TO  <==> NOT_EQUAL_TO
@@ -170,7 +168,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * If $maxResults > 0, an iterator of max $maxResults will be returned;
      * if $maxResults <= 0, an iterator with all results will be returned
      *
-     * @param array<int, array<string, mixed>> $searchSpecArray
+     * @param array<SearchSpec> $searchSpecArray
      * @param SearchType $searchType
      * @param int $maxResults
      * @return ResultsIterator
@@ -281,6 +279,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *
      * @param string $columnName
      * @return int
+     * @throws InvalidArgumentException
      */
     public function getMaxValueInColumn(string $columnName): int;
 
