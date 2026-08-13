@@ -32,12 +32,12 @@ use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
-use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 
 /**
  * An interface to a table made out of associative array rows addressable by a unique integer and that is normally
@@ -175,6 +175,23 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * @throws InvalidRow
      */
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator;
+
+
+    /**
+     * Returns an array of SupportedSearchCondition objects, each of which
+     * contains the supported search conditions for a given column data type.
+     *
+     * If a type is not present in the array, it means that no search conditions are supported for that type.
+     *
+     * An empty array means that search is not supported.
+     *
+     * This array describes the search capabilities of the table. If a search is done using a non-supported
+     * condition, an InvalidSearchSpec exception will be thrown.
+     *
+     * @return array<SupportedSearchCondition>
+     */
+    public function getSupportedSearchConditions(): array;
+
 
     /**
      * Updates the table with the given row, which must contain an id

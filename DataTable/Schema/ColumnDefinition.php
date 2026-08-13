@@ -45,30 +45,45 @@ class ColumnDefinition
     public bool $required = false;
 
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function __construct(string $rowKey, ColumnDataType $type)
     {
         $this->type = $type;
         $this->rowKey = $rowKey;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function withDbColumn(string $dbColumn): ColumnDefinition
     {
         $this->dbColumn = $dbColumn;
         return $this;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function withRequired(bool $required): ColumnDefinition
     {
         $this->required = $required;
         return $this;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function withTypeLength(int $typeLength): ColumnDefinition
     {
         $this->typeLength = $typeLength;
         return $this;
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     public function withNullable(bool $nullable): ColumnDefinition
     {
         $this->nullable = $nullable;

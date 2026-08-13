@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\SearchCondition;
@@ -55,6 +56,11 @@ class SearchSpecTranslatorTest extends TestCase
         ];
     }
 
+    /**
+     * @throws InvalidSearchSpec
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     public function testSearchSpecIsTranslatedToDatabaseColumnAndValue(): void
     {
         $columnDefinitions = [
@@ -67,6 +73,7 @@ class SearchSpecTranslatorTest extends TestCase
             new SearchSpec('enabled', SearchCondition::Equals, true),
             $columnDefinitions,
             $rowTranslator,
+            SupportedSearchCondition::allConditionsSupported(),
         );
 
         $this->assertSame([
@@ -76,6 +83,11 @@ class SearchSpecTranslatorTest extends TestCase
         ], $translatedSpec);
     }
 
+    /**
+     * @throws InvalidSearchSpec
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     public function testSearchSpecArrayIsTranslatedInOrder(): void
     {
         $columnDefinitions = [
@@ -88,7 +100,7 @@ class SearchSpecTranslatorTest extends TestCase
         $translatedSpecs = SearchSpecTranslator::toDataTableSearchSpecArray([
             new SearchSpec('name', SearchCondition::Equals, 'Ada'),
             new SearchSpec('age', SearchCondition::GreaterThan, 30),
-        ], $columnDefinitions, $rowTranslator);
+        ], $columnDefinitions, $rowTranslator, SupportedSearchCondition::allConditionsSupported());
 
         $this->assertSame([
             [
@@ -104,6 +116,11 @@ class SearchSpecTranslatorTest extends TestCase
         ], $translatedSpecs);
     }
 
+    /**
+     * @throws InvalidSearchSpec
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     public function testNullableNullValueIsValidatedAndTranslated(): void
     {
         $columnDefinitions = [
@@ -118,6 +135,7 @@ class SearchSpecTranslatorTest extends TestCase
             new SearchSpec('deletedAt', SearchCondition::Equals, null),
             $columnDefinitions,
             $rowTranslator,
+            SupportedSearchCondition::allConditionsSupported(),
         );
 
         $this->assertSame([
@@ -127,6 +145,10 @@ class SearchSpecTranslatorTest extends TestCase
         ], $translatedSpec);
     }
 
+    /**
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     public function testUndefinedColumnThrowsInvalidSearchSpec(): void
     {
         $columnDefinitions = [new ColumnDefinition('id', ColumnDataType::Id)];
@@ -138,9 +160,14 @@ class SearchSpecTranslatorTest extends TestCase
             new SearchSpec('missing', SearchCondition::Equals, 'value'),
             $columnDefinitions,
             new GenericRowTranslator(new NoOpRowValueTranslator(), $columnDefinitions),
+            SupportedSearchCondition::allConditionsSupported(),
         );
     }
 
+    /**
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     #[DataProvider('invalidBooleanConditionProvider')]
     public function testOrderingConditionsAreRejectedForBooleanColumns(SearchCondition $condition): void
     {
@@ -150,12 +177,45 @@ class SearchSpecTranslatorTest extends TestCase
         ];
 
         $this->expectException(InvalidSearchSpec::class);
-        $this->expectExceptionMessage("Condition '$condition->value' is not valid for column 'enabled' of type 'boolean'.");
+        $this->expectExceptionMessage("Search condition '$condition->value' is not supported for column 'enabled' of type 'boolean'.");
+
+        $supportedSearchConditions = [
+            new SupportedSearchCondition(ColumnDataType::Boolean, [
+                SearchCondition::Equals,
+                SearchCondition::NotEquals,
+            ]),
+        ];
 
         SearchSpecTranslator::toDataTableSearchSpec(
             new SearchSpec('enabled', $condition, true),
             $columnDefinitions,
             new GenericRowTranslator(new NoOpRowValueTranslator(), $columnDefinitions),
+            $supportedSearchConditions,
+        );
+    }
+
+    /**
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
+    #[DataProvider('invalidBooleanConditionProvider')]
+    public function testNotDefinedConditionsAreRejected(SearchCondition $condition): void
+    {
+        $columnDefinitions = [
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('enabled', ColumnDataType::Boolean),
+        ];
+
+        $this->expectException(InvalidSearchSpec::class);
+        $this->expectExceptionMessage("Search condition '$condition->value' is not supported for column 'enabled' of type 'boolean'.");
+
+        $supportedSearchConditions = [];
+
+        SearchSpecTranslator::toDataTableSearchSpec(
+            new SearchSpec('enabled', $condition, true),
+            $columnDefinitions,
+            new GenericRowTranslator(new NoOpRowValueTranslator(), $columnDefinitions),
+            $supportedSearchConditions,
         );
     }
 
@@ -169,6 +229,10 @@ class SearchSpecTranslatorTest extends TestCase
         ];
     }
 
+    /**
+     * @throws InvalidRow
+     * @throws InvalidColumnDefinitionsArray
+     */
     #[DataProvider('invalidSearchValueProvider')]
     public function testInvalidSearchValueThrowsInvalidSearchSpec(
         ColumnDefinition $columnDefinition,
@@ -185,6 +249,7 @@ class SearchSpecTranslatorTest extends TestCase
             new SearchSpec($columnDefinition->rowKey, SearchCondition::Equals, $value),
             $columnDefinitions,
             new GenericRowTranslator(new NoOpRowValueTranslator(), $columnDefinitions),
+            SupportedSearchCondition::allConditionsSupported(),
         );
     }
 
@@ -202,6 +267,9 @@ class SearchSpecTranslatorTest extends TestCase
         ];
     }
 
+    /**
+     * @throws InvalidSearchSpec
+     */
     public function testInvalidRowFromRowTranslatorIsPropagated(): void
     {
         $columnDefinitions = [
@@ -221,6 +289,7 @@ class SearchSpecTranslatorTest extends TestCase
             new SearchSpec('name', SearchCondition::Equals, 'Ada'),
             $columnDefinitions,
             $rowTranslator,
+            SupportedSearchCondition::allConditionsSupported(),
         );
     }
 }

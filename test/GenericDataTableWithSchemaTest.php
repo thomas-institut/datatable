@@ -25,6 +25,7 @@ class GenericDataTableWithSchemaTest extends TestCase
      */
     public function getTestTable(array $columnDefs): GenericDataTableWithSchema
     {
+
         return new GenericDataTableWithSchema(new InMemoryDataTable(), $columnDefs, new StringValuesDbRowValueTranslator());
     }
 

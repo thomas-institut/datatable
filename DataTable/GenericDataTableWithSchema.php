@@ -22,12 +22,16 @@ use ThomasInstitut\DataTable\Schema\GenericRowTranslator;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
 use ThomasInstitut\DataTable\Schema\RowValueTranslator;
 use ThomasInstitut\DataTable\Schema\SearchSpecTranslator;
+use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 use Traversable;
 
 class GenericDataTableWithSchema implements DataTableWithSchema
 {
     private string $idKey;
     private string $idDbColumn;
+
+    /** @var array<SupportedSearchCondition> */
+    private readonly array $supportedSearchConditions;
 
     private readonly GenericRowTranslator $rowTranslator;
 
@@ -37,11 +41,13 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      * @param DataTable $dataTable
      * @param array<ColumnDefinition $columnDefinitions
      * @param RowValueTranslator $rowValueTranslator
+     * @param array<SupportedSearchCondition>|null $supportedSearchConditions
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private readonly DataTable          $dataTable,
                                 private readonly array              $columnDefinitions,
-                                private readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator()
+                                private readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(),
+                                ?array $supportedSearchConditions = null
     )
     {
         $errors = ColumnDefArrayValidator::validate($this->columnDefinitions);
@@ -54,6 +60,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions);
         $this->logger = new NullLogger();
         $this->dataTable->setLogger($this->logger);
+        $this->supportedSearchConditions = $supportedSearchConditions ?? SupportedSearchCondition::allConditionsSupported();
     }
 
     /**
@@ -185,7 +192,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator
     {
         $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
-        $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator);
+        $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator, $this->getSupportedSearchConditions());
         return new TranslatedResultsIterator(
             $this->dataTable->search($dtSearchSpecArray, $dtSearchType, $maxResults),
             $this->rowTranslator
@@ -323,5 +330,15 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     {
         $this->logger = $logger;
         $this->dataTable->setLogger($logger);
+    }
+
+
+    /**
+     * @inheritDoc
+     */
+    public function getSupportedSearchConditions(): array
+    {
+        return $this->supportedSearchConditions;
+
     }
 }
