@@ -70,7 +70,17 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions);
         $this->logger = new NullLogger();
         $this->dataTable->setLogger($this->logger);
-        $this->supportedSearchConditions = $supportedSearchConditions ?? SupportedSearchCondition::reasonableDefaults();
+        $this->supportedSearchConditions = $this->getCleanSearchConditions($supportedSearchConditions ?? SupportedSearchCondition::reasonableDefaults());
+    }
+
+    /**
+     * Removes all search conditions that have types not supported in the data table
+     * @param array<SupportedSearchCondition> $supportedSearchConditions
+     * @return array<SupportedSearchCondition>
+     */
+    private function getCleanSearchConditions(array $supportedSearchConditions) : array
+    {
+        return array_filter($supportedSearchConditions, fn(SupportedSearchCondition $condition) => in_array($condition->type, $this->getSupportedDataTypes()));
     }
 
     /**

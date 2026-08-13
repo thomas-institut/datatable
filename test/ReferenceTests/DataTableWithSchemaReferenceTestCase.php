@@ -1,68 +1,56 @@
 <?php
 
-namespace ThomasInstitut\DataTable;
+namespace ThomasInstitut\DataTable\ReferenceTests;
 
-use PHPUnit\Framework\Attributes\CoversClass;
+use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Random\RandomException;
+use ThomasInstitut\DataTable\DataTableWithSchema;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
-use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
-use ThomasInstitut\DataTable\Schema\DataTableSchema;
-use ThomasInstitut\DataTable\Schema\StringValuesDbRowValueTranslator;
-use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
+use ThomasInstitut\DataTable\SearchCondition;
+use ThomasInstitut\DataTable\SearchSpec;
 
-#[CoversClass(GenericDataTableWithSchema::class)]
-class GenericDataTableWithSchemaTest extends TestCase
+/**
+ * Reference tests for DataTableWithSchema implementations.
+ *
+ * Implementations provide a schema-backed table through getTestTable(). The
+ * test cases use DataTableWithSchema::MandatorySupportedDataTypes and exercise
+ * optional data types when the implementation supports them.
+ */
+abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 {
-
-
     /**
-     * @throws InvalidColumnDefinitionsArray
+     * @param array<ColumnDefinition> $columnDefinitions
      */
-    public function getTestTable(array $columnDefs): GenericDataTableWithSchema
-    {
-        $supportedSearchConditions = [
-            new SupportedSearchCondition(ColumnDataType::Text, SearchCondition::cases()),
-            new SupportedSearchCondition(ColumnDataType::VarChar, SearchCondition::cases()),
-//            new SupportedSearchCondition(ColumnDataType::Integer, SearchCondition::cases()),
-            new SupportedSearchCondition(ColumnDataType::Integer, [SearchCondition::Equals, SearchCondition::NotEquals]),
-            new SupportedSearchCondition(ColumnDataType::Boolean, [SearchCondition::Equals, SearchCondition::NotEquals]),
-        ];
-
-        $supportedTypes = ColumnDataType::cases();
-
-        return new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema($columnDefs), new StringValuesDbRowValueTranslator(), $supportedSearchConditions, $supportedTypes);
-    }
+    abstract public function getTestTable(array $columnDefinitions): DataTableWithSchema;
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws RowAlreadyExists|InvalidRow|RandomException
      */
     #[Test]
     public function testBasic(): void
     {
-        $columDefs = [
+        $columnDefinitions = [
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(255),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-            new ColumnDefinition('metadata', ColumnDataType::Serializable),
-            (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true),
         ];
-        $table = $this->getTestTable($columDefs);
+        $columnDefinitions = array_merge($columnDefinitions, $this->getOptionalColumnDefinitions());
+        $columnDefinitions[] = (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad');
+        $columnDefinitions[] = (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true);
+        $table = $this->getTestTable($columnDefinitions);
 
         $numRows = 100;
-        $rowsToTest = $this->makeFakeValidRows($columDefs, $numRows);
+        $rowsToTest = $this->makeFakeValidRows($columnDefinitions, $numRows);
 
-        $rowIdMap = array_map(function ($row) use ($table) {
+        $rowIdMap = array_map(function (array $row) use ($table): int {
             return $table->createRow($row);
         }, $rowsToTest);
 
@@ -84,11 +72,9 @@ class GenericDataTableWithSchemaTest extends TestCase
                 $this->assertEquals($value, $fetchedRow[$columnName]);
             }
         }
-
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
      * @throws RowAlreadyExists
      */
@@ -117,35 +103,66 @@ class GenericDataTableWithSchemaTest extends TestCase
         $this->assertSame(1, $table->findRows(['age' => 30], 1)->count());
         $this->assertSame(0, $table->findRows(['name' => 'Missing'])->count());
         $this->assertSame($janeId, $table->findRows(['name' => 'Jane'])->getFirst()['id']);
+
+        $booleanTable = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('active', ColumnDataType::Boolean),
+        ]);
+        $activeId = $booleanTable->createRow(['active' => true]);
+        $inactiveId = $booleanTable->createRow(['active' => false]);
+
+        $this->assertSame(1, $booleanTable->findRows(['active' => true])->count());
+        $this->assertSame(['id' => $activeId, 'active' => true], $booleanTable->findRows(['active' => true])->getFirst());
+        $this->assertSame($inactiveId, $booleanTable->findRows(['active' => false])->getFirst()['id']);
+
+        $supportedDataTypes = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+        ])->getSupportedDataTypes();
+        if (in_array(ColumnDataType::VarChar, $supportedDataTypes, true)) {
+            $varCharTable = $this->getTestTable([
+                new ColumnDefinition('id', ColumnDataType::Id),
+                (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(64),
+            ]);
+            $descriptionId = $varCharTable->createRow(['description' => 'movie']);
+            $varCharTable->createRow(['description' => 'book']);
+
+            $rows = $varCharTable->findRows(['description' => 'movie']);
+
+            $this->assertSame(1, $rows->count());
+            $this->assertSame([
+                'id' => $descriptionId,
+                'description' => 'movie',
+            ], $rows->getFirst());
+            $this->assertSame(0, $varCharTable->findRows(['description' => 'missing'])->count());
+        }
     }
 
     /**
-     * @param ColumnDataType $columnType
-     * @param SearchCondition $condition
-     * @param mixed $searchValue
-     * @param array $values
-     * @param int $expectedCount
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
      * @throws RowAlreadyExists
      */
     #[Test]
     #[DataProvider('searchProvider')]
     public function testSearch(
-        ColumnDataType  $columnType,
+        ColumnDataType $columnType,
         SearchCondition $condition,
-        mixed           $searchValue,
-        array           $values,
-        int             $expectedCount,
-    ): void
-    {
+        mixed $searchValue,
+        array $values,
+        int $expectedCount,
+    ): void {
+        $supportedDataTypes = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+        ])->getSupportedDataTypes();
+        if (!in_array($columnType, $supportedDataTypes, true)) {
+            $this->markTestSkipped("Test table does not support data type '$columnType->value'.");
+        }
+
         $columnDefinition = new ColumnDefinition('value', $columnType);
         if ($columnType === ColumnDataType::VarChar) {
             $columnDefinition->withTypeLength(64);
         }
-
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
             $columnDefinition,
@@ -167,7 +184,6 @@ class GenericDataTableWithSchemaTest extends TestCase
         foreach ($values as $value) {
             $table->createRow(['value' => $value]);
         }
-
 
         $results = $table->search([
             new SearchSpec('value', $condition, $searchValue),
@@ -200,7 +216,10 @@ class GenericDataTableWithSchemaTest extends TestCase
             }
         }
 
-        foreach ([SearchCondition::Equals, SearchCondition::NotEquals] as $condition) {
+        foreach ([
+            SearchCondition::Equals,
+            SearchCondition::NotEquals,
+        ] as $condition) {
             $testCases["boolean-$condition->value"] = [ColumnDataType::Boolean, $condition, true, [true, false], 1];
         }
 
@@ -208,7 +227,6 @@ class GenericDataTableWithSchemaTest extends TestCase
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
      * @throws RowAlreadyExists
      * @throws InvalidArgumentException
@@ -216,12 +234,12 @@ class GenericDataTableWithSchemaTest extends TestCase
     #[Test]
     public function testGetMaxValueInColumn(): void
     {
-        $columnDefs = [
+        $columnDefinitions = [
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
         ];
-        $table = $this->getTestTable($columnDefs);
+        $table = $this->getTestTable($columnDefinitions);
 
         $this->assertSame(0, $table->getMaxValueInColumn('age'));
 
@@ -233,9 +251,7 @@ class GenericDataTableWithSchemaTest extends TestCase
         $this->assertSame(3, $table->getMaxValueInColumn('id'));
     }
 
-    /**
-     * @throws InvalidColumnDefinitionsArray
-     */
+
     #[Test]
     public function testGetMaxValueInColumnRejectsUnknownColumn(): void
     {
@@ -248,9 +264,6 @@ class GenericDataTableWithSchemaTest extends TestCase
         $table->getMaxValueInColumn('missing');
     }
 
-    /**
-     * @throws InvalidColumnDefinitionsArray
-     */
     #[Test]
     public function testGetMaxValueInColumnRejectsNonNumericColumn(): void
     {
@@ -265,18 +278,21 @@ class GenericDataTableWithSchemaTest extends TestCase
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
-     * @throws RowAlreadyExists
+     * @throws RowAlreadyExists|RandomException
      */
     #[Test]
     public function testDeleteRow(): void
     {
-        $table = $this->getTestTable([
+        $optionalColumnDefinitions = $this->getOptionalColumnDefinitions();
+        $table = $this->getTestTable(array_merge([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-        ]);
-        $rowId = $table->createRow(['name' => 'John']);
+        ], $optionalColumnDefinitions));
+        $rowId = $table->createRow(array_merge(
+            ['name' => 'John'],
+            $this->getSampleValues($optionalColumnDefinitions),
+        ));
 
         $this->assertSame(1, $table->deleteRow($rowId));
         $this->assertFalse($table->rowExists($rowId));
@@ -285,31 +301,30 @@ class GenericDataTableWithSchemaTest extends TestCase
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
-     * @throws RowAlreadyExists
+     * @throws RowAlreadyExists|RandomException
      */
     #[Test]
     public function testUpdateRow(): void
     {
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema([
+        $optionalColumnDefinitions = $this->getOptionalColumnDefinitions();
+        $table = $this->getTestTable(array_merge([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-        ]));
+        ], $optionalColumnDefinitions));
         $rowId = $table->createRow(['name' => 'John', 'age' => 30]);
 
-        $table->updateRow(['id' => $rowId, 'name' => 'Jane', 'age' => 35]);
+        $updatedRow = array_merge(
+            ['id' => $rowId, 'name' => 'Jane', 'age' => 35],
+            $this->getSampleValues($optionalColumnDefinitions),
+        );
+        $table->updateRow($updatedRow);
 
-        $this->assertSame([
-            'id' => $rowId,
-            'name' => 'Jane',
-            'age' => 35,
-        ], $table->getRow($rowId));
+        $this->assertSame($updatedRow, $table->getRow($rowId));
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
      */
     #[Test]
@@ -326,7 +341,6 @@ class GenericDataTableWithSchemaTest extends TestCase
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws InvalidRow
      */
     #[Test]
@@ -336,22 +350,22 @@ class GenericDataTableWithSchemaTest extends TestCase
             new ColumnDefinition('id', ColumnDataType::Id),
             new ColumnDefinition('name', ColumnDataType::Text),
         ]);
+
         $this->expectException(InvalidRow::class);
         $this->expectExceptionMessage("Id not set in given row (DataTable updateRow)");
         $table->updateRow(['name' => 'Jane']);
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testArrayAccess(): void
     {
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema([
+        $table = $this->getTestTable([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-        ]));
+        ]);
 
         $table[] = ['name' => 'John', 'age' => 30];
         $rowId = 1;
@@ -381,25 +395,22 @@ class GenericDataTableWithSchemaTest extends TestCase
             'name' => 'Peter',
             'age' => 45,
         ], $table[25]);
-
     }
 
     /**
-     * @throws InvalidColumnDefinitionsArray
      * @throws RowAlreadyExists
      */
     #[Test]
     #[DataProvider('badRowProvider')]
     public function testBadRows(array $badRow): void
     {
-        $columDefs = [
+        $columnDefinitions = [
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('someText', ColumnDataType::VarChar))->withTypeLength(10),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withNullable(true),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withDbColumn('activo')->withRequired(true),
         ];
-        $table = $this->getTestTable($columDefs);
+        $table = $this->getTestTable($columnDefinitions);
         $this->expectException(InvalidRow::class);
         $table->createRow($badRow);
     }
@@ -411,15 +422,13 @@ class GenericDataTableWithSchemaTest extends TestCase
             'bad Name' => [['name' => 123, 'active' => true]],
             'bad Age' => [['name' => 'John', 'age' => '30', 'active' => true]],
             'bad Boolean' => [['name' => 'John', 'active' => 'true']],
-            'bad text' => [['name' => 'John', 'someText' => true, 'active' => true]],
-            'long text' => [['name' => 'John', 'someText' => 'this is a long text that is more than 10 characters long', 'active' => true]],
         ];
     }
 
     /**
      * @param array<ColumnDefinition> $columnDefinitions
      * @param int $numRows
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws RandomException
      */
     private function makeFakeValidRows(array $columnDefinitions, int $numRows): array
@@ -427,34 +436,32 @@ class GenericDataTableWithSchemaTest extends TestCase
         $rows = [];
         for ($i = 0; $i < $numRows; $i++) {
             $row = [];
-            foreach ($columnDefinitions as $colDef) {
-                if (!$colDef->required) {
-                    if ($this->getRandomBool()) {
-                        continue;
-                    }
-                }
-                if ($colDef->nullable && $this->getRandomBool()) {
-                    $row[$colDef->rowKey] = null;
+            foreach ($columnDefinitions as $columnDefinition) {
+                if (!$columnDefinition->required && $this->getRandomBool()) {
                     continue;
                 }
-                switch ($colDef->type) {
+                if ($columnDefinition->nullable && $this->getRandomBool()) {
+                    $row[$columnDefinition->rowKey] = null;
+                    continue;
+                }
+                switch ($columnDefinition->type) {
                     case ColumnDataType::Text:
-                        $row[$colDef->rowKey] = $this->getRandomString(1024);
+                        $row[$columnDefinition->rowKey] = $this->getRandomString(1024);
                         break;
                     case ColumnDataType::Integer:
-                        $row[$colDef->rowKey] = random_int(0, 1000);
+                        $row[$columnDefinition->rowKey] = random_int(0, 1000);
                         break;
                     case ColumnDataType::Boolean:
-                        $row[$colDef->rowKey] = $this->getRandomBool();
+                        $row[$columnDefinition->rowKey] = $this->getRandomBool();
                         break;
-
                     case ColumnDataType::Serializable:
-                        $someObject = ['num' => random_int(0, 1000), 'str' => $this->getRandomString(1024)];
-                        $row[$colDef->rowKey] = $someObject;
+                        $row[$columnDefinition->rowKey] = [
+                            'num' => random_int(0, 1000),
+                            'str' => $this->getRandomString(1024),
+                        ];
                         break;
-
                     case ColumnDataType::VarChar:
-                        $row[$colDef->rowKey] = $this->getRandomString($colDef->typeLength);
+                        $row[$columnDefinition->rowKey] = $this->getRandomString($columnDefinition->typeLength);
                         break;
                     case ColumnDataType::Id:
                         break;
@@ -487,5 +494,44 @@ class GenericDataTableWithSchemaTest extends TestCase
         return random_int(0, 1) === 1;
     }
 
+    /**
+     * @return array<ColumnDefinition>
+     * @throws RandomException
+     */
+    private function getOptionalColumnDefinitions(): array
+    {
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+        ]);
+        $supportedDataTypes = $table->getSupportedDataTypes();
+        $columnDefinitions = [];
 
+        if (in_array(ColumnDataType::VarChar, $supportedDataTypes, true)) {
+            $columnDefinitions[] = (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(random_int(8, 512));
+        }
+        if (in_array(ColumnDataType::Serializable, $supportedDataTypes, true)) {
+            $columnDefinitions[] = new ColumnDefinition('metadata', ColumnDataType::Serializable);
+        }
+
+        return $columnDefinitions;
+    }
+
+    /**
+     * @param array<ColumnDefinition> $columnDefinitions
+     * @return array<string, mixed>
+     * @throws RandomException
+     */
+    private function getSampleValues(array $columnDefinitions): array
+    {
+        $values = [];
+        foreach ($columnDefinitions as $columnDefinition) {
+            $values[$columnDefinition->rowKey] = match ($columnDefinition->type) {
+                ColumnDataType::Serializable => ['key' => 'value'],
+                ColumnDataType::VarChar => $this->getRandomString($columnDefinition->typeLength),
+                default => throw new LogicException("Unexpected optional column type '{$columnDefinition->type->value}'"),
+            };
+        }
+
+        return $values;
+    }
 }
