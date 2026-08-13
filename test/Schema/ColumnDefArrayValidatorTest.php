@@ -18,7 +18,7 @@ class ColumnDefArrayValidatorTest extends TestCase
                 ->withTypeLength(100),
         ];
 
-        $this->assertSame([], ColumnDefArrayValidator::validate($columnDefinitions));
+        $this->assertSame([], ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()));
     }
 
     public function testMissingIdColumnIsReported(): void
@@ -29,7 +29,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertSame(
             ['No id column found in column definitions'],
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -45,7 +45,7 @@ class ColumnDefArrayValidatorTest extends TestCase
                 'Element at key invalid is not a ColumnDef object.',
                 'No id column found in column definitions',
             ],
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -59,7 +59,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertContains(
             "Column at index column has invalid rowKey: '$rowKey'",
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -83,7 +83,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertSame(
             ["Column at index name has invalid dbColumn: 'full name'"],
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -97,7 +97,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertContains(
             "Duplicate rowKey: 'name'.",
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -113,7 +113,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertContains(
             "Duplicate database column name: 'shared_name'.",
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -128,7 +128,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertContains(
             "Duplicate database column name: 'first'.",
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -143,7 +143,7 @@ class ColumnDefArrayValidatorTest extends TestCase
 
         $this->assertContains(
             "Column 'name' is Varchar but has invalid typeLength: $typeLength.",
-            ColumnDefArrayValidator::validate($columnDefinitions),
+            ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
 
@@ -163,6 +163,6 @@ class ColumnDefArrayValidatorTest extends TestCase
                 ->withTypeLength(1),
         ];
 
-        $this->assertSame([], ColumnDefArrayValidator::validate($columnDefinitions));
+        $this->assertSame([], ColumnDefArrayValidator::validate($columnDefinitions, ColumnDataType::cases()));
     }
 }

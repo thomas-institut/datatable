@@ -35,9 +35,14 @@ readonly class GenericRowTranslator implements RowTranslator
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
-                                array                      $columnDefinitions)
+                                array                      $columnDefinitions,
+                                ?array                      $supportedDataTypes = null
+    )
     {
-        $errors = ColumnDefArrayValidator::validate($columnDefinitions);
+        if ($supportedDataTypes === null) {
+            $supportedDataTypes = ColumnDataType::cases();
+        }
+        $errors = ColumnDefArrayValidator::validate($columnDefinitions, $supportedDataTypes);
         if (!empty($errors)) {
             throw new InvalidColumnDefinitionsArray();
         }

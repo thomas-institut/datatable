@@ -37,6 +37,7 @@ use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 
 /**
@@ -62,6 +63,21 @@ use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
  */
 interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 {
+    const array MandatorySupportedDataTypes = [
+        ColumnDataType::Id,
+        ColumnDataType::Text,
+        ColumnDataType::Integer,
+        ColumnDataType::Boolean,
+    ];
+
+    /**
+     * Returns a list of the data types supported by this DataTable.
+     *
+     * All implementations must support at least the data types Id, Text, Integer and Boolean.
+     *
+     * @return array<ColumnDataType>
+     */
+    public function getSupportedDataTypes(): array;
     /**
      * Assigns an IdGenerator to the DataTable
      *

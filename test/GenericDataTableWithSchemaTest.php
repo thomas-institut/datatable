@@ -15,6 +15,7 @@ use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
+use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\StringValuesDbRowValueTranslator;
 use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 
@@ -36,7 +37,9 @@ class GenericDataTableWithSchemaTest extends TestCase
             new SupportedSearchCondition(ColumnDataType::Boolean, [SearchCondition::Equals, SearchCondition::NotEquals]),
         ];
 
-        return new GenericDataTableWithSchema(new InMemoryDataTable(), $columnDefs, new StringValuesDbRowValueTranslator(), $supportedSearchConditions);
+        $supportedTypes = ColumnDataType::cases();
+
+        return new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema($columnDefs), new StringValuesDbRowValueTranslator(), $supportedSearchConditions, $supportedTypes);
     }
 
     /**
@@ -289,11 +292,11 @@ class GenericDataTableWithSchemaTest extends TestCase
     #[Test]
     public function testUpdateRow(): void
     {
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), [
+        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-        ]);
+        ]));
         $rowId = $table->createRow(['name' => 'John', 'age' => 30]);
 
         $table->updateRow(['id' => $rowId, 'name' => 'Jane', 'age' => 35]);
@@ -344,11 +347,11 @@ class GenericDataTableWithSchemaTest extends TestCase
     #[Test]
     public function testArrayAccess(): void
     {
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), [
+        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), new DataTableSchema([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-        ]);
+        ]));
 
         $table[] = ['name' => 'John', 'age' => 30];
         $rowId = 1;

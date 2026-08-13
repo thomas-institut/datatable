@@ -10,9 +10,10 @@ class ColumnDefArrayValidator
      * Returns an array of errors if the column definition array is invalid.
      *
      * @param array<string,ColumnDefinition> $columnDefArray
+     * @param array<ColumnDataType> $supportedDataTypes
      * @return string[]
      */
-    public static function validate(array $columnDefArray): array
+    public static function validate(array $columnDefArray, array $supportedDataTypes): array
     {
         $errors = [];
         $rowKeys = [];
@@ -23,6 +24,10 @@ class ColumnDefArrayValidator
             if (!$columnDef instanceof ColumnDefinition) {
                 $errors[] = "Element at key $key is not a ColumnDef object.";
                 continue;
+            }
+
+            if (!in_array($columnDef->type, $supportedDataTypes)) {
+                $errors[] = "Column at index $key has unsupported data type: '{$columnDef->type->value}'";
             }
 
             if ($columnDef->type === ColumnDataType::Id) {

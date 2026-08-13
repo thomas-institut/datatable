@@ -18,6 +18,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefArray;
 use ThomasInstitut\DataTable\Schema\ColumnDefArrayValidator;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
+use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\GenericRowTranslator;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
 use ThomasInstitut\DataTable\Schema\RowValueTranslator;
@@ -33,24 +34,33 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     /** @var array<SupportedSearchCondition> */
     private readonly array $supportedSearchConditions;
 
+    /** @var array<ColumnDataType> */
+    private readonly array $supportedDataTypes;
+
+    private readonly array $columnDefinitions;
+
     private readonly GenericRowTranslator $rowTranslator;
 
     protected LoggerInterface $logger;
 
     /**
      * @param DataTable $dataTable
-     * @param array<ColumnDefinition $columnDefinitions
+     * @param DataTableSchema $dataTableSchema
      * @param RowValueTranslator $rowValueTranslator
      * @param array<SupportedSearchCondition>|null $supportedSearchConditions
+     * @param array<ColumnDataType>|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private readonly DataTable          $dataTable,
-                                private readonly array              $columnDefinitions,
+                                DataTableSchema $dataTableSchema,
                                 private readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(),
-                                ?array $supportedSearchConditions = null
+                                ?array $supportedSearchConditions = null,
+                                ?array $supportedDataTypes = null
     )
     {
-        $errors = ColumnDefArrayValidator::validate($this->columnDefinitions);
+        $this->columnDefinitions = $dataTableSchema->columnDefinitions;
+        $this->supportedDataTypes = $this->getCompliantSupportedDataTypes($supportedDataTypes ?? DataTableWithSchema::MandatorySupportedDataTypes);
+        $errors = ColumnDefArrayValidator::validate($this->columnDefinitions, $this->supportedDataTypes);
         if (count($errors) > 0) {
             throw new InvalidColumnDefinitionsArray('Invalid column definitions: ' . implode(', ', $errors));
         }
@@ -60,7 +70,28 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions);
         $this->logger = new NullLogger();
         $this->dataTable->setLogger($this->logger);
-        $this->supportedSearchConditions = $supportedSearchConditions ?? SupportedSearchCondition::allConditionsSupported();
+        $this->supportedSearchConditions = $supportedSearchConditions ?? SupportedSearchCondition::reasonableDefaults();
+    }
+
+    /**
+     * Returns an array of supported data types that includes all the mandatory data types.
+     *
+     * @param array<ColumnDataType> $supportedDataTypes
+     * @return array<ColumnDataType>
+     */
+    private function getCompliantSupportedDataTypes(array $supportedDataTypes) : array
+    {
+        foreach(DataTableWithSchema::MandatorySupportedDataTypes as $dataType) {
+            if (!in_array($dataType, $supportedDataTypes)) {
+                $supportedDataTypes[] = $dataType;
+            }
+        }
+        return $supportedDataTypes;
+    }
+
+    public function getSupportedDataTypes() : array
+    {
+        return $this->supportedDataTypes;
     }
 
     public function getInnerDataTable() : DataTable
