@@ -10,10 +10,13 @@ use Random\RandomException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\StringValuesDbRowValueTranslator;
+use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 
 #[CoversClass(GenericDataTableWithSchema::class)]
 class GenericDataTableWithSchemaTest extends TestCase
@@ -25,8 +28,15 @@ class GenericDataTableWithSchemaTest extends TestCase
      */
     public function getTestTable(array $columnDefs): GenericDataTableWithSchema
     {
+        $supportedSearchConditions = [
+            new SupportedSearchCondition(ColumnDataType::Text, SearchCondition::cases()),
+            new SupportedSearchCondition(ColumnDataType::VarChar, SearchCondition::cases()),
+//            new SupportedSearchCondition(ColumnDataType::Integer, SearchCondition::cases()),
+            new SupportedSearchCondition(ColumnDataType::Integer, [SearchCondition::Equals, SearchCondition::NotEquals]),
+            new SupportedSearchCondition(ColumnDataType::Boolean, [SearchCondition::Equals, SearchCondition::NotEquals]),
+        ];
 
-        return new GenericDataTableWithSchema(new InMemoryDataTable(), $columnDefs, new StringValuesDbRowValueTranslator());
+        return new GenericDataTableWithSchema(new InMemoryDataTable(), $columnDefs, new StringValuesDbRowValueTranslator(), $supportedSearchConditions);
     }
 
     /**
@@ -41,7 +51,7 @@ class GenericDataTableWithSchemaTest extends TestCase
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(255),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
-            new ColumnDefinition('metadata', ColumnDataType::Any),
+            new ColumnDefinition('metadata', ColumnDataType::Serializable),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true),
         ];
         $table = $this->getTestTable($columDefs);
@@ -104,6 +114,94 @@ class GenericDataTableWithSchemaTest extends TestCase
         $this->assertSame(1, $table->findRows(['age' => 30], 1)->count());
         $this->assertSame(0, $table->findRows(['name' => 'Missing'])->count());
         $this->assertSame($janeId, $table->findRows(['name' => 'Jane'])->getFirst()['id']);
+    }
+
+    /**
+     * @param ColumnDataType $columnType
+     * @param SearchCondition $condition
+     * @param mixed $searchValue
+     * @param array $values
+     * @param int $expectedCount
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    #[DataProvider('searchProvider')]
+    public function testSearch(
+        ColumnDataType  $columnType,
+        SearchCondition $condition,
+        mixed           $searchValue,
+        array           $values,
+        int             $expectedCount,
+    ): void
+    {
+        $columnDefinition = new ColumnDefinition('value', $columnType);
+        if ($columnType === ColumnDataType::VarChar) {
+            $columnDefinition->withTypeLength(64);
+        }
+
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+            $columnDefinition,
+        ]);
+
+        $isSupported = false;
+        foreach ($table->getSupportedSearchConditions() as $supportedSearchCondition) {
+            if ($supportedSearchCondition->type === $columnType
+                && in_array($condition, $supportedSearchCondition->conditions, true)
+            ) {
+                $isSupported = true;
+                break;
+            }
+        }
+        if (!$isSupported) {
+            $this->markTestSkipped("Test table does not support search condition '$condition->value' for type '$columnType->value'.");
+        }
+
+        foreach ($values as $value) {
+            $table->createRow(['value' => $value]);
+        }
+
+
+        $results = $table->search([
+            new SearchSpec('value', $condition, $searchValue),
+        ]);
+
+        $this->assertSame($expectedCount, $results->count());
+    }
+
+    public static function searchProvider(): array
+    {
+        $testCases = [];
+        $orderedTypes = [
+            ColumnDataType::Text,
+            ColumnDataType::VarChar,
+            ColumnDataType::Integer,
+        ];
+
+        foreach ($orderedTypes as $columnType) {
+            $values = $columnType === ColumnDataType::Integer ? [-10, -1, 10] : ['art', 'movie', 'zeal'];
+            foreach (SearchCondition::cases() as $condition) {
+                $expectedCount = match ($condition) {
+                    SearchCondition::Equals,
+                    SearchCondition::LessThan,
+                    SearchCondition::GreaterThan => 1,
+                    SearchCondition::NotEquals,
+                    SearchCondition::LessThanOrEquals,
+                    SearchCondition::GreaterThanOrEquals => 2,
+                };
+                $testCases["$columnType->value-$condition->value"] = [$columnType, $condition, $values[1], $values, $expectedCount];
+            }
+        }
+
+        foreach ([SearchCondition::Equals, SearchCondition::NotEquals] as $condition) {
+            $testCases["boolean-$condition->value"] = [ColumnDataType::Boolean, $condition, true, [true, false], 1];
+        }
+
+        return $testCases;
     }
 
     /**
@@ -347,7 +445,7 @@ class GenericDataTableWithSchemaTest extends TestCase
                         $row[$colDef->rowKey] = $this->getRandomBool();
                         break;
 
-                    case ColumnDataType::Any:
+                    case ColumnDataType::Serializable:
                         $someObject = ['num' => random_int(0, 1000), 'str' => $this->getRandomString(1024)];
                         $row[$colDef->rowKey] = $someObject;
                         break;

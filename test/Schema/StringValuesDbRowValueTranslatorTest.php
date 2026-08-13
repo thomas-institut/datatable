@@ -94,7 +94,7 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         $this->assertNull(
             $translator->dbValueToRowValue(
                 $translator->rowValueToDbValue(null, $type),
-                ColumnDataType::Any,
+                ColumnDataType::Serializable,
             ),
         );
     }
@@ -102,7 +102,7 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
     public static function typesProvider(): array
     {
         return [
-            [ColumnDataType::Any],
+            [ColumnDataType::Serializable],
             [ColumnDataType::Text],
             [ColumnDataType::VarChar],
             [ColumnDataType::Boolean],
@@ -149,7 +149,7 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
 
         $this->assertSame(
             serialize($value),
-            $this->translator->rowValueToDbValue($value, ColumnDataType::Any),
+            $this->translator->rowValueToDbValue($value, ColumnDataType::Serializable),
         );
     }
 
@@ -211,7 +211,7 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
 
         $this->assertSame(
             $value,
-            $this->translator->dbValueToRowValue(serialize($value), ColumnDataType::Any),
+            $this->translator->dbValueToRowValue(serialize($value), ColumnDataType::Serializable),
         );
     }
 

@@ -28,7 +28,7 @@ abstract class RowValueTranslatorReferenceTestCase extends TestCase
     public static function allColumnDataTypeValueProvider(): array
     {
         return [
-            'any' => [ColumnDataType::Any, ['name' => 'Ada']],
+            'any' => [ColumnDataType::Serializable, ['name' => 'Ada']],
             'varchar' => [ColumnDataType::VarChar, 'name'],
             'text' => [ColumnDataType::Text, 'description'],
             'integer' => [ColumnDataType::Integer, -12],

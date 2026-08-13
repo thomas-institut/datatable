@@ -35,7 +35,7 @@ class ColumnValueValidatorTest extends TestCase
     #[DataProvider('anyValueProvider')]
     public function testAnyColumnAcceptsAnyNonNullValue(mixed $value): void
     {
-        $columnDefinition = new ColumnDefinition('value', ColumnDataType::Any);
+        $columnDefinition = new ColumnDefinition('value', ColumnDataType::Serializable);
 
         $this->assertTrue(ColumnValueValidator::validate($value, $columnDefinition));
     }

@@ -5,9 +5,13 @@ namespace ThomasInstitut\DataTable\Schema;
 enum ColumnDataType : string
 {
     /**
-     * Any type of data. No type check is performed.
+     * Any type that can be serialized and deserialized.
+     *
+     * Normally, the database will store the data as a serialized string.
+     *
+     * The database schema does not impose any restrictions on the type of data that can be stored in this column.
      */
-    case Any = 'any';
+    case Serializable = 'serializable';
 
     /**
      * A string of a maximum length. The column definition specifies the maximum length.

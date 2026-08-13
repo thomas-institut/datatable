@@ -19,7 +19,7 @@ class ColumnValueValidator
         }
 
         return match ($columnDefinition->type) {
-            ColumnDataType::Any => true,
+            ColumnDataType::Serializable => true,
             ColumnDataType::VarChar => is_string($value)
                 && strlen($value) <= $columnDefinition->typeLength,
             ColumnDataType::Text => is_string($value),

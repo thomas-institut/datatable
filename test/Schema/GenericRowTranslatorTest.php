@@ -44,7 +44,7 @@ class GenericRowTranslatorTest extends TestCase
                     new ColumnDefinition('description', ColumnDataType::Text),
                     (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years'),
                     new ColumnDefinition('enabled', ColumnDataType::Boolean),
-                    (new ColumnDefinition('metadata', ColumnDataType::Any))->withDbColumn('extra_data'),
+                    (new ColumnDefinition('metadata', ColumnDataType::Serializable))->withDbColumn('extra_data'),
                 ],
                 [
                     'id' => 42,
@@ -71,7 +71,7 @@ class GenericRowTranslatorTest extends TestCase
                     (new ColumnDefinition('body', ColumnDataType::Text))->withDbColumn('text_value'),
                     new ColumnDefinition('count', ColumnDataType::Integer),
                     (new ColumnDefinition('visible', ColumnDataType::Boolean))->withDbColumn('is_visible'),
-                    new ColumnDefinition('attributes', ColumnDataType::Any),
+                    new ColumnDefinition('attributes', ColumnDataType::Serializable),
                 ],
                 [
                     'identifier' => 7,

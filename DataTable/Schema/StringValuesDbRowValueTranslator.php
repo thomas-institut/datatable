@@ -54,7 +54,7 @@ readonly class StringValuesDbRowValueTranslator implements RowValueTranslator
             return $this->dbNullValue;
         }
         $stringValue = match ($type) {
-            ColumnDataType::Any => serialize($value),
+            ColumnDataType::Serializable => serialize($value),
             ColumnDataType::Integer, ColumnDataType::Id => (string)$value,
             ColumnDataType::Boolean => $value ? $this->options->trueValue : $this->options->falseValue,
             ColumnDataType::VarChar, ColumnDataType::Text => $value,
@@ -86,7 +86,7 @@ readonly class StringValuesDbRowValueTranslator implements RowValueTranslator
         }
         $decodedValue = $this->decodeString($value);
         return match ($type) {
-            ColumnDataType::Any => unserialize($decodedValue),
+            ColumnDataType::Serializable => unserialize($decodedValue),
             ColumnDataType::Integer, ColumnDataType::Id => intval($decodedValue),
             ColumnDataType::Boolean => $decodedValue === $this->options->trueValue,
             ColumnDataType::VarChar, ColumnDataType::Text => $decodedValue,

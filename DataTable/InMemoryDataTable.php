@@ -56,6 +56,11 @@ class InMemoryDataTable extends GenericDataTable
         }
     }
 
+    public function getRawData() : array
+    {
+        return $this->theData;
+    }
+
 
     public function getAllRows() : ResultsIterator
     {

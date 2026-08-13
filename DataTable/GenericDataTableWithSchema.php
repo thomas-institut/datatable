@@ -63,6 +63,11 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->supportedSearchConditions = $supportedSearchConditions ?? SupportedSearchCondition::allConditionsSupported();
     }
 
+    public function getInnerDataTable() : DataTable
+    {
+        return $this->dataTable;
+    }
+
     /**
      * @inheritDoc
      * @codeCoverageIgnore
