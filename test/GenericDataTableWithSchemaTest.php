@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Random\RandomException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
@@ -17,6 +18,15 @@ use ThomasInstitut\DataTable\Schema\StringValuesDbRowValueTranslator;
 #[CoversClass(GenericDataTableWithSchema::class)]
 class GenericDataTableWithSchemaTest extends TestCase
 {
+
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
+    public function getTestTable(array $columnDefs): GenericDataTableWithSchema
+    {
+        return new GenericDataTableWithSchema(new InMemoryDataTable(), $columnDefs, new StringValuesDbRowValueTranslator());
+    }
 
     /**
      * @throws InvalidColumnDefinitionsArray
@@ -33,7 +43,7 @@ class GenericDataTableWithSchemaTest extends TestCase
             new ColumnDefinition('metadata', ColumnDataType::Any),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true),
         ];
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), $columDefs, new StringValuesDbRowValueTranslator());
+        $table = $this->getTestTable($columDefs);
 
         $numRows = 100;
         $rowsToTest = $this->makeFakeValidRows($columDefs, $numRows);
@@ -65,6 +75,215 @@ class GenericDataTableWithSchemaTest extends TestCase
 
     /**
      * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testFindRows(): void
+    {
+        $table = $this->getTestTable([
+            (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+        ]);
+
+        $johnId = $table->createRow(['name' => 'John', 'age' => 30]);
+        $janeId = $table->createRow(['name' => 'Jane', 'age' => 30]);
+        $table->createRow(['name' => 'John', 'age' => 45]);
+
+        $rows = $table->findRows(['name' => 'John', 'age' => 30]);
+
+        $this->assertSame(1, $rows->count());
+        $this->assertSame([
+            'id' => $johnId,
+            'name' => 'John',
+            'age' => 30,
+        ], $rows->getFirst());
+
+        $this->assertSame(1, $table->findRows(['age' => 30], 1)->count());
+        $this->assertSame(0, $table->findRows(['name' => 'Missing'])->count());
+        $this->assertSame($janeId, $table->findRows(['name' => 'Jane'])->getFirst()['id']);
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     * @throws RowAlreadyExists
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testGetMaxValueInColumn(): void
+    {
+        $columnDefs = [
+            (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+        ];
+        $table = $this->getTestTable($columnDefs);
+
+        $this->assertSame(0, $table->getMaxValueInColumn('age'));
+
+        $table->createRow(['name' => 'John', 'age' => 30]);
+        $table->createRow(['name' => 'Jane', 'age' => 20]);
+        $table->createRow(['name' => 'Joe', 'age' => 45]);
+
+        $this->assertSame(45, $table->getMaxValueInColumn('age'));
+        $this->assertSame(3, $table->getMaxValueInColumn('id'));
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
+    #[Test]
+    public function testGetMaxValueInColumnRejectsUnknownColumn(): void
+    {
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Column missing not found');
+        $table->getMaxValueInColumn('missing');
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
+    #[Test]
+    public function testGetMaxValueInColumnRejectsNonNumericColumn(): void
+    {
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('name', ColumnDataType::Text),
+        ]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Column name is not numeric');
+        $table->getMaxValueInColumn('name');
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testDeleteRow(): void
+    {
+        $table = $this->getTestTable([
+            (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+        ]);
+        $rowId = $table->createRow(['name' => 'John']);
+
+        $this->assertSame(1, $table->deleteRow($rowId));
+        $this->assertFalse($table->rowExists($rowId));
+        $this->assertNull($table->getRow($rowId));
+        $this->assertSame(0, $table->deleteRow($rowId));
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testUpdateRow(): void
+    {
+        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), [
+            (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+        ]);
+        $rowId = $table->createRow(['name' => 'John', 'age' => 30]);
+
+        $table->updateRow(['id' => $rowId, 'name' => 'Jane', 'age' => 35]);
+
+        $this->assertSame([
+            'id' => $rowId,
+            'name' => 'Jane',
+            'age' => 35,
+        ], $table->getRow($rowId));
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     */
+    #[Test]
+    public function testUpdateRowRejectsInvalidInput(): void
+    {
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('name', ColumnDataType::Text),
+        ]);
+
+        $this->expectException(InvalidRow::class);
+        $this->expectExceptionMessage("Column 'unknown' is not defined in the schema");
+        $table->updateRow(['id' => 1, 'unknown' => 'value']);
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidRow
+     */
+    #[Test]
+    public function testUpdateRowRejectsInvalidRowForUpdate(): void
+    {
+        $table = $this->getTestTable([
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('name', ColumnDataType::Text),
+        ]);
+        $this->expectException(InvalidRow::class);
+        $this->expectExceptionMessage("Id not set in given row (DataTable updateRow)");
+        $table->updateRow(['name' => 'Jane']);
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
+    #[Test]
+    public function testArrayAccess(): void
+    {
+        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), [
+            (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+        ]);
+
+        $table[] = ['name' => 'John', 'age' => 30];
+        $rowId = 1;
+
+        $this->assertSame([
+            'id' => $rowId,
+            'name' => 'John',
+            'age' => 30,
+        ], $table[$rowId]);
+
+        $table[$rowId] = ['name' => 'Jane', 'age' => 35];
+
+        $this->assertSame([
+            'id' => $rowId,
+            'name' => 'Jane',
+            'age' => 35,
+        ], $table[$rowId]);
+
+        unset($table[$rowId]);
+
+        $this->assertFalse(isset($table[$rowId]));
+        $this->assertNull($table[$rowId]);
+
+        $table[25] = ['name' => 'Peter', 'age' => 45];
+        $this->assertSame([
+            'id' => 25,
+            'name' => 'Peter',
+            'age' => 45,
+        ], $table[25]);
+
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
      * @throws RowAlreadyExists
      */
     #[Test]
@@ -78,7 +297,7 @@ class GenericDataTableWithSchemaTest extends TestCase
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withNullable(true),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withDbColumn('activo')->withRequired(true),
         ];
-        $table = new GenericDataTableWithSchema(new InMemoryDataTable(), $columDefs, new StringValuesDbRowValueTranslator());
+        $table = $this->getTestTable($columDefs);
         $this->expectException(InvalidRow::class);
         $table->createRow($badRow);
     }

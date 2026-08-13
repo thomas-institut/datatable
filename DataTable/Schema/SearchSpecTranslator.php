@@ -3,6 +3,7 @@
 namespace ThomasInstitut\DataTable\Schema;
 
 use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\SearchCondition;
 use ThomasInstitut\DataTable\SearchSpec;
@@ -16,20 +17,32 @@ class SearchSpecTranslator
      * @param RowTranslator $rowTranslator
      * @return array<string, int|string>
      * @throws InvalidSearchSpec
+     * @throws InvalidRow
      */
     public static function toDataTableSearchSpec(SearchSpec $searchSpec, array $columnDefs, RowTranslator $rowTranslator): array
     {
         $columnDef = ColumnDefArray::getColumnDef($columnDefs, $searchSpec->column);
         if ($columnDef === null) {
-            throw new InvalidSearchSpec("Column '{$searchSpec->column}' does not exist.");
+            throw new InvalidSearchSpec("Column '$searchSpec->column' does not exist.");
         }
         if (!ColumnValueValidator::validate($searchSpec->value, $columnDef)) {
-            throw new InvalidSearchSpec("Value '{$searchSpec->value}' is not valid for column '{$searchSpec->column}'.");
+            throw new InvalidSearchSpec("Value '$searchSpec->value' is not valid for column '$searchSpec->column'.");
+        }
+
+        $validConditions = match($columnDef->type) {
+            ColumnDataType::Boolean => [SearchCondition::Equals, SearchCondition::NotEquals],
+            default => [
+                SearchCondition::Equals, SearchCondition::NotEquals, SearchCondition::GreaterThan, SearchCondition::LessThan,
+                SearchCondition::GreaterThanOrEquals, SearchCondition::LessThanOrEquals,
+            ],
+        };
+        if (!in_array($searchSpec->condition, $validConditions)) {
+            throw new InvalidSearchSpec("Condition '{$searchSpec->condition->value}' is not valid for column '$searchSpec->column' of type '{$columnDef->type->value}'.");
         }
 
         $rowToTranslate = [$searchSpec->column => $searchSpec->value];
-        $translatedRow = $rowTranslator->inputRowToDb($rowToTranslate);
-        $translatedColumnName = $translatedRow[array_keys($translatedRow)[0]];
+        $translatedRow = $rowTranslator->inputRowToDb($rowToTranslate, false);
+        $translatedColumnName = array_keys($translatedRow)[0];
         $translatedValue = $translatedRow[$translatedColumnName];
 
         return [
@@ -39,13 +52,12 @@ class SearchSpecTranslator
         ];
     }
 
-
     /**
      * @param array $searchSpecArray
      * @param array $columnDefs
      * @param RowTranslator $rowTranslator
      * @return array<array<string, int|string>>
-     * @throws InvalidSearchSpec
+     * @throws InvalidSearchSpec|InvalidRow
      */
     public static function toDataTableSearchSpecArray(array $searchSpecArray, array $columnDefs, RowTranslator $rowTranslator): array {
         return array_map(fn(SearchSpec $searchSpec) => self::toDataTableSearchSpec($searchSpec, $columnDefs, $rowTranslator), $searchSpecArray);

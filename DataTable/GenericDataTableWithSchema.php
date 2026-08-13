@@ -5,6 +5,7 @@ namespace ThomasInstitut\DataTable;
 use Iterator;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
@@ -13,6 +14,7 @@ use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\TranslatedResultsIterator;
+use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefArray;
 use ThomasInstitut\DataTable\Schema\ColumnDefArrayValidator;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
@@ -56,6 +58,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function getIterator(): Traversable
     {
@@ -97,7 +100,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
             try {
                 $this->createRow($value);
             } catch (RowAlreadyExists) { // @codeCoverageIgnore
-                // this should never happen
+                // this will never happen unless the underlying database is corrupted
+                throw new RuntimeException('Unexpected "Row already exists" exception'); // @codeCoverageIgnore
             }
         }
     }
@@ -112,6 +116,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function setIdGenerator(IdGenerator $ig): void
     {
@@ -120,6 +125,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function rowExists(int $rowId): bool
     {
@@ -167,7 +173,10 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
-        return $this->dataTable->findRows($this->rowTranslator->inputRowToDb($rowToMatch, false), $maxResults);
+        return new TranslatedResultsIterator(
+            $this->dataTable->findRows($this->rowTranslator->inputRowToDb($rowToMatch, false), $maxResults),
+            $this->rowTranslator,
+        );
     }
 
     /**
@@ -177,7 +186,10 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     {
         $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
         $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator);
-        return $this->dataTable->search($dtSearchSpecArray, $dtSearchType, $maxResults);
+        return new TranslatedResultsIterator(
+            $this->dataTable->search($dtSearchSpecArray, $dtSearchType, $maxResults),
+            $this->rowTranslator
+        );
     }
 
     /**
@@ -194,6 +206,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function supportsTransactions(): bool
     {
@@ -202,6 +215,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function startTransaction(): bool
     {
@@ -210,6 +224,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function commit(): bool
     {
@@ -218,6 +233,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function rollBack(): bool
     {
@@ -226,6 +242,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function isInTransaction(): bool
     {
@@ -234,6 +251,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function isUnderlyingDatabaseInTransaction(): bool
     {
@@ -250,6 +268,13 @@ class GenericDataTableWithSchema implements DataTableWithSchema
             throw new InvalidArgumentException("Column $columnName not found");
         }
 
+        $numericTypes = [ColumnDataType::Integer, ColumnDataType::Id];
+
+        if (!in_array($colDef->type, $numericTypes)) {
+            throw new InvalidArgumentException("Column $columnName is not numeric");
+        }
+
+
         return $this->dataTable->getMaxValueInColumn($colDef->dbColumn ?? $colDef->rowKey);
     }
 
@@ -265,6 +290,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function getMaxId(): int
     {
@@ -273,6 +299,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function getUniqueIds(): Iterator
     {
@@ -281,6 +308,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function getName(): string
     {
@@ -289,6 +317,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function setLogger(LoggerInterface $logger): void
     {

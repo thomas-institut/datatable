@@ -5,6 +5,7 @@ namespace ThomasInstitut\DataTable\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 
@@ -12,7 +13,7 @@ use ThomasInstitut\DataTable\Exception\InvalidRow;
 class GenericRowTranslatorTest extends TestCase
 {
     /**
-     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidColumnDefinitionsArray|InvalidRow
      */
     #[DataProvider('roundTripProvider')]
     public function testRowsRoundTripThroughDatabaseTranslation(
@@ -118,7 +119,7 @@ class GenericRowTranslatorTest extends TestCase
             [new ColumnDefinition('id', ColumnDataType::Id)],
         );
 
-        $this->expectException(InvalidRow::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage("Column 'unknown' is not defined in the DataTable");
 
         $translator->dbRowToOutputRow(['unknown' => 'value']);

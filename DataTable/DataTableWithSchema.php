@@ -32,6 +32,7 @@ use IteratorAggregate;
 use Psr\Log\LoggerAwareInterface;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
@@ -171,6 +172,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
+     * @throws InvalidRow
      */
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator;
 
