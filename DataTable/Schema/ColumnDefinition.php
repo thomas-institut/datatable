@@ -56,17 +56,13 @@ class ColumnDefinition
     public mixed $defaultValue;
 
 
-    /**
-     * @codeCoverageIgnore
-     */
     public function __construct(string $rowKey, ColumnDataType $type)
     {
         $this->type = $type;
         $this->rowKey = $rowKey;
 
         // set a sensible default value
-        $this->defaultValue = match($type)
-        {
+        $this->defaultValue = match ($type) {
             ColumnDataType::VarChar,
             ColumnDataType::Integer, ColumnDataType::Id => -1,
             ColumnDataType::Boolean => false,
@@ -100,52 +96,37 @@ class ColumnDefinition
         };
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public function withDefaultValue(mixed $defaultValue): ColumnDefinition
     {
-        if (!self::valueIsValidForColumn($defaultValue, $this)){
+        if (!self::valueIsValidForColumn($defaultValue, $this)) {
             throw new InvalidArgumentException("Invalid default value for column $this->rowKey");
         }
         $this->defaultValue = $defaultValue;
         return $this;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public function withDbColumn(string $dbColumn): ColumnDefinition
     {
         $this->dbColumn = $dbColumn;
         return $this;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public function withRequired(bool $required): ColumnDefinition
     {
-        if (in_array($this->type, ColumnDataType::NoDefaultTypes))
-        {
+        if (in_array($this->type, ColumnDataType::NoDefaultTypes)) {
             $required = true;
         }
         $this->required = $required;
         return $this;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
     public function withTypeLength(int $typeLength): ColumnDefinition
     {
         $this->typeLength = $typeLength;
         return $this;
     }
 
-    /**
-     * @codeCoverageIgnore
-     */
+
     public function withNullable(bool $nullable): ColumnDefinition
     {
         $this->nullable = $nullable;

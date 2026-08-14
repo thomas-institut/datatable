@@ -7,13 +7,27 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ColumnDefArray::class)]
-class ColumnDefArrayValidatorTest extends TestCase
+class ColumnDefArrayTest extends TestCase
 {
+
+    public function testReturnsNullOnNotFound()
+    {
+        $columnDefinitions = [
+            (new ColumnDefinition('name', ColumnDataType::VarChar))
+                ->withDbColumn('full_name')
+                ->withTypeLength(100)
+        ];
+
+        $this->assertNull(ColumnDefArray::getIdDbColumn($columnDefinitions));
+        $this->assertNull(ColumnDefArray::getIdKey($columnDefinitions));
+        $this->assertNull(ColumnDefArray::getColumnDef($columnDefinitions, 'missing'));
+    }
+
     public function testValidColumnDefinitionsHaveNoErrors(): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'name' => (new ColumnDefinition('name', ColumnDataType::VarChar))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::VarChar))
                 ->withDbColumn('full_name')
                 ->withTypeLength(100),
         ];
@@ -24,7 +38,7 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testMissingIdColumnIsReported(): void
     {
         $columnDefinitions = [
-            'name' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertSame(
@@ -36,15 +50,54 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testInvalidElementIsReportedAndDoesNotStopValidation(): void
     {
         $columnDefinitions = [
-            'invalid' => 'not a column definition',
-            'name' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            'not a column definition',
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertSame(
             [
-                'Element at key invalid is not a ColumnDef object.',
+                'Element at index 0 is not a ColumnDef object.',
                 'No id column found in column definitions',
             ],
+            ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
+        );
+    }
+
+    public function testNonIntegerArrayKeyIsReported(): void
+    {
+        $columnDefinitions = [
+            new ColumnDefinition('id', ColumnDataType::Id),
+            'name' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+        ];
+
+        $this->assertSame(
+            ["Column definition array key must be an integer, but found 'name' of type string"],
+            ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
+        );
+    }
+
+    public function testUnsupportedDataTypeIsReported(): void
+    {
+        $columnDefinitions = [
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+        ];
+
+        $this->assertSame(
+            ["Column at index 1 has unsupported data type: 'text'"],
+            ColumnDefArray::validate($columnDefinitions, [ColumnDataType::Id]),
+        );
+    }
+
+    public function testTypesWithoutDefaultsMustBeRequired(): void
+    {
+        $columnDefinitions = [
+            new ColumnDefinition('id', ColumnDataType::Id),
+            new ColumnDefinition('name', ColumnDataType::Text),
+        ];
+
+        $this->assertSame(
+            ['Column at index 1 must have required = true since it is of type text.'],
             ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
@@ -53,12 +106,12 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testInvalidRowKeyIsReported(string $rowKey): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'column' => (new ColumnDefinition($rowKey, ColumnDataType::Text))->withRequired(true),
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition($rowKey, ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertContains(
-            "Column at index column has invalid rowKey: '$rowKey'",
+            "Column at index 1 has invalid rowKey: '$rowKey'",
             ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
@@ -76,14 +129,14 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testInvalidDatabaseColumnIsReported(): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'name' => (new ColumnDefinition('name', ColumnDataType::Text))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::Text))
                 ->withDbColumn('full name')
                 ->withRequired(true),
         ];
 
         $this->assertSame(
-            ["Column at index name has invalid dbColumn: 'full name'"],
+            ["Column at index 1 has invalid dbColumn: 'full name'"],
             ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }
@@ -91,9 +144,9 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testDuplicateRowKeyIsReported(): void
     {
         $columnDefinitions = [
-            'first' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-            'second' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            new ColumnDefinition('id', ColumnDataType::Id),
         ];
 
         $this->assertContains(
@@ -105,11 +158,11 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testDuplicateEffectiveDatabaseColumnIsReported(): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'first' => (new ColumnDefinition('first', ColumnDataType::Text))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('first', ColumnDataType::Text))
                 ->withDbColumn('shared_name')
                 ->withRequired(true),
-            'second' => (new ColumnDefinition('second', ColumnDataType::Text))
+            (new ColumnDefinition('second', ColumnDataType::Text))
                 ->withDbColumn('shared_name')
                 ->withRequired(true),
         ];
@@ -123,9 +176,9 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testRowKeyIsUsedAsEffectiveDatabaseColumnWhenDbColumnIsNull(): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'first' => (new ColumnDefinition('first', ColumnDataType::Text))->withRequired(true),
-            'second' => (new ColumnDefinition('second', ColumnDataType::Text))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('first', ColumnDataType::Text))->withRequired(true),
+            (new ColumnDefinition('second', ColumnDataType::Text))
                 ->withDbColumn('first')
                 ->withRequired(true),
         ];
@@ -140,8 +193,8 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testInvalidVarcharLengthIsReported(int $typeLength): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'name' => (new ColumnDefinition('name', ColumnDataType::VarChar))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::VarChar))
                 ->withTypeLength($typeLength),
         ];
 
@@ -162,8 +215,8 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testPositiveVarcharLengthIsValid(): void
     {
         $columnDefinitions = [
-            'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'name' => (new ColumnDefinition('name', ColumnDataType::VarChar))
+            new ColumnDefinition('id', ColumnDataType::Id),
+            (new ColumnDefinition('name', ColumnDataType::VarChar))
                 ->withTypeLength(1),
         ];
 

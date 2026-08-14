@@ -76,7 +76,7 @@ class ColumnDefArray
      * Checks the column definition array for validity.
      * Returns an array of errors if the column definition array is invalid.
      *
-     * @param array<string,ColumnDefinition> $columnDefArray
+     * @param array<ColumnDefinition> $columnDefArray
      * @param array<ColumnDataType> $supportedDataTypes
      * @return string[]
      */
@@ -87,32 +87,36 @@ class ColumnDefArray
         $dbColumns = [];
         $idKey = null;
 
-        foreach ($columnDefArray as $key => $columnDef) {
+        foreach ($columnDefArray as $index => $columnDef) {
+            if (!is_int($index)) {
+                $errors[] = "Column definition array key must be an integer, but found '$index' of type " . gettype($index);
+                continue;
+            }
             if (!$columnDef instanceof ColumnDefinition) {
-                $errors[] = "Element at key $key is not a ColumnDef object.";
+                $errors[] = "Element at index $index is not a ColumnDef object.";
                 continue;
             }
 
             if (!in_array($columnDef->type, $supportedDataTypes)) {
-                $errors[] = "Column at index $key has unsupported data type: '{$columnDef->type->value}'";
+                $errors[] = "Column at index $index has unsupported data type: '{$columnDef->type->value}'";
             }
 
             if ($columnDef->type === ColumnDataType::Id) {
-                $idKey = $key;
+                $idKey = $columnDef->rowKey;
             }
 
             if (!self::isValidKey($columnDef->rowKey)) {
-                $errors[] = "Column at index $key has invalid rowKey: '$columnDef->rowKey'";
+                $errors[] = "Column at index $index has invalid rowKey: '$columnDef->rowKey'";
             }
 
             // if $dbColumn is not null, it must be trimmed string, not empty and a single word
             if ($columnDef->dbColumn !== null && !self::isValidKey($columnDef->dbColumn)) {
-                $errors[] = "Column at index $key has invalid dbColumn: '$columnDef->dbColumn'";
+                $errors[] = "Column at index $index has invalid dbColumn: '$columnDef->dbColumn'";
             }
 
             // some types must be marked as required
             if (in_array($columnDef->type, ColumnDataType::NoDefaultTypes) && $columnDef->required === false) {
-                $errors[] = "Column at index $key must have required = true since it is of type {$columnDef->type->value}.";
+                $errors[] = "Column at index $index must have required = true since it is of type {$columnDef->type->value}.";
             }
 
             // $rowKey and $dbColumn must be unique in the array.

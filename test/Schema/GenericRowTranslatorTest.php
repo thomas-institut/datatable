@@ -4,6 +4,7 @@ namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
@@ -127,5 +128,13 @@ class GenericRowTranslatorTest extends TestCase
         $this->expectExceptionMessage("Column 'unknown' is not defined in the DataTable");
 
         $translator->dbRowToOutputRow(['unknown' => 'value']);
+    }
+
+
+    #[Test]
+    public function testConstructorThrowsOnInvalidColumnDefinitionsArray(): void
+    {
+        $this->expectException(InvalidColumnDefinitionsArray::class);
+        new GenericRowTranslator(new NoOpRowValueTranslator(), [ new ColumnDefinition('id', ColumnDataType::Serializable)]);
     }
 }

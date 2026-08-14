@@ -3,6 +3,7 @@
 namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\DataTableWithSchema;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\InMemoryDataTableWithSchema;
@@ -11,14 +12,17 @@ use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 
-#[CoversClass(ArrayResultsIterator::class)]
+#[CoversClass(TranslatedResultsIterator::class)]
 class TranslatedResultsIteratorTest extends ResultsIteratorReferenceTestCase
 {
     /**
      * @throws InvalidColumnDefinitionsArray
      */
     public function createDataTable() : DataTableWithSchema {
-        return new InMemoryDataTableWithSchema(new DataTableSchema([ new ColumnDefinition('id', ColumnDataType::Id), new ColumnDefinition('value', ColumnDataType::Integer)]));
+        return new InMemoryDataTableWithSchema(new DataTableSchema([
+            new ColumnDefinition(DataTable::DEFAULT_ID_COLUMN_NAME, ColumnDataType::Id),
+            new ColumnDefinition(ResultsIteratorReferenceTestCase::INT_COLUM, ColumnDataType::Integer)
+        ]));
     }
 
 }
