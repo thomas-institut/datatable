@@ -42,7 +42,7 @@ readonly class GenericRowTranslator implements RowTranslator
         if ($supportedDataTypes === null) {
             $supportedDataTypes = ColumnDataType::cases();
         }
-        $errors = ColumnDefArrayValidator::validate($columnDefinitions, $supportedDataTypes);
+        $errors = ColumnDefArray::validate($columnDefinitions, $supportedDataTypes);
         if (!empty($errors)) {
             throw new InvalidColumnDefinitionsArray();
         }
@@ -89,7 +89,7 @@ readonly class GenericRowTranslator implements RowTranslator
                 throw new InvalidRow("Column '$key' is not defined in the schema");
             }
             $columnDef = $this->defsByRowKey[$key];
-            if (!ColumnValueValidator::validate($value, $columnDef)) {
+            if (!ColumnDefinition::valueIsValidForColumn($value, $columnDef)) {
                 throw new InvalidRow("Invalid value for column '$key': $value");
             }
         }

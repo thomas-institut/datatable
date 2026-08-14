@@ -3,7 +3,6 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
-use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
@@ -64,6 +63,4 @@ class MySqlDataTableWithSchemaTest extends DataTableWithSchemaReferenceTestCase
         $mySqlDataTable = new MySqlDataTable($this->pdoProvider, $tableName, true, $dbIdColumnName);
         return new MySqlDataTableWithSchema($mySqlDataTable, new DataTableSchema($columnDefinitions));
     }
-
-
 }

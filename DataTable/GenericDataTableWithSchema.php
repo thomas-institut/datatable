@@ -16,7 +16,6 @@ use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\TranslatedResultsIterator;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefArray;
-use ThomasInstitut\DataTable\Schema\ColumnDefArrayValidator;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\GenericRowTranslator;
@@ -60,7 +59,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     {
         $this->columnDefinitions = $dataTableSchema->columnDefinitions;
         $this->supportedDataTypes = $this->getCompliantSupportedDataTypes($supportedDataTypes ?? DataTableWithSchema::MandatorySupportedDataTypes);
-        $errors = ColumnDefArrayValidator::validate($this->columnDefinitions, $this->supportedDataTypes);
+        $errors = ColumnDefArray::validate($this->columnDefinitions, $this->supportedDataTypes);
         if (count($errors) > 0) {
             throw new InvalidColumnDefinitionsArray('Invalid column definitions: ' . implode(', ', $errors));
         }
@@ -95,11 +94,6 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function getSupportedDataTypes() : array
     {
         return $this->supportedDataTypes;
-    }
-
-    public function getInnerDataTable() : DataTable
-    {
-        return $this->dataTable;
     }
 
     /**

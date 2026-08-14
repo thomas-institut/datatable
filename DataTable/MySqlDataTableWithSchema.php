@@ -86,6 +86,7 @@ class MySqlDataTableWithSchema extends GenericDataTableWithSchema
                 ColumnDataType::Integer => "$dbColName INT",
                 ColumnDataType::Serializable => "$dbColName LONGTEXT",
                 ColumnDataType::Boolean => "$dbColName BOOLEAN",
+                ColumnDataType::TimeString => "$dbColName DATETIME(6)",
             };
 
             if ($colDef->type !== ColumnDataType::Id) {

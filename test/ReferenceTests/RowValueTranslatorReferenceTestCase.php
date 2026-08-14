@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\RowValueTranslator;
+use ThomasInstitut\TimeString\TimeString;
 
 abstract class RowValueTranslatorReferenceTestCase extends TestCase
 {
@@ -33,6 +34,7 @@ abstract class RowValueTranslatorReferenceTestCase extends TestCase
             'text' => [ColumnDataType::Text, 'description'],
             'integer' => [ColumnDataType::Integer, -12],
             'boolean' => [ColumnDataType::Boolean, true],
+            'time' => [ColumnDataType::TimeString, TimeString::now()],
             'id' => [ColumnDataType::Id, 42],
         ];
     }

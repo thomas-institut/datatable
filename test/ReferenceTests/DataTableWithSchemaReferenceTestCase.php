@@ -17,6 +17,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\SearchCondition;
 use ThomasInstitut\DataTable\SearchSpec;
+use ThomasInstitut\TimeString\TimeString;
 
 /**
  * Reference tests for DataTableWithSchema implementations.
@@ -462,6 +463,11 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
                     case ColumnDataType::Integer:
                         $row[$columnDefinition->rowKey] = random_int(0, 1000);
                         break;
+
+                    case ColumnDataType::TimeString:
+                        $row[$columnDefinition->rowKey] = TimeString::now();
+                        break;
+
                     case ColumnDataType::Boolean:
                         $row[$columnDefinition->rowKey] = $this->getRandomBool();
                         break;
@@ -524,6 +530,10 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             $columnDefinitions[] = (new ColumnDefinition('metadata', ColumnDataType::Serializable))->withRequired(true);
         }
 
+        if (in_array(ColumnDataType::TimeString, $supportedDataTypes, true)) {
+            $columnDefinitions[] = (new ColumnDefinition('time', ColumnDataType::TimeString));
+        }
+
         return $columnDefinitions;
     }
 
@@ -539,6 +549,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             $values[$columnDefinition->rowKey] = match ($columnDefinition->type) {
                 ColumnDataType::Serializable => ['key' => 'value'],
                 ColumnDataType::VarChar => $this->getRandomString($columnDefinition->typeLength),
+                ColumnDataType::TimeString => TimeString::now(),
                 default => throw new LogicException("Unexpected optional column type '{$columnDefinition->type->value}'"),
             };
         }

@@ -57,7 +57,7 @@ readonly class StringValuesDbRowValueTranslator implements RowValueTranslator
             ColumnDataType::Serializable => serialize($value),
             ColumnDataType::Integer, ColumnDataType::Id => (string)$value,
             ColumnDataType::Boolean => $value ? $this->options->trueValue : $this->options->falseValue,
-            ColumnDataType::VarChar, ColumnDataType::Text => $value,
+            ColumnDataType::VarChar, ColumnDataType::Text, ColumnDataType::TimeString => $value,
         };
         return $this->encodeString($stringValue);
     }
@@ -89,7 +89,7 @@ readonly class StringValuesDbRowValueTranslator implements RowValueTranslator
             ColumnDataType::Serializable => unserialize($decodedValue),
             ColumnDataType::Integer, ColumnDataType::Id => intval($decodedValue),
             ColumnDataType::Boolean => $decodedValue === $this->options->trueValue,
-            ColumnDataType::VarChar, ColumnDataType::Text => $decodedValue,
+            ColumnDataType::VarChar, ColumnDataType::Text, ColumnDataType::TimeString => $decodedValue,
         };
     }
 }

@@ -26,7 +26,7 @@ class SearchSpecTranslator
         if ($columnDef === null) {
             throw new InvalidSearchSpec("Column '$searchSpec->column' does not exist.");
         }
-        if (!ColumnValueValidator::validate($searchSpec->value, $columnDef)) {
+        if (!ColumnDefinition::valueIsValidForColumn($searchSpec->value, $columnDef)) {
             throw new InvalidSearchSpec("Value '$searchSpec->value' is not valid for column '$searchSpec->column'.");
         }
 

@@ -73,7 +73,7 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
     /**
      * Returns a list of the data types supported by this DataTable.
      *
-     * All implementations must support at least the data types Id, Text, Integer and Boolean.
+     * All implementations must support at least the data types id, Text, Integer and Boolean.
      *
      * @return array<ColumnDataType>
      */

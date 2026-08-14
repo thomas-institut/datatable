@@ -2,6 +2,9 @@
 
 namespace ThomasInstitut\DataTable\Schema;
 
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\TimeString\TimeString;
+
 class ColumnDefinition
 {
     /**
@@ -10,12 +13,12 @@ class ColumnDefinition
      */
     public ColumnDataType $type;
 
-
     /**
      * If true, the column can be null.
      * @var bool
      */
     public bool $nullable = false;
+
     /**
      * The column type length.
      *
@@ -67,8 +70,46 @@ class ColumnDefinition
             ColumnDataType::VarChar,
             ColumnDataType::Integer, ColumnDataType::Id => -1,
             ColumnDataType::Boolean => false,
-            default => null
+            ColumnDataType::Serializable, ColumnDataType::Text => null,
+            ColumnDataType::TimeString => '1000-01-01 00:00:00.000000',
         };
+    }
+
+    /**
+     * @param mixed $value
+     * @param ColumnDefinition $columnDefinition
+     * @return bool
+     */
+    public static function valueIsValidForColumn(mixed $value, ColumnDefinition $columnDefinition): bool
+    {
+        if ($value === null) {
+            if ($columnDefinition->type === ColumnDataType::Id) {
+                return false;
+            }
+            return $columnDefinition->nullable;
+        }
+
+        return match ($columnDefinition->type) {
+            ColumnDataType::Serializable => true,
+            ColumnDataType::VarChar => is_string($value)
+                && strlen($value) <= $columnDefinition->typeLength,
+            ColumnDataType::Text => is_string($value),
+            ColumnDataType::Id, ColumnDataType::Integer => is_int($value),
+            ColumnDataType::Boolean => is_bool($value),
+            ColumnDataType::TimeString => TimeString::isValid($value),
+        };
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function withDefaultValue(mixed $defaultValue): ColumnDefinition
+    {
+        if (!self::valueIsValidForColumn($defaultValue, $this)){
+            throw new InvalidArgumentException("Invalid default value for column $this->rowKey");
+        }
+        $this->defaultValue = $defaultValue;
+        return $this;
     }
 
     /**

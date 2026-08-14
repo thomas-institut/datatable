@@ -12,13 +12,6 @@ class InMemoryDataTableWithSchema extends GenericDataTableWithSchema
 {
     public function __construct(DataTableSchema $dataTableSchema, array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
-        $supportedSearchConditions = [
-            new SupportedSearchCondition(ColumnDataType::Text, SearchCondition::cases()),
-            new SupportedSearchCondition(ColumnDataType::VarChar, SearchCondition::cases()),
-            new SupportedSearchCondition(ColumnDataType::Integer, SearchCondition::cases()),
-            new SupportedSearchCondition(ColumnDataType::Boolean, [SearchCondition::Equals, SearchCondition::NotEquals]),
-        ];
-
-        parent::__construct(new InMemoryDataTable($data, $idGenerator), $dataTableSchema, new NoOpRowValueTranslator(), $supportedSearchConditions, ColumnDataType::cases());
+        parent::__construct(new InMemoryDataTable($data, $idGenerator), $dataTableSchema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases());
     }
 }

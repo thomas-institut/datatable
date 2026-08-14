@@ -48,6 +48,15 @@ enum ColumnDataType : string
 
 
     /**
+     * A time string (v1.3)
+     *
+     * DataTable 3.0 will use TimeString version 2.
+     *
+     * @see https://github.com/thomas-institut/timestring
+     */
+    case TimeString = 'time_string';
+
+    /**
      * Types that do not accept a default value and therefore MUST be marked as required in the database schema.
      */
     const array NoDefaultTypes = [ColumnDataType::Serializable, ColumnDataType::Text];

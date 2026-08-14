@@ -6,22 +6,22 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(ColumnValueValidator::class)]
-class ColumnValueValidatorTest extends TestCase
+#[CoversClass(ColumnDefinition::class)]
+class ColumnDefinitionTest extends TestCase
 {
     public function testNullableColumnAcceptsNull(): void
     {
         $columnDefinition = (new ColumnDefinition('name', ColumnDataType::Text))
             ->withNullable(true);
 
-        $this->assertTrue(ColumnValueValidator::validate(null, $columnDefinition));
+        $this->assertTrue(ColumnDefinition::valueIsValidForColumn(null, $columnDefinition));
     }
 
     public function testNonNullableColumnRejectsNull(): void
     {
         $columnDefinition = new ColumnDefinition('name', ColumnDataType::Text);
 
-        $this->assertFalse(ColumnValueValidator::validate(null, $columnDefinition));
+        $this->assertFalse(ColumnDefinition::valueIsValidForColumn(null, $columnDefinition));
     }
 
     public function testIdColumnRejectsNullEvenWhenNullable(): void
@@ -29,7 +29,7 @@ class ColumnValueValidatorTest extends TestCase
         $columnDefinition = (new ColumnDefinition('id', ColumnDataType::Id))
             ->withNullable(true);
 
-        $this->assertFalse(ColumnValueValidator::validate(null, $columnDefinition));
+        $this->assertFalse(ColumnDefinition::valueIsValidForColumn(null, $columnDefinition));
     }
 
     #[DataProvider('anyValueProvider')]
@@ -37,7 +37,7 @@ class ColumnValueValidatorTest extends TestCase
     {
         $columnDefinition = new ColumnDefinition('value', ColumnDataType::Serializable);
 
-        $this->assertTrue(ColumnValueValidator::validate($value, $columnDefinition));
+        $this->assertTrue(ColumnDefinition::valueIsValidForColumn($value, $columnDefinition));
     }
 
     public static function anyValueProvider(): array
@@ -58,7 +58,7 @@ class ColumnValueValidatorTest extends TestCase
 
         $this->assertSame(
             $expected,
-            ColumnValueValidator::validate($value, $columnDefinition),
+            ColumnDefinition::valueIsValidForColumn($value, $columnDefinition),
         );
     }
 
@@ -79,7 +79,7 @@ class ColumnValueValidatorTest extends TestCase
 
         $this->assertSame(
             $expected,
-            ColumnValueValidator::validate($value, $columnDefinition),
+            ColumnDefinition::valueIsValidForColumn($value, $columnDefinition),
         );
     }
 
@@ -102,7 +102,7 @@ class ColumnValueValidatorTest extends TestCase
 
         $this->assertSame(
             $expected,
-            ColumnValueValidator::validate($value, $columnDefinition),
+            ColumnDefinition::valueIsValidForColumn($value, $columnDefinition),
         );
     }
 
@@ -123,7 +123,7 @@ class ColumnValueValidatorTest extends TestCase
 
         $this->assertSame(
             $expected,
-            ColumnValueValidator::validate($value, $columnDefinition),
+            ColumnDefinition::valueIsValidForColumn($value, $columnDefinition),
         );
     }
 

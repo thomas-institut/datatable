@@ -13,7 +13,11 @@ class MySqlRowValueTranslator implements RowValueTranslator
         return match($type) {
             ColumnDataType::Serializable => serialize($value),
             ColumnDataType::Boolean => $value ? 1 : 0,
-            ColumnDataType::Text, ColumnDataType::VarChar, ColumnDataType::Integer, ColumnDataType::Id => $value,
+            ColumnDataType::Text,
+            ColumnDataType::VarChar,
+            ColumnDataType::Integer,
+            ColumnDataType::Id,
+            ColumnDataType::TimeString => $value,
         };
     }
 
@@ -25,8 +29,11 @@ class MySqlRowValueTranslator implements RowValueTranslator
         return match($type) {
             ColumnDataType::Serializable => unserialize($value),
             ColumnDataType::Boolean => $value === 1,
-            ColumnDataType::Integer, ColumnDataType::Id => intval($value),
-            ColumnDataType::Text, ColumnDataType::VarChar => $value,
+            ColumnDataType::Integer,
+            ColumnDataType::Id => intval($value),
+            ColumnDataType::Text,
+            ColumnDataType::VarChar,
+            ColumnDataType::TimeString => $value,
         };
     }
 }
