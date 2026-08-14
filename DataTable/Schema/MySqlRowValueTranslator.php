@@ -17,7 +17,9 @@ class MySqlRowValueTranslator implements RowValueTranslator
             ColumnDataType::VarChar,
             ColumnDataType::Integer,
             ColumnDataType::Id,
-            ColumnDataType::TimeString => $value,
+            ColumnDataType::TimeString,
+            ColumnDataType::ValidFrom,
+            ColumnDataType::ValidUntil => $value,
         };
     }
 
@@ -33,7 +35,9 @@ class MySqlRowValueTranslator implements RowValueTranslator
             ColumnDataType::Id => intval($value),
             ColumnDataType::Text,
             ColumnDataType::VarChar,
-            ColumnDataType::TimeString => $value,
+            ColumnDataType::TimeString,
+            ColumnDataType::ValidFrom,
+            ColumnDataType::ValidUntil => $value,
         };
     }
 }

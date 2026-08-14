@@ -27,18 +27,18 @@ use Traversable;
 
 class GenericDataTableWithSchema implements DataTableWithSchema
 {
-    private string $idKey;
-    private string $idDbColumn;
+    protected string $idKey;
+    protected string $idDbColumn;
 
     /** @var array<SupportedSearchCondition> */
-    private readonly array $supportedSearchConditions;
+    protected readonly array $supportedSearchConditions;
 
     /** @var array<ColumnDataType> */
-    private readonly array $supportedDataTypes;
+    protected readonly array $supportedDataTypes;
 
-    private readonly array $columnDefinitions;
+    protected readonly array $columnDefinitions;
 
-    private readonly GenericRowTranslator $rowTranslator;
+    protected readonly GenericRowTranslator $rowTranslator;
 
     protected LoggerInterface $logger;
 
@@ -50,9 +50,9 @@ class GenericDataTableWithSchema implements DataTableWithSchema
      * @param array<ColumnDataType>|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray
      */
-    public function __construct(private readonly DataTable          $dataTable,
+    public function __construct(protected readonly DataTable          $dataTable,
                                 DataTableSchema $dataTableSchema,
-                                private readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(),
+                                protected readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(),
                                 ?array $supportedSearchConditions = null,
                                 ?array $supportedDataTypes = null
     )

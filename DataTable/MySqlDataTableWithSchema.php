@@ -82,11 +82,13 @@ class MySqlDataTableWithSchema extends GenericDataTableWithSchema
             $rowSqlSpec = match ($colDef->type) {
                 ColumnDataType::Id => "$dbColName BIGINT AUTO_INCREMENT PRIMARY KEY NOT NULL",
                 ColumnDataType::Text => "$dbColName TEXT",
-                ColumnDataType::VarChar => "$dbColName VARCHAR({$colDef->typeLength})",
+                ColumnDataType::VarChar => "$dbColName VARCHAR($colDef->typeLength)",
                 ColumnDataType::Integer => "$dbColName INT",
                 ColumnDataType::Serializable => "$dbColName LONGTEXT",
                 ColumnDataType::Boolean => "$dbColName BOOLEAN",
                 ColumnDataType::TimeString => "$dbColName DATETIME(6)",
+                ColumnDataType::ValidFrom => "valid_from datetime(6) NOT NULL DEFAULT '2020-04-09 00:00:00.000000'",
+                ColumnDataType::ValidUntil => "valid_until datetime(6) NOT NULL DEFAULT '9999-12-31 23:59:59.999999'"
             };
 
             if ($colDef->type !== ColumnDataType::Id) {

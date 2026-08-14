@@ -67,7 +67,8 @@ class ColumnDefinition
             ColumnDataType::Integer, ColumnDataType::Id => -1,
             ColumnDataType::Boolean => false,
             ColumnDataType::Serializable, ColumnDataType::Text => null,
-            ColumnDataType::TimeString => '1000-01-01 00:00:00.000000',
+            ColumnDataType::TimeString, ColumnDataType::ValidFrom => '1000-01-01 00:00:00.000000',
+            ColumnDataType::ValidUntil => TimeString::END_OF_TIMES
         };
     }
 
@@ -92,10 +93,13 @@ class ColumnDefinition
             ColumnDataType::Text => is_string($value),
             ColumnDataType::Id, ColumnDataType::Integer => is_int($value),
             ColumnDataType::Boolean => is_bool($value),
-            ColumnDataType::TimeString => TimeString::isValid($value),
+            ColumnDataType::TimeString, ColumnDataType::ValidFrom, ColumnDataType::ValidUntil => TimeString::isValid($value),
         };
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function withDefaultValue(mixed $defaultValue): ColumnDefinition
     {
         if (!self::valueIsValidForColumn($defaultValue, $this)) {

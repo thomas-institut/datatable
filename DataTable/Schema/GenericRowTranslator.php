@@ -32,6 +32,7 @@ readonly class GenericRowTranslator implements RowTranslator
     /**
      * @param RowValueTranslator $rowValueTranslator
      * @param array<ColumnDefinition> $columnDefinitions The definitions of the columns in the table.
+     * @param array|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
@@ -111,10 +112,13 @@ readonly class GenericRowTranslator implements RowTranslator
             if (!isset($colDefs[$key])) {
                 throw new InvalidRow("Column '$key' is not defined in the DataTable");
             }
+
             $type = $colDefs[$key]->type;
-            if ($type === ColumnDataType::Id) {
-                $type = ColumnDataType::Integer;
-            }
+            $type = match($type) {
+                ColumnDataType::Id => ColumnDataType::Integer,
+                ColumnDataType::ValidUntil, ColumnDataType::ValidFrom => ColumnDataType::TimeString,
+                default => $type,
+            };
 
             if ($fromDatabase) {
                 $translatedValuesRow[$key] = $this->rowValueTranslator->dbValueToRowValue($value, $type);
@@ -132,7 +136,6 @@ readonly class GenericRowTranslator implements RowTranslator
                 : $columnDefinition->dbColumn ?? $columnDefinition->rowKey;
             $translatedRow[$translatedKey] = $translatedValuesRow[$key];
         }
-
 
         return $translatedRow;
     }

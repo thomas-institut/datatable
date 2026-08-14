@@ -9,29 +9,49 @@ class ColumnDefArray
      *
      * @param array<int, ColumnDefinition> $columnDefinitions
      */
-    public static function getIdKey(array $columnDefinitions): string| null {
-        for ($i = 0; $i < count($columnDefinitions); $i++) {
-             if ($columnDefinitions[$i]->type === ColumnDataType::Id) {
-                return $columnDefinitions[$i]->rowKey;
-            }
+    public static function getIdKey(array $columnDefinitions): string|null
+    {
+
+        $defs = self::getColumnDefsForType($columnDefinitions, ColumnDataType::Id);
+        if (count($defs) > 0) {
+            return $defs[0]->rowKey;
         }
         return null;
+    }
+
+    /**
+     * Returns the column definition for the given type or an empty array if not found.
+     *
+     * @param array $columDefinitions
+     * @param ColumnDataType $type
+     * @return array
+     */
+    public static function getColumnDefsForType(array $columDefinitions, ColumnDataType $type): array
+    {
+        $defs = [];
+        foreach ($columDefinitions as $columnDefinition) {
+            if ($columnDefinition->type === $type) {
+                $defs[] = $columnDefinition;
+            }
+        }
+        return $defs;
     }
 
     /**
      * @param array<int, ColumnDefinition> $columnDefinitions
      * @return string|null
      */
-    public static function getIdDbColumn(array $columnDefinitions): string| null {
-        for ($i = 0; $i < count($columnDefinitions); $i++) {
-            if ($columnDefinitions[$i]->type === ColumnDataType::Id) {
-                return $columnDefinitions[$i]->dbColumn ?? $columnDefinitions[$i]->rowKey;
-            }
+    public static function getIdDbColumn(array $columnDefinitions): string|null
+    {
+        $defs = self::getColumnDefsForType($columnDefinitions, ColumnDataType::Id);
+        if (count($defs) > 0) {
+            return $defs[0]->dbColumn ?? $defs[0]->rowKey;
         }
         return null;
     }
 
-    public static function getColumnDef(array $columnDefinitions, string $rowKey): ColumnDefinition | null {
+    public static function getColumnDef(array $columnDefinitions, string $rowKey): ColumnDefinition|null
+    {
         for ($i = 0; $i < count($columnDefinitions); $i++) {
             if ($columnDefinitions[$i]->rowKey === $rowKey) {
                 return $columnDefinitions[$i];
@@ -46,7 +66,8 @@ class ColumnDefArray
      * @param array<ColumnDefinition> $columnDefinitions
      * @return array<string, ColumnDefinition>
      */
-    public static function getDefsByDbKey(array $columnDefinitions): array {
+    public static function getDefsByDbKey(array $columnDefinitions): array
+    {
         $defsByDbKey = [];
         foreach ($columnDefinitions as $columnDef) {
             if ($columnDef->dbColumn !== null) {
@@ -64,12 +85,32 @@ class ColumnDefArray
      * @param array<ColumnDefinition> $columnDefinitions
      * @return array<string, ColumnDefinition>
      */
-    public static function getDefsByRowKey(array $columnDefinitions): array {
+    public static function getDefsByRowKey(array $columnDefinitions): array
+    {
         $defsByRowKey = [];
         foreach ($columnDefinitions as $columnDef) {
             $defsByRowKey[$columnDef->rowKey] = $columnDef;
         }
         return $defsByRowKey;
+    }
+
+    public static function validateUnitemporal(array $columnDefArray): array
+    {
+        $errors = [];
+
+        foreach ([ColumnDataType::ValidFrom, ColumnDataType::ValidUntil] as $type) {
+            $defs = self::getColumnDefsForType($columnDefArray, $type);
+            if (count($defs) === 0) {
+                $errors[] = "Unitemporal data table must have at least one column of type '$type->value'.";
+                continue;
+            }
+
+            if (count($defs) > 1) {
+                $errors[] = "Unitemporal data table must have at most one column of type '$type->value'.";
+            }
+        }
+
+        return $errors;
     }
 
     /**

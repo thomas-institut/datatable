@@ -48,17 +48,7 @@ use Throwable;
 
 /**
  * Implements a PDO-based data table that keeps different versions
- * of its rows. The term 'unitemporal' is taken from
- * Johnston and Weis, "Managing Time in Relational Databases", 2010, but
- * this implementation does not necessarily follow the techniques
- * described in that book.
- *
- * The normal DataTable methods for creating, updating and deleting
- * rows do not delete any previous data but just mark that data as
- * not valid anymore. Data retrieval methods (getRow and findRows) get
- * the latest versions of the data and strip out the time information, so,
- * if used with the normal methods, the class behaves as any other DataTable.
- * There are, however, new methods to retrieve data at previous points in time.
+ * of its rows.
  *
  * The actual SQL table should have an integer id and two datetime
  * columns with precision up to the microsecond:

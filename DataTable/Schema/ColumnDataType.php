@@ -42,9 +42,22 @@ enum ColumnDataType : string
     case Boolean = 'boolean';
 
     /**
-     * The table's id column.
+     * The table's id column, a bigint
      */
     case Id = 'id';
+
+
+    /**
+     * The valid from column of a Unitemporal DataTable, a TimeString
+     *
+     */
+    case ValidFrom = 'valid_from';
+
+    /**
+     * The valid until column of a Unitemporal DataTable, a TimeString
+     */
+    case ValidUntil = 'valid_until';
+
 
 
     /**
