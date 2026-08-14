@@ -56,7 +56,8 @@ readonly class TranslatedResultsIterator implements ResultsIterator
      */
     public function current(): ?array
     {
-        return $this->rowTranslator->dbRowToOutputRow($this->resultsIterator->current());
+        $current = $this->resultsIterator->current();
+        return $current === null ? null : $this->rowTranslator->dbRowToOutputRow($current);
     }
 
     /**
@@ -64,6 +65,7 @@ readonly class TranslatedResultsIterator implements ResultsIterator
      */
     public function getFirst(): ?array
     {
-        return $this->rowTranslator->dbRowToOutputRow($this->resultsIterator->getFirst());
+        $first = $this->resultsIterator->getFirst();
+        return $first === null ? null : $this->rowTranslator->dbRowToOutputRow($first);
     }
 }

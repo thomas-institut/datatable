@@ -3,8 +3,11 @@
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
+
 use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\DataTableWithSchema;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
@@ -20,14 +23,15 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
     const string INT_COLUM = 'value';
     const int NUM_ROWS = 10;
 
-    protected ?DataTable $dataTable = null;
+    protected DataTable | DataTableWithSchema | null $dataTable = null;
 
 
-    abstract public function createDataTable() : DataTable;
+    abstract public function createDataTable() : DataTable | DataTableWithSchema;
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
-    private function getDataTable() : DataTable {
+    private function getDataTable() : DataTable | DataTableWithSchema {
 
         if ($this->dataTable === null) {
 
@@ -43,6 +47,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     function getNonEmptyIterator(): ResultsIterator
     {
@@ -51,6 +56,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     function getEmptyIterator(): ResultsIterator
     {
@@ -60,6 +66,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testEmptyIterator() : void
     {
@@ -79,6 +86,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testGetFirst() : void{
 
@@ -91,6 +99,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testForEachLoop() : void {
         $iterator = $this->getNonEmptyIterator();
