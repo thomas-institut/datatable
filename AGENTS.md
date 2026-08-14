@@ -16,7 +16,7 @@ table where each row is identified by a unique integer ID. Key features include:
 - **CRUD Operations**: `createRow`, `getRow`, `updateRow`, `deleteRow`.
 - **Search/Query**: `findRows` (simple matching) and `search` (complex conditions with AND/OR).
 - **Transactions**: `startTransaction`, `commit`, `rollBack`.
-- **Metadata**: `getIdColumnName`, `setName`, etc.
+- **Metadata**: `getIdDbColumnName`, `setName`, etc.
 - **Interfaces**: Implements `ArrayAccess`, `IteratorAggregate`, `LoggerAwareInterface`, and `ErrorReporter`.
 
 ### 2. Implementations

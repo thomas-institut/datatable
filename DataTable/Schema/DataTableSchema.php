@@ -16,4 +16,9 @@ class DataTableSchema
     {
     }
 
+    public function getIdDbColumn(): string
+    {
+        return ColumnDefArray::getIdDbColumn($this->columnDefinitions);
+    }
+
 }

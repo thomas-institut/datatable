@@ -43,6 +43,11 @@ class ColumnDefArrayValidator
                 $errors[] = "Column at index $key has invalid dbColumn: '$columnDef->dbColumn'";
             }
 
+            // some types must be marked as required
+            if (in_array($columnDef->type, ColumnDataType::NoDefaultTypes) && $columnDef->required === false) {
+                $errors[] = "Column at index $key must have required = true since it is of type {$columnDef->type->value}.";
+            }
+
             // $rowKey and $dbColumn must be unique in the array.
             $effectiveDbColumn = $columnDef->dbColumn ?? $columnDef->rowKey;
 

@@ -36,7 +36,7 @@ readonly class GenericRowTranslator implements RowTranslator
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
                                 array                      $columnDefinitions,
-                                ?array                      $supportedDataTypes = null
+                                ?array                     $supportedDataTypes = null
     )
     {
         if ($supportedDataTypes === null) {

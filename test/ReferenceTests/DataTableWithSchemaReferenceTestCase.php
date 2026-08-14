@@ -163,6 +163,9 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         if ($columnType === ColumnDataType::VarChar) {
             $columnDefinition->withTypeLength(64);
         }
+        if (in_array($columnType, ColumnDataType::NoDefaultTypes)) {
+            $columnDefinition->withRequired(true);
+        }
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
             $columnDefinition,
@@ -269,7 +272,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     {
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('name', ColumnDataType::Text),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ]);
 
         $this->expectException(InvalidArgumentException::class);
@@ -313,11 +316,19 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
         ], $optionalColumnDefinitions));
-        $rowId = $table->createRow(['name' => 'John', 'age' => 30]);
+
+        $optionalValues = $this->getSampleValues($optionalColumnDefinitions);
+
+        $original = array_merge(
+            ['name' => 'John', 'age' => 30],
+            $optionalValues,
+        );
+
+        $rowId = $table->createRow($original);
 
         $updatedRow = array_merge(
             ['id' => $rowId, 'name' => 'Jane', 'age' => 35],
-            $this->getSampleValues($optionalColumnDefinitions),
+            $optionalValues,
         );
         $table->updateRow($updatedRow);
 
@@ -332,12 +343,12 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     {
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('name', ColumnDataType::Text),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ]);
 
         $this->expectException(InvalidRow::class);
         $this->expectExceptionMessage("Column 'unknown' is not defined in the schema");
-        $table->updateRow(['id' => 1, 'unknown' => 'value']);
+        $table->updateRow(['id' => 1, 'name' => 'whatever', 'unknown' => 'value']);
     }
 
     /**
@@ -348,7 +359,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     {
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('name', ColumnDataType::Text),
+           ( new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ]);
 
         $this->expectException(InvalidRow::class);
@@ -510,7 +521,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             $columnDefinitions[] = (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(random_int(8, 512));
         }
         if (in_array(ColumnDataType::Serializable, $supportedDataTypes, true)) {
-            $columnDefinitions[] = new ColumnDefinition('metadata', ColumnDataType::Serializable);
+            $columnDefinitions[] = (new ColumnDefinition('metadata', ColumnDataType::Serializable))->withRequired(true);
         }
 
         return $columnDefinitions;

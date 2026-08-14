@@ -19,9 +19,9 @@ final class SupportedSearchCondition
     public static function reasonableDefaults(): array
     {
         return [
-            new self(ColumnDataType::Text, [SearchCondition::cases()]),
-            new self(ColumnDataType::VarChar, [SearchCondition::cases()]),
-            new self(ColumnDataType::Integer, [SearchCondition::cases()]),
+            new self(ColumnDataType::Text, SearchCondition::cases()),
+            new self(ColumnDataType::VarChar, SearchCondition::cases()),
+            new self(ColumnDataType::Integer, SearchCondition::cases()),
             new self(ColumnDataType::Boolean, [SearchCondition::Equals, SearchCondition::NotEquals]),
         ];
     }

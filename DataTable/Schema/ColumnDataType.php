@@ -10,6 +10,8 @@ enum ColumnDataType : string
      * Normally, the database will store the data as a serialized string.
      *
      * The database schema does not impose any restrictions on the type of data that can be stored in this column.
+     *
+     * **WARNING**: This type must be marked as required since most databases would not accept a default value for it.
      */
     case Serializable = 'serializable';
 
@@ -18,8 +20,12 @@ enum ColumnDataType : string
      */
     case VarChar = 'varchar';
 
-    /*
+    /**
      * A string of any length. No length check is performed.
+     *
+     * **WARNING**: This type must be marked as required since most databases would not accept a default value for it.
+     *
+     * @see ColumnDataType::VarChar an alternative that accepts a default value.
      */
     case Text = 'text';
 
@@ -35,10 +41,15 @@ enum ColumnDataType : string
      */
     case Boolean = 'boolean';
 
-
     /**
      * The table's id column.
      */
     case Id = 'id';
+
+
+    /**
+     * Types that do not accept a default value and therefore MUST be marked as required in the database schema.
+     */
+    const array NoDefaultTypes = [ColumnDataType::Serializable, ColumnDataType::Text];
 
 }

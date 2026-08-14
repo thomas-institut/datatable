@@ -92,7 +92,9 @@ class SearchSpecTranslatorTest extends TestCase
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
-            (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('full_name'),
+            (new ColumnDefinition('name', ColumnDataType::Text))
+                ->withDbColumn('full_name')
+                ->withRequired(true),
             (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years'),
         ];
         $rowTranslator = new GenericRowTranslator(new StringValuesDbRowValueTranslator(), $columnDefinitions);
@@ -127,6 +129,7 @@ class SearchSpecTranslatorTest extends TestCase
             new ColumnDefinition('id', ColumnDataType::Id),
             (new ColumnDefinition('deletedAt', ColumnDataType::Text))
                 ->withDbColumn('deleted_at')
+                ->withRequired(true)
                 ->withNullable(true),
         ];
         $rowTranslator = new GenericRowTranslator(new StringValuesDbRowValueTranslator(), $columnDefinitions);
@@ -256,14 +259,20 @@ class SearchSpecTranslatorTest extends TestCase
     public static function invalidSearchValueProvider(): array
     {
         return [
-            'text receives integer' => [new ColumnDefinition('description', ColumnDataType::Text), 123],
+            'text receives integer' => [
+                (new ColumnDefinition('description', ColumnDataType::Text))->withRequired(true),
+                123,
+            ],
             'varchar exceeds maximum length' => [
                 (new ColumnDefinition('name', ColumnDataType::VarChar))->withTypeLength(3),
                 'long',
             ],
             'integer receives numeric string' => [new ColumnDefinition('age', ColumnDataType::Integer), '42'],
             'boolean receives integer' => [new ColumnDefinition('enabled', ColumnDataType::Boolean), 1],
-            'non-nullable column receives null' => [new ColumnDefinition('value', ColumnDataType::Text), null],
+            'non-nullable column receives null' => [
+                (new ColumnDefinition('value', ColumnDataType::Text))->withRequired(true),
+                null,
+            ],
         ];
     }
 
@@ -274,7 +283,7 @@ class SearchSpecTranslatorTest extends TestCase
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('name', ColumnDataType::Text),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ];
         $rowTranslator = $this->createMock(RowTranslator::class);
         $rowTranslator->expects($this->once())

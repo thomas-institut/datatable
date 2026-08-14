@@ -41,10 +41,12 @@ class GenericRowTranslatorTest extends TestCase
                     (new ColumnDefinition('name', ColumnDataType::VarChar))
                         ->withDbColumn('full_name')
                         ->withTypeLength(100),
-                    new ColumnDefinition('description', ColumnDataType::Text),
+                    (new ColumnDefinition('description', ColumnDataType::Text))->withRequired(true),
                     (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years'),
                     new ColumnDefinition('enabled', ColumnDataType::Boolean),
-                    (new ColumnDefinition('metadata', ColumnDataType::Serializable))->withDbColumn('extra_data'),
+                    (new ColumnDefinition('metadata', ColumnDataType::Serializable))
+                        ->withDbColumn('extra_data')
+                        ->withRequired(true),
                 ],
                 [
                     'id' => 42,
@@ -68,10 +70,12 @@ class GenericRowTranslatorTest extends TestCase
                 [
                     (new ColumnDefinition('identifier', ColumnDataType::Id))->withDbColumn('id_value'),
                     (new ColumnDefinition('title', ColumnDataType::VarChar))->withTypeLength(100),
-                    (new ColumnDefinition('body', ColumnDataType::Text))->withDbColumn('text_value'),
+                    (new ColumnDefinition('body', ColumnDataType::Text))
+                        ->withDbColumn('text_value')
+                        ->withRequired(true),
                     new ColumnDefinition('count', ColumnDataType::Integer),
                     (new ColumnDefinition('visible', ColumnDataType::Boolean))->withDbColumn('is_visible'),
-                    new ColumnDefinition('attributes', ColumnDataType::Serializable),
+                    (new ColumnDefinition('attributes', ColumnDataType::Serializable))->withRequired(true),
                 ],
                 [
                     'identifier' => 7,

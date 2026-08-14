@@ -326,14 +326,16 @@ class PdoDataTable extends GenericDataTable
     /**
      * Executes a general SELECT query on the data table
      *
-     * Try not to use this method directly, prefer to use search() or findRows() since
-     * search is implemented by any DataTable not just by PdoDataTable
+     * **WARNING**: Try not to use this method directly, prefer `search()` or `findRows()`,
+     * which are implemented by any DataTable not just by PdoDataTable
      *
      * The method executes the following query:
-     *  SELECT * FROM tableName WHERE  $where LIMIT $limit ORDER BY $orderBy
      *
-     * LIMIT $limit is omitted if $limit < 0
-     * ORDER BY $orderBy is omitted if $orderBy=== ''
+     * ` SELECT * FROM tableName WHERE  $where LIMIT $limit ORDER BY $orderBy`
+     *
+     * `LIMIT $limit is omitted if $limit < 0`
+     *
+     * `ORDER BY $orderBy` is omitted if $orderBy=== ''
      *
      * $context is used to report errors
      *
@@ -346,7 +348,7 @@ class PdoDataTable extends GenericDataTable
      * @throws InvalidWhereClauseException
      * @see DataTable::search()  Preferred alternative
      * @see DataTable::findRows() Preferred alternative
-     */
+      */
     public function select(string $what, string $where, int $limit, string $orderBy, string $context): PDOStatement
     {
 

@@ -46,12 +46,29 @@ class ColumnDefinition
 
 
     /**
+     * The default value to use for the column if the database requires one for optional columns.
+     *
+     * @var mixed|null
+     */
+    public mixed $defaultValue;
+
+
+    /**
      * @codeCoverageIgnore
      */
     public function __construct(string $rowKey, ColumnDataType $type)
     {
         $this->type = $type;
         $this->rowKey = $rowKey;
+
+        // set a sensible default value
+        $this->defaultValue = match($type)
+        {
+            ColumnDataType::VarChar,
+            ColumnDataType::Integer, ColumnDataType::Id => -1,
+            ColumnDataType::Boolean => false,
+            default => null
+        };
     }
 
     /**
@@ -68,6 +85,10 @@ class ColumnDefinition
      */
     public function withRequired(bool $required): ColumnDefinition
     {
+        if (in_array($this->type, ColumnDataType::NoDefaultTypes))
+        {
+            $required = true;
+        }
         $this->required = $required;
         return $this;
     }
@@ -87,6 +108,7 @@ class ColumnDefinition
     public function withNullable(bool $nullable): ColumnDefinition
     {
         $this->nullable = $nullable;
+        $this->defaultValue = null;
         return $this;
     }
 

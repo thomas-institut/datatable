@@ -24,7 +24,7 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testMissingIdColumnIsReported(): void
     {
         $columnDefinitions = [
-            'name' => new ColumnDefinition('name', ColumnDataType::Text),
+            'name' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertSame(
@@ -37,7 +37,7 @@ class ColumnDefArrayValidatorTest extends TestCase
     {
         $columnDefinitions = [
             'invalid' => 'not a column definition',
-            'name' => new ColumnDefinition('name', ColumnDataType::Text),
+            'name' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertSame(
@@ -54,7 +54,7 @@ class ColumnDefArrayValidatorTest extends TestCase
     {
         $columnDefinitions = [
             'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'column' => new ColumnDefinition($rowKey, ColumnDataType::Text),
+            'column' => (new ColumnDefinition($rowKey, ColumnDataType::Text))->withRequired(true),
         ];
 
         $this->assertContains(
@@ -78,7 +78,8 @@ class ColumnDefArrayValidatorTest extends TestCase
         $columnDefinitions = [
             'id' => new ColumnDefinition('id', ColumnDataType::Id),
             'name' => (new ColumnDefinition('name', ColumnDataType::Text))
-                ->withDbColumn('full name'),
+                ->withDbColumn('full name')
+                ->withRequired(true),
         ];
 
         $this->assertSame(
@@ -90,8 +91,8 @@ class ColumnDefArrayValidatorTest extends TestCase
     public function testDuplicateRowKeyIsReported(): void
     {
         $columnDefinitions = [
-            'first' => new ColumnDefinition('name', ColumnDataType::Text),
-            'second' => new ColumnDefinition('name', ColumnDataType::Text),
+            'first' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            'second' => (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
             'id' => new ColumnDefinition('id', ColumnDataType::Id),
         ];
 
@@ -106,9 +107,11 @@ class ColumnDefArrayValidatorTest extends TestCase
         $columnDefinitions = [
             'id' => new ColumnDefinition('id', ColumnDataType::Id),
             'first' => (new ColumnDefinition('first', ColumnDataType::Text))
-                ->withDbColumn('shared_name'),
+                ->withDbColumn('shared_name')
+                ->withRequired(true),
             'second' => (new ColumnDefinition('second', ColumnDataType::Text))
-                ->withDbColumn('shared_name'),
+                ->withDbColumn('shared_name')
+                ->withRequired(true),
         ];
 
         $this->assertContains(
@@ -121,9 +124,10 @@ class ColumnDefArrayValidatorTest extends TestCase
     {
         $columnDefinitions = [
             'id' => new ColumnDefinition('id', ColumnDataType::Id),
-            'first' => new ColumnDefinition('first', ColumnDataType::Text),
+            'first' => (new ColumnDefinition('first', ColumnDataType::Text))->withRequired(true),
             'second' => (new ColumnDefinition('second', ColumnDataType::Text))
-                ->withDbColumn('first'),
+                ->withDbColumn('first')
+                ->withRequired(true),
         ];
 
         $this->assertContains(
