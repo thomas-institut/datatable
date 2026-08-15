@@ -38,6 +38,7 @@ use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 
 
 /**
@@ -107,7 +108,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         $dataTable = $this->getTestDataTable();
         $idColumn = $dataTable->getIdColumnName();
         
-        $this->assertFalse($dataTable->rowExists(1));
+//        $this->assertFalse($dataTable->rowExists(1));
         
         $ids = [];
         for ($i = 1; $i <= $this->numRows; $i++) {

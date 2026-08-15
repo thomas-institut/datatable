@@ -63,6 +63,9 @@ interface UnitemporalDataTable extends DataTable
     const int ERROR_INVALID_TIME = 2002;
 
 
+    const string DEFAULT_VALID_FROM_COLUMN = 'valid_from';
+    const string DEFAULT_VALID_UNTIL_COLUMN = 'valid_until';
+
     /**
      * Creates a row that exists starting from the given time
      * Returns the id of the newly created row.
@@ -143,6 +146,7 @@ interface UnitemporalDataTable extends DataTable
      * @param string $timeString
      * @return int
      * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime -- if the given time is not later than the last version of the row
      */
     public function deleteRowWithTime(int $rowId, string $timeString): int;
 
