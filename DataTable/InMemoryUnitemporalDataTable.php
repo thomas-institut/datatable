@@ -5,11 +5,14 @@ namespace ThomasInstitut\DataTable;
 
 use ArrayIterator;
 use Iterator;
+use LogicException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
@@ -90,7 +93,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private function internalMarkRowAsInvalid(int $internalRowId, string $timeString): void
     {
         $theRow = $this->theData[$internalRowId];
-//        print "Marking internal row $internalRowId ID: {$theRow[$this->idColumnName]} as invalid at time: $timeString\n";
         $this->theData[$internalRowId][$this->validUntilColumn] = $timeString;
     }
 
@@ -212,6 +214,9 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         foreach ($validRows as $row) {
             if ($this->rowMatches($row, $theRow)) {
                 $foundRows[] = $row;
+                if ($maxResults > 0 && count($foundRows) === $maxResults) {
+                    break;
+                }
             }
         }
         return new ArrayResultsIterator($this->sanitizedRowSet($foundRows));
@@ -220,7 +225,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private function rowMatches(array $theRow, array $rowToMatch): bool
     {
         foreach ($rowToMatch as $key => $value) {
-            if (!isset($theRow[$key]) || $theRow[$key] !== $value) {
+            if (!array_key_exists($key, $theRow) || $theRow[$key] !== $value) {
                 return false;
             }
         }
@@ -229,8 +234,103 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
-        // TODO: Implement searchWithTime() method.
-        return new ArrayResultsIterator([]);
+        $this->checkSearchSpec($searchSpecArray, $searchType);
+        $validRows = $this->getDataRowsValidAtTime($this->theData, $timeString);
+        $foundRows = [];
+
+        foreach ($validRows as $row) {
+            if ($this->rowMatchesSearchSpec($row, $searchSpecArray, $searchType)) {
+                $foundRows[] = $row;
+                if ($maxResults > 0 && count($foundRows) === $maxResults) {
+                    break;
+                }
+            }
+        }
+
+        return new ArrayResultsIterator($this->sanitizedRowSet($foundRows));
+    }
+
+    private function checkSearchSpec(array $searchSpecArray, int $searchType): void
+    {
+        $this->resetError();
+
+        if ($searchSpecArray === []) {
+            $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY);
+            throw new InvalidSearchSpec($this->errorMessage, $this->errorCode);
+        }
+
+        foreach ($searchSpecArray as $specIndex => $spec) {
+            if (!isset($spec[self::SEARCH_SPEC_COLUMN]) || !is_string($spec[self::SEARCH_SPEC_COLUMN])) {
+                $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY);
+                throw new InvalidSearchSpec($this->errorMessage, $this->errorCode);
+            }
+            if (!array_key_exists(self::SEARCH_SPEC_VALUE, $spec)) {
+                $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY);
+                throw new InvalidSearchSpec($this->errorMessage, $this->errorCode);
+            }
+            if (!isset($spec[self::SEARCH_SPEC_CONDITION]) || !is_int($spec[self::SEARCH_SPEC_CONDITION]) ||
+                !in_array($spec[self::SEARCH_SPEC_CONDITION], [
+                    self::COND_EQUAL_TO,
+                    self::COND_NOT_EQUAL_TO,
+                    self::COND_LESS_THAN,
+                    self::COND_LESS_OR_EQUAL_TO,
+                    self::COND_GREATER_THAN,
+                    self::COND_GREATER_OR_EQUAL_TO,
+                ], true)) {
+                $this->setError('searchSpec is not valid', self::ERROR_INVALID_SPEC_ARRAY);
+                throw new InvalidSearchSpec($this->errorMessage, $this->errorCode);
+            }
+        }
+
+        if ($searchType !== self::SEARCH_AND && $searchType !== self::SEARCH_OR) {
+            $this->setError('Invalid search type', self::ERROR_INVALID_SEARCH_TYPE);
+            throw new InvalidSearchType($this->errorMessage, $this->errorCode);
+        }
+    }
+
+    private function rowMatchesSearchSpec(array $dataRow, array $searchSpecArray, int $searchType): bool
+    {
+        if ($searchType === self::SEARCH_AND) {
+            foreach ($searchSpecArray as $spec) {
+                if (!$this->rowMatchesSearchCondition($dataRow, $spec)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        foreach ($searchSpecArray as $spec) {
+            if ($this->rowMatchesSearchCondition($dataRow, $spec)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function rowMatchesSearchCondition(array $dataRow, array $spec): bool
+    {
+        $column = $spec[self::SEARCH_SPEC_COLUMN];
+        if (!array_key_exists($column, $dataRow)) {
+            return false;
+        }
+
+        $rowValue = $dataRow[$column];
+        $value = $spec[self::SEARCH_SPEC_VALUE];
+        if (is_string($value)) {
+            $comparison = strcmp((string) $rowValue, $value);
+        } else {
+            $comparison = $rowValue <=> $value;
+        }
+
+        return match ($spec[self::SEARCH_SPEC_CONDITION]) {
+            self::COND_EQUAL_TO => is_string($value) ? $comparison === 0 : $rowValue === $value,
+            self::COND_NOT_EQUAL_TO => is_string($value) ? $comparison !== 0 : $rowValue !== $value,
+            self::COND_LESS_THAN => $comparison < 0,
+            self::COND_LESS_OR_EQUAL_TO => $comparison <= 0,
+            self::COND_GREATER_THAN => $comparison > 0,
+            self::COND_GREATER_OR_EQUAL_TO => $comparison >= 0,
+            default => throw new LogicException('Invalid search condition'),
+        };
     }
 
     private function setError(string $message, int $errorCode): void
@@ -364,7 +464,13 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function getRow(int $rowId): ?array
     {
-        return $this->sanitizedRow($this->getRowWithTime($rowId, TimeString::now()), true);
+        $this->resetError();
+        $row = $this->getRowWithTime($rowId, TimeString::now());
+        if ($row === null) {
+            $this->setError("The row with id $rowId does not exist", self::ERROR_ROW_DOES_NOT_EXIST);
+            return null;
+        }
+        return $this->sanitizedRow($row, true);
     }
 
 
@@ -387,8 +493,20 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
-        // TODO: Implement search() method.
-        return new ArrayResultsIterator([]);
+        $this->checkSearchSpec($searchSpecArray, $searchType);
+        $validRows = $this->getDataRowsValidAtTime($this->theData, TimeString::now());
+        $foundRows = [];
+
+        foreach ($validRows as $row) {
+            if ($this->rowMatchesSearchSpec($row, $searchSpecArray, $searchType)) {
+                $foundRows[] = $row;
+                if ($maxResults > 0 && count($foundRows) === $maxResults) {
+                    break;
+                }
+            }
+        }
+
+        return new ArrayResultsIterator($this->sanitizedRowSet($foundRows, true));
     }
 
     public function updateRow(array $theRow): void
@@ -432,13 +550,23 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function getIdForKeyValue(string $key, mixed $value): int
     {
-        // TODO: Implement getIdForKeyValue() method.
-        return -1;
+        $validRows = $this->getDataRowsValidAtTime($this->theData, TimeString::now());
+        foreach ($validRows as $row) {
+            if (array_key_exists($key, $row) && $row[$key] === $value) {
+                return $row[$this->idColumnName];
+            }
+        }
+
+        return self::NULL_ROW_ID;
     }
 
     public function getMaxValueInColumn(string $columnName): int
     {
-        return max(array_column($this->theData, $columnName));
+        $values = array_column(
+            $this->getDataRowsValidAtTime($this->theData, TimeString::now()),
+            $columnName
+        );
+        return $values === [] ? 0 : max($values);
     }
 
     public function getMaxId(): int
@@ -459,11 +587,13 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     {
         $ids = [];
         foreach ($this->theData as $row) {
-            if ($row[$this->validFromColumn] <= $timeString && $row[$this->validUntilColumn] >= $timeString) {
+            if ($row[$this->validFromColumn] <= $timeString && $row[$this->validUntilColumn] > $timeString) {
                 $ids[] = $row[$this->idColumnName];
             }
         }
-        return new ArrayIterator(array_unique($ids));
+        $ids = array_values(array_unique($ids, SORT_NUMERIC));
+        sort($ids, SORT_NUMERIC);
+        return new ArrayIterator($ids);
     }
 
     public function getName(): string
