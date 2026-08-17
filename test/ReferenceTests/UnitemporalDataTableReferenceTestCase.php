@@ -11,6 +11,7 @@ use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\UnitemporalDataTable;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\TimeString;
@@ -148,16 +149,46 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     public function testSearchWithTime(): void
     {
         $table = $this->getTestUnitemporalDataTable();
-        $table->createRowWithTime([self::STRING_COLUMN => 'value'], '2010-01-01');
+        $firstId = $table->createRowWithTime([self::STRING_COLUMN => 'matching'], '2010-01-01');
+        $secondId = $table->createRowWithTime([self::STRING_COLUMN => 'matching'], '2010-01-01');
+        $thirdId = $table->createRowWithTime([self::STRING_COLUMN => 'other'], '2010-01-01');
 
-        // PdoUnitemporalDataTable is the de facto reference implementation and
-        // deliberately reports this method as not implemented.
-        $results = $table->searchWithTime([
-            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'value'],
-        ], DataTable::SEARCH_AND, '2015-01-01');
+        $matchingSearch = [
+            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'matching'],
+        ];
 
-        $this->assertSame(0, $results->count());
-        $this->assertSame(DataTable::ERROR_NOT_IMPLEMENTED, $table->getErrorCode());
+        $table->deleteRowWithTime($secondId, '2015-01-01');
+        $table->deleteRowWithTime($firstId, '2020-01-01');
+
+        $idColumn = $table->getIdColumnName();
+        $getResultIds = static function (ResultsIterator $results) use ($idColumn): array {
+            $ids = [];
+            foreach ($results as $row) {
+                $ids[] = $row[$idColumn];
+            }
+            return $ids;
+        };
+
+        $this->assertSame([$firstId, $secondId], $getResultIds($table->searchWithTime(
+            $matchingSearch,
+            DataTable::SEARCH_AND,
+            '2014-12-31'
+        )));
+        $this->assertSame([$firstId], $getResultIds($table->searchWithTime(
+            $matchingSearch,
+            DataTable::SEARCH_AND,
+            '2015-01-01'
+        )));
+        $this->assertSame([], $getResultIds($table->searchWithTime(
+            $matchingSearch,
+            DataTable::SEARCH_AND,
+            '2020-01-01'
+        )));
+
+        $this->assertSame([$thirdId], $getResultIds($table->searchWithTime([
+            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'matching'],
+            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'other'],
+        ], DataTable::SEARCH_OR, '2020-01-01')));
     }
 
     /**

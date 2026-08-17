@@ -32,13 +32,8 @@ use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
-use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
-use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
-use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
-use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoUnitemporalDataTable;
-use ThomasInstitut\DataTable\UnitemporalDataTable;
 use ThomasInstitut\TimeString\TimeString;
 
 

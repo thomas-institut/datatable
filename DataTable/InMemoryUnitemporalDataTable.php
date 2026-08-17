@@ -244,10 +244,21 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
-        // Match PdoUnitemporalDataTable, the de facto reference implementation:
-        // point-in-time full search is not implemented yet.
-        $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
-        return new ArrayResultsIterator([]);
+        $this->checkSearchSpec($searchSpecArray, $searchType);
+        $timeString = $this->getValidTimeString($timeString, 'searchWithTime');
+        $validRows = $this->getDataRowsValidAtTime($this->theData, $timeString);
+        $foundRows = [];
+
+        foreach ($validRows as $row) {
+            if ($this->rowMatchesSearchSpec($row, $searchSpecArray, $searchType)) {
+                $foundRows[] = $row;
+                if ($maxResults > 0 && count($foundRows) === $maxResults) {
+                    break;
+                }
+            }
+        }
+
+        return new ArrayResultsIterator($this->sanitizedRowSet($foundRows));
     }
 
     /**
@@ -531,20 +542,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
-        $this->checkSearchSpec($searchSpecArray, $searchType);
-        $validRows = $this->getDataRowsValidAtTime($this->theData, TimeString::now());
-        $foundRows = [];
-
-        foreach ($validRows as $row) {
-            if ($this->rowMatchesSearchSpec($row, $searchSpecArray, $searchType)) {
-                $foundRows[] = $row;
-                if ($maxResults > 0 && count($foundRows) === $maxResults) {
-                    break;
-                }
-            }
-        }
-
-        return new ArrayResultsIterator($this->sanitizedRowSet($foundRows, true));
+        return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
     }
 
     public function updateRow(array $theRow): void

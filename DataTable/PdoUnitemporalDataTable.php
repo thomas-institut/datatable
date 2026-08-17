@@ -672,10 +672,40 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
-        // TODO: implement searchWithTime
-        $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
-        return new ArrayResultsIterator([]);
+        $this->checkSpec($searchSpecArray, $searchType);
+        try {
+            $timeString = TimeString::fromString($timeString);
+        } catch (InvalidTimeZoneException|MalformedStringException) {
+            $this->throwExceptionForInvalidTime($timeString, 'searchWithTime');
+        }
 
+        $conditions = [];
+        foreach ($searchSpecArray as $spec) {
+            $conditions[] = $this->getSqlConditionFromSpec($spec);
+        }
+        $sqlLogicalOperator = $searchType === self::SEARCH_OR ? ' OR ' : ' AND ';
+        $quotedTimeString = $this->quoteValue($timeString);
+        $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE (' .
+            implode($sqlLogicalOperator, $conditions) . ')' .
+            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+
+        if ($maxResults > 0) {
+            $sql .= ' LIMIT ' . $maxResults;
+        }
+
+        return new PdoResultsIterator($this->doQuery($sql, 'searchWithTime'), $this->idColumnName);
+
+    }
+
+    #[Override]
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
+    {
+        try {
+            return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
+        } catch (InvalidTimeStringException $e) {
+            throw new RuntimeException("Unexpected error: " . $e->getMessage());
+        }
     }
 
 
