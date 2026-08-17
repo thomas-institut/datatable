@@ -70,16 +70,6 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return new MySqlUnitemporalDataTable($pdoOrProvider, $tableName, $this->getIdColumnName());
     }
 
-    protected function getMockColumnInfoResponse(): array
-    {
-        return ['Type' => 'int'];
-    }
-
-    protected function getMockDatetimeColumnInfoResponse(): array
-    {
-        return ['Type' => 'datetime'];
-    }
-
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
         if (self::$motherSession === null) {

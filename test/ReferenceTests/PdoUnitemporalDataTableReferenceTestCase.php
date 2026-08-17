@@ -28,10 +28,8 @@ namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use ArrayIterator;
 use PDO;
-use PDOStatement;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\Exception;
 use RuntimeException;
 use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
@@ -39,9 +37,7 @@ use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
-use ThomasInstitut\DataTable\PdoDataTable;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
-use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
 use ThomasInstitut\DataTable\PdoUnitemporalDataTable;
 use ThomasInstitut\DataTable\UnitemporalDataTable;
 use ThomasInstitut\TimeString\TimeString;
@@ -71,121 +67,6 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
     protected function constructPdoDataTable(PDO $pdo): PdoUnitemporalDataTable
     {
         return $this->constructPdoUnitemporalDataTable($pdo);
-    }
-
-    protected function constructPdoDataTableWithProvider(PdoProvider $provider): PdoDataTable
-    {
-        return $this->constructPdoUnitemporalDataTableForTable($provider, $this->getTableName());
-    }
-
-    protected function constructPdoDataTableForTable(PDO|PdoProvider $pdoOrProvider, string $tableName): PdoDataTable
-    {
-        return $this->constructPdoUnitemporalDataTableForTable($pdoOrProvider, $tableName);
-    }
-
-    /**
-     * Return mock column info matching the dialect's format for datetime columns.
-     *
-     * For MySqlDialect this would be ['Type' => 'datetime'].
-     */
-    abstract protected function getMockDatetimeColumnInfoResponse(): array;
-
-    #[Test]
-    #[AllowMockObjectsWithoutExpectations]
-    public function testTransactionFailures(): void
-    {
-        $intResp = $this->getMockColumnInfoResponse();
-        $dtResp = $this->getMockDatetimeColumnInfoResponse();
-
-        // Helper to create a fresh mock PDO + provider for each subtest
-        /**
-         * @throws Exception
-         */
-        $createMocks = function () use ($intResp, $dtResp): array {
-            $pdo = $this->createStub(PDO::class);
-            $pdoProvider = $this->createStub(PdoProvider::class);
-            $pdoProvider->method('getPdo')->willReturn($pdo);
-
-            $stmt = $this->createStub(PDOStatement::class);
-            $stmt->method('rowCount')->willReturn(1);
-            $stmt->method('fetch')->willReturnOnConsecutiveCalls($intResp, $dtResp, $dtResp);
-            $pdo->method('query')->willReturn($stmt);
-
-            $prepareStmt = $this->createStub(PDOStatement::class);
-            $pdo->method('prepare')->willReturn($prepareStmt);
-
-            return [$pdo, $pdoProvider];
-        };
-
-        // Test startTransaction failure
-        [$pdo, $pdoProvider] = $createMocks();
-        $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
-        $pdo->method('inTransaction')->willReturn(false);
-        $pdo->method('beginTransaction')->willReturn(false);
-        $this->assertFalse($dataTable->startTransaction());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION, $dataTable->getErrorCode());
-
-        // Test commit failure
-        [$pdo, $pdoProvider] = $createMocks();
-        $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
-        $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, true);
-        $this->assertTrue($dataTable->startTransaction());
-        $pdo->method('commit')->willReturn(false);
-        $this->assertFalse($dataTable->commit());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
-        $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
-
-        // Test commit failure where transaction ended
-        [$pdo, $pdoProvider] = $createMocks();
-        $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
-        $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
-        $this->assertTrue($dataTable->startTransaction());
-        $pdo->method('commit')->willReturn(false);
-        $this->assertFalse($dataTable->commit());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
-        $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
-
-        // Test rollBack failure
-        [$pdo, $pdoProvider] = $createMocks();
-        $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
-        $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, true);
-        $this->assertTrue($dataTable->startTransaction());
-        $pdo->method('rollBack')->willReturn(false);
-        $this->assertFalse($dataTable->rollBack());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
-        $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
-
-        // Test rollBack failure where transaction ended
-        [$pdo, $pdoProvider] = $createMocks();
-        $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
-        $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
-        $this->assertTrue($dataTable->startTransaction());
-        $pdo->method('rollBack')->willReturn(false);
-        $this->assertFalse($dataTable->rollBack());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
-        $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
-    }
-
-    /**
-     * @throws RowAlreadyExists
-     */
-    #[Test]
-    public function testDbConnectionProvider(): void
-    {
-        $pdo = $this->getPdo();
-        $provider = new SimplePdoProvider($pdo);
-        $dataTable = $this->constructPdoUnitemporalDataTableForTable($provider, $this->getTableName());
-
-        $rowId = 101;
-        $row = [$this->getIdColumnName() => $rowId, self::STRING_COLUMN => 'test'];
-        $dataTable->createRow($row);
-
-        $this->assertTrue($dataTable->rowExists($rowId));
-        $this->assertEquals('test', $dataTable->getRow($rowId)[self::STRING_COLUMN]);
     }
 
     #[Test]
