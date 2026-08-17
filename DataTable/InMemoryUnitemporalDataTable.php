@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
@@ -56,8 +57,16 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private int $errorCode;
 
 
-    public function __construct(?array &$data = null, ?IdGenerator $idGenerator = null, ?LoggerInterface $logger = null)
+    public function __construct(
+        ?array &$data = null,
+        ?IdGenerator $idGenerator = null,
+        ?LoggerInterface $logger = null,
+        string $validFromColumnName = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN,
+        string $validUntilColumnName = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN
+    )
     {
+        $this->setValidFromColumnName($validFromColumnName);
+        $this->setValidUntilColumnName($validUntilColumnName);
         $this->logger = $logger ?? new NullLogger();
         if ($data === null) {
             $this->theData = [];
@@ -652,6 +661,35 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     public function getIdColumnName(): string
     {
         return $this->idColumnName;
+    }
+
+    public function getValidFromColumnName(): string
+    {
+        return $this->validFromColumn;
+    }
+
+    public function getValidUntilColumnName(): string
+    {
+        return $this->validUntilColumn;
+    }
+
+    public function setValidFromColumnName(string $validFromColumnName): void
+    {
+        $this->validateTimeColumnName($validFromColumnName);
+        $this->validFromColumn = $validFromColumnName;
+    }
+
+    public function setValidUntilColumnName(string $validUntilColumnName): void
+    {
+        $this->validateTimeColumnName($validUntilColumnName);
+        $this->validUntilColumn = $validUntilColumnName;
+    }
+
+    private function validateTimeColumnName(string $columnName): void
+    {
+        if ($columnName === '' || trim($columnName) !== $columnName || preg_match('/\s/', $columnName) === 1) {
+            throw new InvalidArgumentException('Time column names must be non-empty and contain no whitespace');
+        }
     }
 
     /**

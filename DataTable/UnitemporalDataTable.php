@@ -27,6 +27,7 @@
 
 namespace ThomasInstitut\DataTable;
 
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
@@ -173,5 +174,56 @@ interface UnitemporalDataTable extends DataTable
      * @throws InvalidTimeStringException
      */
     public function getAllRowsWithTime(string $timeString): ResultsIterator;
+
+
+    /**
+     * Gets the name of the column that stores the *valid from* time of each row.
+     *
+     * This is the name registered with the data table instance, it must match the name
+     * in the underlying database, but this is not checked explicitly.
+     * @return string
+     */
+    public function getValidFromColumnName(): string;
+
+
+    /**
+     * Gets the name of the column that stores the *valid until* time of each row.
+     *
+     * This is the name registered with the data table instance, it must match the name
+     * in the underlying database, but this is not checked explicitly.
+     * @return string
+     */
+    public function getValidUntilColumnName(): string;
+
+    /**
+     * Sets the *valid from* column name registered with the data table instance.
+     *
+     * Normally, this method should be called shortly after the data table instance is created if
+     * the implementation does not provide it in its constructor.
+     *
+     * This is the name registered with the data table instance, it must match the name
+     * in the underlying database, but this is not checked explicitly in this method.
+     *
+     * @param string $validFromColumnName
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function setValidFromColumnName(string $validFromColumnName): void;
+
+
+    /**
+     * Sets the *valid until* column name registered with the data table instance.
+     *
+     * Normally, this method should be called shortly after the data table instance is created if
+     * the implementation does not provide it in its constructor.
+     *
+     * This is the name registered with the data table instance, it must match the name
+     * in the underlying database, but this is not checked explicitly in this method.
+     *
+     * @param string $validUntilColumnName
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function setValidUntilColumnName(string $validUntilColumnName): void;
 
 }

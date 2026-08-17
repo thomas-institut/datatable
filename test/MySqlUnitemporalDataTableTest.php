@@ -6,6 +6,7 @@ namespace ThomasInstitut\DataTable;
 
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\ReferenceTests\PdoUnitemporalDataTableReferenceTestCase;
 
@@ -191,6 +192,40 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
 EOD;
         $pdo->query($tableSetupSQL);
+    }
+
+    #[Test]
+    public function testCustomValidTimeColumnNames(): void
+    {
+        $pdo = $this->getPdo();
+        $tableName = 'dt_test_table_custom_time_columns';
+        $idColumn = $this->getIdColumnName();
+        $validFromColumn = 'created_at';
+        $validUntilColumn = 'expired_at';
+
+        $pdo->exec("DROP TABLE IF EXISTS `$tableName`");
+        $pdo->exec("CREATE TABLE `$tableName` (
+            `$idColumn` int(11) UNSIGNED NOT NULL,
+            `$validFromColumn` datetime(6) NOT NULL,
+            `$validUntilColumn` datetime(6) NOT NULL,
+            `a_string` varchar(100) DEFAULT NULL,
+            PRIMARY KEY (`$idColumn`, `$validFromColumn`, `$validUntilColumn`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1");
+
+        $table = new MySqlUnitemporalDataTable(
+            $pdo,
+            $tableName,
+            $idColumn,
+            $validFromColumn,
+            $validUntilColumn
+        );
+        $rowId = $table->createRowWithTime(['a_string' => 'custom'], '2010-01-01');
+        $row = $table->getRowWithTime($rowId, '2010-01-02');
+
+        $this->assertSame($validFromColumn, $table->getValidFromColumnName());
+        $this->assertSame($validUntilColumn, $table->getValidUntilColumnName());
+        $this->assertSame('2010-01-01 00:00:00.000000', $row[$validFromColumn]);
+        $this->assertSame('9999-12-31 23:59:59.999999', $row[$validUntilColumn]);
     }
 
     public function getTestUnitemporalDataTable(bool $resetTable = true, bool $newSession = false): UnitemporalDataTable

@@ -4,6 +4,7 @@ namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use PHPUnit\Framework\Attributes\Test;
 use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
@@ -24,6 +25,28 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): DataTable
     {
         return $this->getTestUnitemporalDataTable($resetTable, $newSession);
+    }
+
+    #[Test]
+    public function testValidTimeColumnNamesRejectInvalidNames(): void
+    {
+        $table = $this->getTestUnitemporalDataTable();
+
+        foreach (['', ' valid_from', 'valid_until ', 'valid from'] as $invalidName) {
+            try {
+                $table->setValidFromColumnName($invalidName);
+                $this->fail("Invalid valid-from column name '$invalidName' must be rejected.");
+            } catch (InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+
+            try {
+                $table->setValidUntilColumnName($invalidName);
+                $this->fail("Invalid valid-until column name '$invalidName' must be rejected.");
+            } catch (InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
     }
 
 

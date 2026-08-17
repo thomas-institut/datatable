@@ -85,32 +85,52 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     const string FIELD_VALID_FROM = 'valid_from';
     const string FIELD_VALID_UNTIL = 'valid_until';
 
+    protected string $validFromColumn = self::FIELD_VALID_FROM;
+    protected string $validUntilColumn = self::FIELD_VALID_UNTIL;
+
     /**
      *
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
      * @param SqlDialect $sqlDialect
      * @param string $idColumnName
+     * @param string $validFromColumnName
+     * @param string $validUntilColumnName
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(
+        PDO|PdoProvider $pdoOrProvider,
+        string $tableName,
+        SqlDialect $sqlDialect,
+        string $idColumnName = self::DEFAULT_ID_COLUMN_NAME,
+        string $validFromColumnName = self::FIELD_VALID_FROM,
+        string $validUntilColumnName = self::FIELD_VALID_UNTIL
+    )
     {
+        $this->validateTimeColumnName($validFromColumnName);
+        $this->validateTimeColumnName($validUntilColumnName);
+        $this->validFromColumn = $validFromColumnName;
+        $this->validUntilColumn = $validUntilColumnName;
         parent::__construct($pdoOrProvider, $tableName, $sqlDialect, false, $idColumnName);
 
         // Check additional columns
-        if (!$this->isTableColumnValid(self::FIELD_VALID_FROM, ['datetime'])) {
+        if (!$this->isTableColumnValid($this->validFromColumn, ['datetime'])) {
             // error message and code set by isTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        if (!$this->isTableColumnValid(self::FIELD_VALID_UNTIL, ['datetime'])) {
+        if (!$this->isTableColumnValid($this->validUntilColumn, ['datetime'])) {
             // error message and code set by isTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        // Override rowExistsById statement
+        $this->prepareRowExistsByIdStatement();
+    }
+
+    private function prepareRowExistsByIdStatement(): void
+    {
         $quotedIdColumnName = $this->sqlDialect->quoteIdentifier($this->idColumnName);
         $quotedTableName = $this->sqlDialect->quoteIdentifier($this->tableName);
-        $quotedValidUntilColumnName = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidUntilColumnName = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
         try {
             $this->statements['rowExistsById'] =
                 $this->pdoProvider->getPdo()->prepare('SELECT ' . $quotedIdColumnName . ' FROM ' . $quotedTableName .
@@ -122,6 +142,38 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
                 . "in constructor, " . $e->getMessage(), self::ERROR_PREPARING_STATEMENTS);
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
             // @codeCoverageIgnoreEnd
+        }
+    }
+
+    public function getValidFromColumnName(): string
+    {
+        return $this->validFromColumn;
+    }
+
+    public function getValidUntilColumnName(): string
+    {
+        return $this->validUntilColumn;
+    }
+
+    public function setValidFromColumnName(string $validFromColumnName): void
+    {
+        $this->validateTimeColumnName($validFromColumnName);
+        $this->validFromColumn = $validFromColumnName;
+    }
+
+    public function setValidUntilColumnName(string $validUntilColumnName): void
+    {
+        $this->validateTimeColumnName($validUntilColumnName);
+        $this->validUntilColumn = $validUntilColumnName;
+        if (isset($this->pdoProvider)) {
+            $this->prepareRowExistsByIdStatement();
+        }
+    }
+
+    private function validateTimeColumnName(string $columnName): void
+    {
+        if ($columnName === '' || trim($columnName) !== $columnName || preg_match('/\s/', $columnName) === 1) {
+            throw new InvalidArgumentException('Time column names must be non-empty and contain no whitespace');
         }
     }
 
@@ -157,33 +209,33 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             //print_r($rowHistory);
             $previousVersion = null;
             foreach ($rowHistory as $version) {
-                if ($version[self::FIELD_VALID_UNTIL] < $version[self::FIELD_VALID_FROM]) {
+                if ($version[$this->validUntilColumn] < $version[$this->validFromColumn]) {
                     $issues[] = [
                         'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
                         'code' => self::REPORT_ERROR_INVALID_TIME_RANGE,
-                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " < validFrom " . $version[self::FIELD_VALID_FROM]
+                        'description' => "validUntil " . $version[$this->validUntilColumn] . " < validFrom " . $version[$this->validFromColumn]
                     ];
                 }
-                if ($version[self::FIELD_VALID_UNTIL] === $version[self::FIELD_VALID_FROM]) {
+                if ($version[$this->validUntilColumn] === $version[$this->validFromColumn]) {
                     $issues[] = [
                         'id' => $id, 'type' => self::REPORT_TYPE_WARNING,
                         'code' => self::REPORT_WARNING_ZERO_TIME_RANGE,
-                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " = validFrom " . $version[self::FIELD_VALID_FROM]
+                        'description' => "validUntil " . $version[$this->validUntilColumn] . " = validFrom " . $version[$this->validFromColumn]
                     ];
                 }
                 if (!is_null($previousVersion)) {
-                    if ($version[self::FIELD_VALID_FROM] < $previousVersion[self::FIELD_VALID_UNTIL]) {
+                    if ($version[$this->validFromColumn] < $previousVersion[$this->validUntilColumn]) {
                         $issues[] = [
                             'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
                             'code' => self::REPORT_ERROR_OVERLAPPING_VERSIONS,
-                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " < previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
+                            'description' => "validFrom " . $version[$this->validFromColumn] . " < previous version validUntil " . $previousVersion[$this->validUntilColumn]
                         ];
                     }
-                    if ($version[self::FIELD_VALID_FROM] > $previousVersion[self::FIELD_VALID_UNTIL]) {
+                    if ($version[$this->validFromColumn] > $previousVersion[$this->validUntilColumn]) {
                         $issues[] = [
                             'id' => $id, 'type' => self::REPORT_TYPE_INFO,
                             'code' => self::REPORT_INFO_GAP,
-                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " > previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
+                            'description' => "validFrom " . $version[$this->validFromColumn] . " > previous version validUntil " . $previousVersion[$this->validUntilColumn]
                         ];
                     }
                 }
@@ -215,8 +267,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      */
     public function getUniqueIdsWithTime(string $timeString): Iterator
     {
-        $quotedValidFrom = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
-        $quotedValidUntil = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidFrom = $this->sqlDialect->quoteIdentifier($this->validFromColumn);
+        $quotedValidUntil = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
 
         if ($timeString === '') {
             $sqlTimeConstraint = '';
@@ -303,8 +355,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             }
         }
 
-        $theRow[self::FIELD_VALID_FROM] = $timeString;
-        $theRow[self::FIELD_VALID_UNTIL] = TimeString::END_OF_TIMES;
+        $theRow[$this->validFromColumn] = $timeString;
+        $theRow[$this->validUntilColumn] = TimeString::END_OF_TIMES;
 
         return parent::realCreateRow($theRow);
     }
@@ -327,13 +379,13 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         }
         $quotedTableName = $this->sqlDialect->quoteIdentifier($this->tableName);
         $quotedIdColumnName = $this->sqlDialect->quoteIdentifier($this->idColumnName);
-        $quotedValidFrom = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
-        $quotedValidUntil = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidFrom = $this->sqlDialect->quoteIdentifier($this->validFromColumn);
+        $quotedValidUntil = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
         $sql = 'UPDATE ' . $quotedTableName . ' SET ' .
             $quotedValidUntil . '=' . $this->quoteValue($timeString) .
             ' WHERE ' . $quotedIdColumnName . '=' . $theRow[$this->idColumnName] .
-            ' AND ' . $quotedValidFrom . ' = ' . $this->quoteValue($theRow[self::FIELD_VALID_FROM]) .
-            ' AND ' . $quotedValidUntil . '= ' . $this->quoteValue($theRow[self::FIELD_VALID_UNTIL]);
+            ' AND ' . $quotedValidFrom . ' = ' . $this->quoteValue($theRow[$this->validFromColumn]) .
+            ' AND ' . $quotedValidUntil . '= ' . $this->quoteValue($theRow[$this->validUntilColumn]);
 
         $this->doQuery($sql, 'makeRowInvalid');
 
@@ -382,7 +434,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             throw new RowDoesNotExist();
         }
 
-        if ($currentRow[self::FIELD_VALID_FROM] > $timeString) {
+        if ($currentRow[$this->validFromColumn] > $timeString) {
             // attempt to update a row before the row's last version is valid
             $this->setError("Row update time is before the row's last version", UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
             throw new InvalidRowUpdateTime();
@@ -398,7 +450,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         try {
             $this->makeRowInvalid($currentRow, $timeString);
             foreach (array_keys($currentRow) as $key) {
-                if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
+                if ($key === $this->validFromColumn or $key === $this->validUntilColumn) {
                     continue;
                 }
                 if (!array_key_exists($key, $theRow)) {
@@ -451,7 +503,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
         $eot = TimeString::END_OF_TIMES;
 
-        $sql .= ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '=' . $this->quoteValue($eot);
+        $sql .= ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '=' . $this->quoteValue($eot);
 
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
@@ -481,8 +533,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $timeString = $this->getValidTimeString($timeString, 'getAllRowsWithTime');
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
-            ' WHERE ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+            ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
 
         return new PdoResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
@@ -507,8 +559,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             return null;
         }
         if ($stripTimeInfo) {
-            unset($theRow[self::FIELD_VALID_FROM]);
-            unset($theRow[self::FIELD_VALID_UNTIL]);
+            unset($theRow[$this->validFromColumn]);
+            unset($theRow[$this->validUntilColumn]);
         }
         return $theRow;
     }
@@ -523,8 +575,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
             ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->idColumnName) . '=' . $rowId .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString .
             ' LIMIT 1';
 
         $r = $this->doQuery($sql, 'getRowWithTime');
@@ -562,7 +614,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key) {
-            if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
+            if ($key === $this->validFromColumn or $key === $this->validUntilColumn) {
                 // Ignore time info keys
                 continue;
             }
@@ -577,8 +629,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE ' .
             implode(' AND ', $conditions) .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
 
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
@@ -687,8 +739,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE (' .
             implode($sqlLogicalOperator, $conditions) . ')' .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
 
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
@@ -731,7 +783,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     {
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
             ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->idColumnName) . '=' . $rowId .
-            ' ORDER BY ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
+            ' ORDER BY ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn);
 
         $r = $this->doQuery($sql, 'getRowHistory');
         if ($r->rowCount() === 0) {
