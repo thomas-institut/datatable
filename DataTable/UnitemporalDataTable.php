@@ -84,6 +84,7 @@ interface UnitemporalDataTable extends DataTable
      * @param int $rowId
      * @param string $timeString
      * @return bool
+     * @throws InvalidTimeStringException
      */
     public function rowExistsWithTime(int $rowId, string $timeString): bool;
 
@@ -94,6 +95,7 @@ interface UnitemporalDataTable extends DataTable
      * @param int $rowId
      * @param string $timeString
      * @return array|null
+     * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array;
 
@@ -105,6 +107,7 @@ interface UnitemporalDataTable extends DataTable
      * @param $maxResults
      * @param string $timeString
      * @return ResultsIterator
+     * @throws InvalidTimeStringException
      */
     public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator;
 
@@ -119,6 +122,7 @@ interface UnitemporalDataTable extends DataTable
      * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
+     * @throws InvalidTimeStringException
      */
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator;
 
@@ -151,7 +155,10 @@ interface UnitemporalDataTable extends DataTable
     public function deleteRowWithTime(int $rowId, string $timeString): int;
 
     /**
-     * Returns an array with all the different versions of the row with the given $rowId
+     * Returns an array with all the different versions of the row with the given $rowId in ascending chronological order.
+     *
+     * Be aware that this method will return rows even if the given $rowId is not valid now. Only if $rowId has
+     * never existed will this method throw a RowDoesNotExist exception.
      *
      * @param int $rowId
      * @return array

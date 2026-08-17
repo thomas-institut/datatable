@@ -80,7 +80,7 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return ['Type' => 'datetime'];
     }
 
-    public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoDataTable
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
         if (self::$motherSession === null) {
             self::$motherSession = $this->getPdo();
@@ -201,5 +201,10 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
 EOD;
         $pdo->query($tableSetupSQL);
+    }
+
+    public function getTestUnitemporalDataTable(bool $resetTable = true, bool $newSession = false): UnitemporalDataTable
+    {
+       return $this->getTestDataTable($resetTable, $newSession);
     }
 }

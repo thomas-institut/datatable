@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use Iterator;
+use Override;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -241,7 +242,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
-    #[\Override]
+    #[Override]
     public function getUniqueIds(): Iterator
     {
         return $this->getUniqueIdsWithTime(TimeString::now());
@@ -255,7 +256,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @return int
      * @throws InvalidTimeStringException
      */
-    #[\Override]
+    #[Override]
     public function realCreateRow(array $theRow): int
     {
         return $this->realCreateRowWithTime($theRow, TimeString::now());
@@ -344,7 +345,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @throws InvalidRowUpdateTime
      * @throws RowDoesNotExist
      */
-    #[\Override]
+    #[Override]
     public function realUpdateRow(array $theRow): void
     {
         try {
@@ -433,7 +434,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @param int $maxResults
      * @return string
      */
-    #[\Override]
+    #[Override]
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
     {
 
@@ -459,7 +460,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $sql;
     }
 
-    #[\Override]
+    #[Override]
     public function getAllRows(): ResultsIterator
     {
         try {
@@ -486,7 +487,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return new PdoResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
 
-    #[\Override]
+    #[Override]
     public function getRow(int $rowId): ?array
     {
         $this->resetError();
@@ -513,9 +514,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
-    /**
-     * @throws InvalidTimeStringException
-     */
     public function getRowWithTime(int $rowId, string $timeString): ?array
     {
         $this->resetError();
@@ -540,7 +538,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $res;
     }
 
-    #[\Override]
+    #[Override]
     public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         try {
@@ -618,7 +616,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
-    #[\Override]
+    #[Override]
     public function deleteRow(int $rowId): int
     {
         try {
