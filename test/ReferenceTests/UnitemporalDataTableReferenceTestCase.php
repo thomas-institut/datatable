@@ -279,7 +279,93 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     public function testGetAllRowsWithTime(): void
     {
         $dataTable = $this->getTestUnitemporalDataTable();
+        $idColumn = $dataTable->getIdColumnName();
 
-        $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
+        $getValuesAtTime = function (string $time) use ($dataTable, $idColumn): array {
+            $values = [];
+            foreach ($dataTable->getAllRowsWithTime($time) as $row) {
+                $values[$row[$idColumn]] = $row[self::STRING_COLUMN];
+            }
+            return $values;
+        };
+
+        $assertValuesAtTime = function (string $time, array $expected) use ($getValuesAtTime): void {
+            $actual = $getValuesAtTime($time);
+            $this->assertCount(count($expected), $actual);
+            foreach ($expected as $rowId => $value) {
+                $this->assertArrayHasKey($rowId, $actual);
+                $this->assertSame($value, $actual[$rowId]);
+            }
+        };
+
+        $assertValuesAtTime('2009-12-31', []);
+
+        $firstId = $dataTable->createRowWithTime([self::STRING_COLUMN => 'first'], '2010-01-01');
+        $secondId = $dataTable->createRowWithTime([self::STRING_COLUMN => 'second'], '2010-01-01');
+        $thirdId = $dataTable->createRowWithTime([self::STRING_COLUMN => 'third'], '2010-01-01');
+        $fourthId = $dataTable->createRowWithTime([self::STRING_COLUMN => 'fourth'], '2012-01-01');
+
+        $assertValuesAtTime('2010-01-01', [
+            $firstId => 'first',
+            $secondId => 'second',
+            $thirdId => 'third',
+        ]);
+        $assertValuesAtTime('2011-12-31', [
+            $firstId => 'first',
+            $secondId => 'second',
+            $thirdId => 'third',
+        ]);
+        $assertValuesAtTime('2012-01-01', [
+            $firstId => 'first',
+            $secondId => 'second',
+            $thirdId => 'third',
+            $fourthId => 'fourth',
+        ]);
+
+        $dataTable->updateRowWithTime([
+            $idColumn => $firstId,
+            self::STRING_COLUMN => 'first updated',
+        ], '2015-01-01');
+        $dataTable->updateRowWithTime([
+            $idColumn => $secondId,
+            self::STRING_COLUMN => 'second updated',
+        ], '2015-01-01');
+
+        $assertValuesAtTime('2014-12-31', [
+            $firstId => 'first',
+            $secondId => 'second',
+            $thirdId => 'third',
+            $fourthId => 'fourth',
+        ]);
+        $assertValuesAtTime('2015-01-01', [
+            $firstId => 'first updated',
+            $secondId => 'second updated',
+            $thirdId => 'third',
+            $fourthId => 'fourth',
+        ]);
+
+        $dataTable->deleteRowWithTime($thirdId, '2020-01-01');
+        $dataTable->deleteRowWithTime($fourthId, '2025-01-01');
+
+        $assertValuesAtTime('2019-12-31', [
+            $firstId => 'first updated',
+            $secondId => 'second updated',
+            $thirdId => 'third',
+            $fourthId => 'fourth',
+        ]);
+        $assertValuesAtTime('2020-01-01', [
+            $firstId => 'first updated',
+            $secondId => 'second updated',
+            $fourthId => 'fourth',
+        ]);
+        $assertValuesAtTime('2024-12-31', [
+            $firstId => 'first updated',
+            $secondId => 'second updated',
+            $fourthId => 'fourth',
+        ]);
+        $assertValuesAtTime('2025-01-01', [
+            $firstId => 'first updated',
+            $secondId => 'second updated',
+        ]);
     }
 }
