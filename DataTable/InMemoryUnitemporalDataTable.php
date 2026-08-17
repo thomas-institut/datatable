@@ -506,7 +506,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function getAllRows(): ResultsIterator
     {
-        return new ArrayResultsIterator($this->sanitizedRowSet($this->getDataRowsValidAtTime($this->theData, TimeString::now())));
+        try {
+            return $this->getAllRowsWithTime(TimeString::now());
+        } catch (InvalidTimeStringException $e) {
+            throw new RuntimeException('Unexpected error getting rows', $e);
+        }
     }
 
     public function getDataRowsValidAtTime(array $data, string $time): array
@@ -681,5 +685,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     public function getErrorCode(): int
     {
         return $this->errorCode;
+    }
+
+    public function getAllRowsWithTime(string $timeString): ResultsIterator
+    {
+        $timeString = $this->getValidTimeString($timeString, 'getAllRowsWithTime');
+        return new ArrayResultsIterator($this->sanitizedRowSet($this->getDataRowsValidAtTime($this->theData, $timeString)));
     }
 }

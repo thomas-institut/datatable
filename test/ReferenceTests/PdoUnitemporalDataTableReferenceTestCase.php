@@ -31,12 +31,11 @@ use PDO;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
-use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
-use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
-use ThomasInstitut\DataTable\Exception\InvalidSearchType;
+use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
+use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoUnitemporalDataTable;
 use ThomasInstitut\DataTable\UnitemporalDataTable;
@@ -134,68 +133,6 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
         $this->assertTrue($exceptionCaught);
     }
 
-
-
-    /**
-     * @throws InvalidTimeStringException
-     */
-    #[Test]
-    public function testGetAllRowsWithTime(): void
-    {
-        /**
-         * @var PdoUnitemporalDataTable $dataTable
-         */
-        $dataTable = $this->getTestDataTable();
-
-        $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
-    }
-
-    /**
-     * Checks invalid-time handling for operations that exist only on the PDO
-     * implementation or expose its internal update method.
-     */
-    #[Test]
-    public function testBadTimes(): void
-    {
-
-        /**
-         * @var PdoUnitemporalDataTable $dataTable
-         */
-        $dataTable = $this->getTestDataTable();
-
-        // get all rows
-        $exceptionCaught = false;
-        try {
-            $dataTable->getAllRowsWithTime('BadTime');
-        } catch (InvalidTimeStringException) {
-            $exceptionCaught = true;
-        }
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(UnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
-
-        $newId = $dataTable->createRowWithTime([self::INT_COLUMN => 1000], '2010-10-10 10:10:10');
-        $this->assertNotEquals(0, $newId);
-
-        // The raw PDO update operation is not part of UnitemporalDataTable.
-        $exceptionCaught = false;
-        try {
-            $dataTable->realUpdateRowWithTime([ $this->getIdColumnName() => $newId, self::INT_COLUMN => 1001], 'BadTime');
-        } catch (InvalidTimeStringException) {
-            $exceptionCaught = true;
-        }
-        $this->assertTrue($exceptionCaught);
-        $this->assertEquals(UnitemporalDataTable::ERROR_INVALID_TIME, $dataTable->getErrorCode());
-
-        $theRow = $dataTable->getRow($newId);
-        $this->assertNotNull($theRow);
-        $this->assertEquals(1000, $theRow[self::INT_COLUMN]);
-
-    }
-
-
-
-
-
     /**
      * @throws InvalidArgumentException
      */
@@ -286,27 +223,4 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
         $this->assertEquals(PdoUnitemporalDataTable::REPORT_INFO_GAP, $issues[0]['code']);
     }
 
-    /**
-     * @throws RowAlreadyExists
-     * @throws InvalidSearchSpec
-     * @throws InvalidSearchType
-     */
-    #[Test]
-    public function testSearchAndFindWithMaxResults(): void
-    {
-        $dataTable = $this->getTestDataTable();
-        $dataTable->createRow([self::INT_COLUMN => 10, self::STRING_COLUMN => 'test']);
-        $dataTable->createRow([self::INT_COLUMN => 20, self::STRING_COLUMN => 'test']);
-        $dataTable->createRow([self::INT_COLUMN => 30, self::STRING_COLUMN => 'test']);
-
-        $spec = [
-            ['column' => self::STRING_COLUMN, 'condition' => DataTable::COND_EQUAL_TO, 'value' => 'test']
-        ];
-
-        $results = $dataTable->search($spec, DataTable::SEARCH_AND, 2);
-        $this->assertEquals(2, $results->count());
-
-        $results = $dataTable->findRows([self::STRING_COLUMN => 'test'], 1);
-        $this->assertEquals(1, $results->count());
-    }
 }

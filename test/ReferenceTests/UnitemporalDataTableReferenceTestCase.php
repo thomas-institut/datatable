@@ -269,4 +269,17 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
             }
         }
     }
+
+
+
+    /**
+     * @throws InvalidTimeStringException
+     */
+    #[Test]
+    public function testGetAllRowsWithTime(): void
+    {
+        $dataTable = $this->getTestUnitemporalDataTable();
+
+        $this->assertEquals(0, iterator_count($dataTable->getAllRowsWithTime('2019-01-01')));
+    }
 }

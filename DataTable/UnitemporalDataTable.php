@@ -166,4 +166,12 @@ interface UnitemporalDataTable extends DataTable
      */
     public function getRowHistory(int $rowId): array;
 
+
+    /**
+     * @param string $timeString
+     * @return ResultsIterator
+     * @throws InvalidTimeStringException
+     */
+    public function getAllRowsWithTime(string $timeString): ResultsIterator;
+
 }
