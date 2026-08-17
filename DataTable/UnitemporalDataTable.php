@@ -36,6 +36,7 @@ use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\UnitemporalConsistency\ConsistencyIssue;
 
 /**
  * Defines a class that provides the same methods as a DataTable but with a
@@ -63,6 +64,16 @@ interface UnitemporalDataTable extends DataTable
     const int ERROR_INVALID_ROW_UPDATE_TIME = 2001;
     const int ERROR_INVALID_TIME = 2002;
 
+
+    // Consistency check error codes
+    const string REPORT_TYPE_ERROR = 'error';
+    const string REPORT_TYPE_WARNING = 'warning';
+    const string REPORT_TYPE_INFO = 'info';
+
+    const int REPORT_ERROR_INVALID_TIME_RANGE = 100;
+    const int REPORT_WARNING_ZERO_TIME_RANGE = 101;
+    const int REPORT_ERROR_OVERLAPPING_VERSIONS = 102;
+    const int REPORT_INFO_GAP = 103;
 
     const string DEFAULT_VALID_FROM_COLUMN = 'valid_from';
     const string DEFAULT_VALID_UNTIL_COLUMN = 'valid_until';
@@ -225,5 +236,25 @@ interface UnitemporalDataTable extends DataTable
      * @throws InvalidArgumentException
      */
     public function setValidUntilColumnName(string $validUntilColumnName): void;
+
+    /**
+     * Returns a list of consistency issues for the given IDs.
+     *
+     * If the list of IDs is null, all IDs are checked.
+     *
+     * An id is consistent in the datatable if its history does not contain any overlapping versions and
+     * no invalid time ranges (time ranges where validUntil < validFrom).
+     *
+     * Other issues may be reported, such as gaps in the time range or zero time ranges (time ranges where validUntil = validFrom).
+     * These are considered only warnings since they do not affect the consistency of the data but may indicate
+     * an undesired usage of the data table.
+     *
+     * **WARNING**: This method may be slow for large data tables.
+     *
+     * @param array<int>|null $idsToCheck
+     * @return array<ConsistencyIssue>
+     * @throws RowDoesNotExist
+     */
+    public function getConsistencyIssues(?array $idsToCheck): array;
 
 }

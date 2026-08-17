@@ -42,6 +42,7 @@ use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\SqlDialect\SqlDialect;
+use ThomasInstitut\DataTable\UnitemporalConsistency\UnitemporalConsistencyChecker;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
@@ -68,25 +69,10 @@ use Throwable;
 class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTable
 {
 
-    // Error codes
 
 
-    const string REPORT_TYPE_ERROR = 'error';
-    const string REPORT_TYPE_WARNING = 'warning';
-    const string REPORT_TYPE_INFO = 'info';
-
-    const int REPORT_ERROR_INVALID_TIME_RANGE = 100;
-    const int REPORT_WARNING_ZERO_TIME_RANGE = 101;
-    const int REPORT_ERROR_OVERLAPPING_VERSIONS = 102;
-    const int REPORT_INFO_GAP = 103;
-
-
-    // Other constants
-    const string FIELD_VALID_FROM = 'valid_from';
-    const string FIELD_VALID_UNTIL = 'valid_until';
-
-    protected string $validFromColumn = self::FIELD_VALID_FROM;
-    protected string $validUntilColumn = self::FIELD_VALID_UNTIL;
+    protected string $validFromColumn = self::DEFAULT_VALID_FROM_COLUMN;
+    protected string $validUntilColumn = self::DEFAULT_VALID_UNTIL_COLUMN;
 
     /**
      *
@@ -96,14 +82,15 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @param string $idColumnName
      * @param string $validFromColumnName
      * @param string $validUntilColumnName
+     * @throws InvalidArgumentException
      */
     public function __construct(
         PDO|PdoProvider $pdoOrProvider,
         string $tableName,
         SqlDialect $sqlDialect,
         string $idColumnName = self::DEFAULT_ID_COLUMN_NAME,
-        string $validFromColumnName = self::FIELD_VALID_FROM,
-        string $validUntilColumnName = self::FIELD_VALID_UNTIL
+        string $validFromColumnName = self::DEFAULT_VALID_FROM_COLUMN,
+        string $validUntilColumnName = self::DEFAULT_VALID_UNTIL_COLUMN
     )
     {
         $this->validateTimeColumnName($validFromColumnName);
@@ -177,70 +164,16 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         }
     }
 
-    /**
-     * Checks that the data's time information is consistent across the table
-     * Returns an array of objects, each one describing an issue:
-     *    [
-     *         'id' => int
-     *         'type' =>  ERROR | WARNING | INFO
-     *         'code' =>  int
-     *         'description'  => string
-     *
-     *   ]
-     * @param array $ids
-     * @return array
-     * @throws InvalidArgumentException
-     * @throws RunTimeException
-     */
-    public function checkConsistency(array $ids = []): array
+    public function getConsistencyIssues(array|null $idsToCheck): array
     {
-        $issues = [];
-        if (count($ids) === 0) {
+        if ($idsToCheck === null) {
             // check everything!
-            $ids = $this->getUniqueIdsWithTime('');
+            $idsToCheck = $this->getUniqueIds();
         }
-
-        foreach ($ids as $id) {
-            $id = intval($id);  // just in case
-            if ($id < 0) {
-                continue;
-            }
+        $issues = [];
+        foreach($idsToCheck as $id) {
             $rowHistory = $this->getRowHistory($id);
-            //print_r($rowHistory);
-            $previousVersion = null;
-            foreach ($rowHistory as $version) {
-                if ($version[$this->validUntilColumn] < $version[$this->validFromColumn]) {
-                    $issues[] = [
-                        'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
-                        'code' => self::REPORT_ERROR_INVALID_TIME_RANGE,
-                        'description' => "validUntil " . $version[$this->validUntilColumn] . " < validFrom " . $version[$this->validFromColumn]
-                    ];
-                }
-                if ($version[$this->validUntilColumn] === $version[$this->validFromColumn]) {
-                    $issues[] = [
-                        'id' => $id, 'type' => self::REPORT_TYPE_WARNING,
-                        'code' => self::REPORT_WARNING_ZERO_TIME_RANGE,
-                        'description' => "validUntil " . $version[$this->validUntilColumn] . " = validFrom " . $version[$this->validFromColumn]
-                    ];
-                }
-                if (!is_null($previousVersion)) {
-                    if ($version[$this->validFromColumn] < $previousVersion[$this->validUntilColumn]) {
-                        $issues[] = [
-                            'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
-                            'code' => self::REPORT_ERROR_OVERLAPPING_VERSIONS,
-                            'description' => "validFrom " . $version[$this->validFromColumn] . " < previous version validUntil " . $previousVersion[$this->validUntilColumn]
-                        ];
-                    }
-                    if ($version[$this->validFromColumn] > $previousVersion[$this->validUntilColumn]) {
-                        $issues[] = [
-                            'id' => $id, 'type' => self::REPORT_TYPE_INFO,
-                            'code' => self::REPORT_INFO_GAP,
-                            'description' => "validFrom " . $version[$this->validFromColumn] . " > previous version validUntil " . $previousVersion[$this->validUntilColumn]
-                        ];
-                    }
-                }
-                $previousVersion = $version;
-            }
+            $issues = [...$issues, ...UnitemporalConsistencyChecker::getConsistencyIssues($id, $rowHistory, $this->validFromColumn, $this->validUntilColumn)];
         }
         return $issues;
     }
@@ -436,7 +369,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
         if ($currentRow[$this->validFromColumn] > $timeString) {
             // attempt to update a row before the row's last version is valid
-            $this->setError("Row update time is before the row's last version", UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
+            $this->setError("Row update time is before the row's last version", self::ERROR_INVALID_ROW_UPDATE_TIME);
             throw new InvalidRowUpdateTime();
         }
 

@@ -120,8 +120,8 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         $otherStringCol = self::STRING_COLUMN_2;
         $tableName = $this->getTableName();
         $idCol = $this->getIdColumnName();
-        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
+        $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `$tableName`;
@@ -144,8 +144,8 @@ EOD;
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
         $idCol =  $this->getIdColumnName();
-        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
+        $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
         $tableSetupSQL =<<<EOD
             DROP TABLE IF EXISTS `test_table_bad_1`;

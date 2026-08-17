@@ -46,8 +46,8 @@ class MySqlUnitemporalDataTable extends PdoUnitemporalDataTable
         PDO|PdoProvider $pdoOrProvider,
         string $tableName,
         string $idColumnName = self::DEFAULT_ID_COLUMN_NAME,
-        string $validFromColumnName = self::FIELD_VALID_FROM,
-        string $validUntilColumnName = self::FIELD_VALID_UNTIL
+        string $validFromColumnName = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN,
+        string $validUntilColumnName = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN
     )
     {
         parent::__construct(

@@ -21,6 +21,7 @@ use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\UnitemporalConsistency\UnitemporalConsistencyChecker;
 use ThomasInstitut\TimeString\TimeString;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
@@ -727,5 +728,19 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     {
         $timeString = $this->getValidTimeString($timeString, 'getAllRowsWithTime');
         return new ArrayResultsIterator($this->sanitizedRowSet($this->getDataRowsValidAtTime($this->theData, $timeString)));
+    }
+
+    public function getConsistencyIssues(array|null $idsToCheck): array
+    {
+        if ($idsToCheck === null) {
+            // check everything!
+            $idsToCheck = $this->getUniqueIds();
+        }
+        $issues = [];
+        foreach($idsToCheck as $id) {
+            $rowHistory = $this->getRowHistory($id);
+            $issues = [...$issues, ...UnitemporalConsistencyChecker::getConsistencyIssues($id, $rowHistory, $this->validFromColumn, $this->validUntilColumn)];
+        }
+        return $issues;
     }
 }

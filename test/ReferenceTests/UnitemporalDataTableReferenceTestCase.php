@@ -2,6 +2,7 @@
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use ThomasInstitut\DataTable\DataTable;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
@@ -12,7 +13,10 @@ use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\InMemoryUnitemporalDataTable;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
+use ThomasInstitut\DataTable\UnitemporalConsistency\IssueCode;
+use ThomasInstitut\DataTable\UnitemporalConsistency\IssueType;
 use ThomasInstitut\DataTable\UnitemporalDataTable;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\TimeString;
@@ -25,6 +29,95 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): DataTable
     {
         return $this->getTestUnitemporalDataTable($resetTable, $newSession);
+    }
+
+    #[Test]
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetConsistencyIssues(): void
+    {
+        $dataTable = $this->getMockBuilder(InMemoryUnitemporalDataTable::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getRowHistory'])
+            ->getMock();
+        $dataTable->setValidFromColumnName(UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN);
+        $dataTable->setValidUntilColumnName(UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN);
+
+        $histories = [
+            1 => [
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-01-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => '2020-02-01 00:00:00.000000',
+                ],
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-02-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => TimeString::END_OF_TIMES,
+                ],
+            ],
+            2 => [
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-02-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => '2020-01-01 00:00:00.000000',
+                ],
+            ],
+            3 => [
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-01-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => '2020-01-01 00:00:00.000000',
+                ],
+            ],
+            4 => [
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-01-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => '2020-02-01 00:00:00.000000',
+                ],
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-01-15 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => TimeString::END_OF_TIMES,
+                ],
+            ],
+            5 => [
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-01-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => '2020-02-01 00:00:00.000000',
+                ],
+                [
+                    UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN => '2020-03-01 00:00:00.000000',
+                    UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN => TimeString::END_OF_TIMES,
+                ],
+            ],
+        ];
+        $dataTable->method('getRowHistory')->willReturnCallback(
+            static fn(int $id): array => $histories[$id]
+        );
+
+        $this->assertCount(0, $dataTable->getConsistencyIssues([1]));
+
+        $expectedIssues = [
+            2 => [IssueType::Error, IssueCode::InvalidTimeRange],
+            3 => [IssueType::Warning, IssueCode::ZeroTimeRange],
+            4 => [IssueType::Error, IssueCode::OverlappingVersions],
+            5 => [IssueType::Info, IssueCode::Gap],
+        ];
+        foreach ($expectedIssues as $id => [$expectedType, $expectedCode]) {
+            $issues = $dataTable->getConsistencyIssues([$id]);
+            $this->assertCount(1, $issues);
+            $this->assertSame($id, $issues[0]->id);
+            $this->assertSame($expectedType, $issues[0]->type);
+            $this->assertSame($expectedCode, $issues[0]->code);
+        }
+
+        $issues = $dataTable->getConsistencyIssues([2, 3, 4, 5]);
+        $this->assertCount(4, $issues);
+        $this->assertSame([2, 3, 4, 5], array_map(static fn($issue): int => $issue->id, $issues));
+        $this->assertSame(
+            [
+                IssueCode::InvalidTimeRange,
+                IssueCode::ZeroTimeRange,
+                IssueCode::OverlappingVersions,
+                IssueCode::Gap,
+            ],
+            array_map(static fn($issue): IssueCode => $issue->code, $issues)
+        );
     }
 
     #[Test]

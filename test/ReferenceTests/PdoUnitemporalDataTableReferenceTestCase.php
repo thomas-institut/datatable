@@ -26,15 +26,11 @@
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
-use ArrayIterator;
 use PDO;
-use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
-use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoUnitemporalDataTable;
-use ThomasInstitut\TimeString\TimeString;
 
 
 /**
@@ -126,96 +122,6 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-    }
-
-    /**
-     * @throws InvalidArgumentException
-     */
-    #[Test]
-    #[AllowMockObjectsWithoutExpectations]
-    public function testConsistency(): void
-    {
-        $dataTable = $this->getMockBuilder(PdoUnitemporalDataTable::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getUniqueIdsWithTime', 'getRowHistory'])
-            ->getMock();
-
-        $dataTable->expects($this->any())->method('getUniqueIdsWithTime')->willReturn(new ArrayIterator([1]));
-
-        // 1. Valid history
-        $dataTable->expects($this->any())->method('getRowHistory')
-            ->willReturnOnConsecutiveCalls(
-                [
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
-                    ],
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
-                    ]
-                ],
-                // 2. Invalid range (until < from)
-                [
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-02-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
-                    ]
-                ],
-                // 3. Zero range (until == from)
-                [
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-01-01 00:00:00.000000'
-                    ]
-                ],
-                // 4. Overlap
-                [
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
-                    ],
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-15 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
-                    ]
-                ],
-                // 5. Gap
-                [
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-01-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => '2020-02-01 00:00:00.000000'
-                    ],
-                    [
-                        PdoUnitemporalDataTable::FIELD_VALID_FROM => '2020-03-01 00:00:00.000000',
-                        PdoUnitemporalDataTable::FIELD_VALID_UNTIL => TimeString::END_OF_TIMES
-                    ]
-                ]
-            );
-
-        // 1. Valid
-        $issues = $dataTable->checkConsistency([1]);
-        $this->assertCount(0, $issues);
-
-        // 2. Invalid range
-        $issues = $dataTable->checkConsistency([1]);
-        $this->assertCount(1, $issues);
-        $this->assertEquals(PdoUnitemporalDataTable::REPORT_ERROR_INVALID_TIME_RANGE, $issues[0]['code']);
-
-        // 3. Zero range
-        $issues = $dataTable->checkConsistency([1]);
-        $this->assertCount(1, $issues);
-        $this->assertEquals(PdoUnitemporalDataTable::REPORT_WARNING_ZERO_TIME_RANGE, $issues[0]['code']);
-
-        // 4. Overlap
-        $issues = $dataTable->checkConsistency([1]);
-        $this->assertCount(1, $issues);
-        $this->assertEquals(PdoUnitemporalDataTable::REPORT_ERROR_OVERLAPPING_VERSIONS, $issues[0]['code']);
-
-        // 5. Gap
-        $issues = $dataTable->checkConsistency([1]);
-        $this->assertCount(1, $issues);
-        $this->assertEquals(PdoUnitemporalDataTable::REPORT_INFO_GAP, $issues[0]['code']);
     }
 
 }
