@@ -168,7 +168,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     {
         if ($idsToCheck === null) {
             // check everything!
-            $idsToCheck = $this->getUniqueIds();
+            $idsToCheck = $this->getUniqueIdsWithTime('');
         }
         $issues = [];
         foreach($idsToCheck as $id) {
@@ -626,9 +626,14 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      */
     public function deleteRowWithTime(int $rowId, string $timeString): int
     {
+        $timeString = $this->getValidTimeString($timeString, 'deleteRowWithTime');
         $oldRow = $this->realGetRow($rowId);
         if ($oldRow === null) {
             return 0;
+        }
+        if ($timeString <= $oldRow[$this->validFromColumn]) {
+            $this->setError('The given time is not later than the last version of the row', self::ERROR_INVALID_ROW_UPDATE_TIME);
+            throw new InvalidRowUpdateTime("The given time is not later than the last version of the row");
         }
         $this->makeRowInvalid($oldRow, $timeString);
         return 1;

@@ -430,6 +430,10 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $data = $this->internalGetRowHistory($rowId);
             $latestRow = $data[count($data) - 1];
+            if ($timeString <= $latestRow[$this->validFromColumn]) {
+                $this->setError('The given time is not later than the last version of the row', UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
+                throw new InvalidRowUpdateTime("The given time is not later than the last version of the row");
+            }
             $this->internalMarkRowAsInvalid($latestRow[self::InternalRowIdKey], $timeString);
             return 1;
         } catch (RowDoesNotExist) {
@@ -734,7 +738,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     {
         if ($idsToCheck === null) {
             // check everything!
-            $idsToCheck = $this->getUniqueIds();
+            $idsToCheck = array_values(array_unique(
+                array_column($this->theData, $this->idColumnName),
+                SORT_NUMERIC
+            ));
+            sort($idsToCheck, SORT_NUMERIC);
         }
         $issues = [];
         foreach($idsToCheck as $id) {

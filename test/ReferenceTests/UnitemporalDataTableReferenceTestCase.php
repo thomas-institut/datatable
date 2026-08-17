@@ -343,6 +343,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
      * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
+     * @throws RowDoesNotExist
      */
     #[Test]
     public function testDeleteRowWithTime(): void
@@ -355,11 +356,18 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $this->assertFalse($table->rowExistsWithTime($rowId, '2015-01-01'));
         $this->assertSame(0, $table->deleteRowWithTime($rowId + 1, '2015-01-01'));
 
-        // PdoUnitemporalDataTable, the de facto reference implementation,
-        // permits a backdated deletion and stores the resulting invalid range.
         $backdatedId = $table->createRowWithTime([self::STRING_COLUMN => 'backdated'], '2010-01-01');
-        $this->assertSame(1, $table->deleteRowWithTime($backdatedId, '2009-01-01'));
-        $this->assertFalse($table->rowExistsWithTime($backdatedId, '2009-01-01'));
+        foreach (['2009-01-01', '2010-01-01'] as $invalidDeletionTime) {
+            try {
+                $table->deleteRowWithTime($backdatedId, $invalidDeletionTime);
+                $this->fail('A deletion at or before the latest version must be rejected.');
+            } catch (InvalidRowUpdateTime) {
+                $this->assertSame(UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME, $table->getErrorCode());
+            }
+        }
+
+        $this->assertTrue($table->rowExistsWithTime($backdatedId, '2010-01-01'));
+        $this->assertCount(0, $table->getConsistencyIssues([$backdatedId]));
     }
 
     /**
