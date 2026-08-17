@@ -31,6 +31,55 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         return $this->getTestUnitemporalDataTable($resetTable, $newSession);
     }
 
+    /**
+     * @throws RowDoesNotExist
+     */
+    private function assertNoConsistencyErrors(UnitemporalDataTable $table): void
+    {
+        $errors = array_filter(
+            $table->getConsistencyIssues(null),
+            static fn($issue): bool => $issue->type === IssueType::Error
+        );
+
+        $this->assertCount(0, $errors);
+    }
+
+    /**
+     * @throws InvalidRowForUpdate
+     * @throws RowDoesNotExist
+     * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime
+     * @throws RowAlreadyExists
+     */
+    #[Test]
+    public function testRowMutationsDoNotCreateConsistencyErrors(): void
+    {
+        $table = $this->getTestUnitemporalDataTable();
+        $idColumn = $table->getIdColumnName();
+
+        $firstId = $table->createRowWithTime([self::STRING_COLUMN => 'first'], '2010-01-01');
+        $this->assertNoConsistencyErrors($table);
+
+        $secondId = $table->createRowWithTime([self::STRING_COLUMN => 'second'], '2010-01-01');
+        $this->assertNoConsistencyErrors($table);
+
+        $table->updateRowWithTime([
+            $idColumn => $firstId,
+            self::STRING_COLUMN => 'first updated',
+        ], '2015-01-01');
+        $this->assertNoConsistencyErrors($table);
+
+        $this->assertSame(1, $table->deleteRowWithTime($secondId, '2020-01-01'));
+        $this->assertNoConsistencyErrors($table);
+
+        $this->assertSame(1, $table->deleteRowWithTime($firstId, '2025-01-01'));
+        $this->assertNoConsistencyErrors($table);
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     * @throws RowDoesNotExist
+     */
     #[Test]
     #[AllowMockObjectsWithoutExpectations]
     public function testGetConsistencyIssues(): void
@@ -259,7 +308,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
      * @throws InvalidTimeStringException
      * @throws InvalidSearchSpec
      * @throws RowAlreadyExists
-     * @throws InvalidSearchType
+     * @throws InvalidSearchType|InvalidRowUpdateTime
      */
     #[Test]
     public function testSearchWithTime(): void
@@ -400,9 +449,6 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         }
     }
 
-    /**
-     * @throws RowAlreadyExists|InvalidTimeStringException
-     */
     #[Test]
     public function testInvalidTimes(): void
     {
@@ -426,9 +472,12 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     }
 
 
-
     /**
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
+     * @throws RowAlreadyExists
+     * @throws RowDoesNotExist
      */
     #[Test]
     public function testGetAllRowsWithTime(): void
