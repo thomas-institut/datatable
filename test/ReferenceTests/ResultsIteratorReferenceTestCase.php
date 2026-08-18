@@ -104,7 +104,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
     public function testForEachLoop() : void {
         $iterator = $this->getNonEmptyIterator();
         $numIterations = 0;
-        foreach($iterator as $key => $row) {
+        foreach($iterator as $row) {
             $this->assertValidResultRow($row, __FUNCTION__);
             $numIterations++;
         }

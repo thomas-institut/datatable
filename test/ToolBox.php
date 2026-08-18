@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use Random\RandomException;
@@ -9,7 +11,7 @@ class ToolBox
 {
     static public function getRandomString(int $minLength, int $maxLength = -1): string
     {
-        if ($maxLength == -1) {
+        if ($maxLength === -1) {
             $maxLength = $minLength;
         }
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -21,7 +23,7 @@ class ToolBox
             }
             return $randomString;
         } catch (RandomException $e) {
-            throw new RuntimeException($e->getMessage());
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e);
         }
     }
 }

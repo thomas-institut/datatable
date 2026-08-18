@@ -64,10 +64,7 @@ class InMemoryDataTable extends GenericDataTable
     public function rowExists(int $rowId) : bool
     {
         $this->resetError();
-        if (isset($this->theData[$rowId])) {
-            return true;
-        }
-        return false;
+        return isset($this->theData[$rowId]);
     }
     
     public function realCreateRow(array $theRow) : int

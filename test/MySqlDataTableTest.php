@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -23,7 +25,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 namespace ThomasInstitut\DataTable;
 
 use PDO;
@@ -106,17 +107,15 @@ class MySqlDataTableTest extends PdoDataTableReferenceTestCase
 
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoDataTable
     {
-        if (self::$motherSession === null) {
+        if (!self::$motherSession instanceof \PDO) {
             self::$motherSession = $this->getPdo();
             $pdo = self::$motherSession;
             self::$pdoCount = 1;
+        } elseif ($newSession) {
+            $pdo = $this->getPdo();
+            self::$pdoCount++;
         } else {
-            if ($newSession) {
-                $pdo = $this->getPdo();
-                self::$pdoCount++;
-            } else {
-                $pdo = self::$motherSession;
-            }
+            $pdo = self::$motherSession;
         }
 
         if ($resetTable) {

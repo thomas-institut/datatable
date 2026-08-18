@@ -60,7 +60,7 @@ abstract class GenericDataTable implements DataTable
     public function __construct(?IdGenerator $idGenerator = null)
     {
 
-        if ($idGenerator === null) {
+        if (!$idGenerator instanceof \ThomasInstitut\DataTable\IdGenerator\IdGenerator) {
             $this->idGenerator = new SequentialIdGenerator();
         } else {
             $this->idGenerator = $idGenerator;
@@ -329,12 +329,10 @@ abstract class GenericDataTable implements DataTable
     {
         if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName] <= 0) {
             $theRow[$this->idColumnName] = $this->getOneUnusedId();
-        } else {
-            if ($this->rowExists($theRow[$this->idColumnName])) {
-                $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
-                    self::ERROR_ROW_ALREADY_EXISTS);
-                throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
-            }
+        } elseif ($this->rowExists($theRow[$this->idColumnName])) {
+            $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
+                self::ERROR_ROW_ALREADY_EXISTS);
+            throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
         }
         return $theRow;
     }
@@ -378,8 +376,9 @@ abstract class GenericDataTable implements DataTable
             $problems[] = ['specIndex' => -1, 'msg' => 'specArray is empty', 'code' => self::ERROR_SPEC_ARRAY_IS_EMPTY];
             return $problems;
         }
+        $counter = count($specArray);
 
-        for ($i = 0; $i < count($specArray); $i++) {
+        for ($i = 0; $i < $counter; $i++) {
             $spec = $specArray[$i];
             if (!isset($spec['column']) || !is_string($spec['column'])) {
                 $problems[] = [

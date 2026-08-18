@@ -16,7 +16,7 @@ class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalDataTab
 
     public function getTestUnitemporalDataTable(bool $resetTable = true, bool $newSession = false): UnitemporalDataTable
     {
-        if (self::$motherTable === null) {
+        if (!self::$motherTable instanceof \ThomasInstitut\DataTable\InMemoryUnitemporalDataTable) {
             self::$theData = [];
             self::$motherTable = new InMemoryUnitemporalDataTable(self::$theData);
             $dataTable = self::$motherTable;

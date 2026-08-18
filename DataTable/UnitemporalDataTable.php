@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -23,8 +25,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-
 namespace ThomasInstitut\DataTable;
 
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
@@ -63,17 +63,6 @@ interface UnitemporalDataTable extends DataTable
 
     const int ERROR_INVALID_ROW_UPDATE_TIME = 2001;
     const int ERROR_INVALID_TIME = 2002;
-
-
-    // Consistency check error codes
-    const string REPORT_TYPE_ERROR = 'error';
-    const string REPORT_TYPE_WARNING = 'warning';
-    const string REPORT_TYPE_INFO = 'info';
-
-    const int REPORT_ERROR_INVALID_TIME_RANGE = 100;
-    const int REPORT_WARNING_ZERO_TIME_RANGE = 101;
-    const int REPORT_ERROR_OVERLAPPING_VERSIONS = 102;
-    const int REPORT_INFO_GAP = 103;
 
     const string DEFAULT_VALID_FROM_COLUMN = 'valid_from';
     const string DEFAULT_VALID_UNTIL_COLUMN = 'valid_until';

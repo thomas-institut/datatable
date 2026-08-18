@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\UnitemporalConsistency;
 
 enum IssueCode: int

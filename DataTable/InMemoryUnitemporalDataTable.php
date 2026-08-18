@@ -329,11 +329,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
         $rowValue = $dataRow[$column];
         $value = $spec[self::SEARCH_SPEC_VALUE];
-        if (is_string($value)) {
-            $comparison = strcmp((string) $rowValue, $value);
-        } else {
-            $comparison = $rowValue <=> $value;
-        }
+        $comparison = is_string($value) ? strcmp((string) $rowValue, $value) : $rowValue <=> $value;
 
         return match ($spec[self::SEARCH_SPEC_CONDITION]) {
             self::COND_EQUAL_TO => is_string($value) ? $comparison === 0 : $rowValue === $value,

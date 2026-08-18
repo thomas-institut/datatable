@@ -43,7 +43,7 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
 
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
     {
-        if (self::$motherTable === null) {  // first table to serve
+        if (!self::$motherTable instanceof \ThomasInstitut\DataTable\InMemoryDataTable) {  // first table to serve
             self::$theData = [];
             self::$motherTable = new InMemoryDataTable(self::$theData);
             $dt = self::$motherTable;

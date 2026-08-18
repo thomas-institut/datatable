@@ -15,15 +15,13 @@ class PdoResultsIterator implements ResultsIterator
 {
     private readonly Iterator $source;
 
-    private mixed $first;
-    private int $currentKey;
+    private mixed $first = null;
+    private int $currentKey = 0;
 
     public function __construct(private readonly PDOStatement $statement, private readonly string $idColumnName)
     {
         $this->statement->setFetchMode(PDO::FETCH_ASSOC);
         $this->source = $this->statement->getIterator();
-        $this->first = null;
-        $this->currentKey = 0;
     }
 
     private function normalizeResultRowArray(array $row) : array {

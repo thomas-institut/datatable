@@ -1,7 +1,6 @@
 <?php
 
 
-
 namespace ThomasInstitut\DataTable;
 
 use PDO;
@@ -74,17 +73,15 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
     #[\Override]
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
-        if (self::$motherSession === null) {
+        if (!self::$motherSession instanceof PDO) {
             self::$motherSession = $this->getPdo();
             $pdo = self::$motherSession;
             self::$pdoCount = 1;
+        } elseif ($newSession) {
+            $pdo = $this->getPdo();
+            self::$pdoCount++;
         } else {
-            if ($newSession) {
-                $pdo = $this->getPdo();
-                self::$pdoCount++;
-            } else {
-                $pdo = self::$motherSession;
-            }
+            $pdo = self::$motherSession;
         }
 
         if ($resetTable) {
@@ -124,7 +121,7 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
         $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
-        $tableSetupSQL =<<<EOD
+        $tableSetupSQL = <<<EOD
             DROP TABLE IF EXISTS `$tableName`;
             CREATE TABLE IF NOT EXISTS `$tableName` (
               $idCol int(11) UNSIGNED NOT NULL,
@@ -138,17 +135,17 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
 EOD;
         $pdo->query($tableSetupSQL);
     }
-    
+
     protected function resetTestDbWithBadTables(PDO $pdo): void
     {
 
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
-        $idCol =  $this->getIdColumnName();
+        $idCol = $this->getIdColumnName();
         $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
         $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
-        $tableSetupSQL =<<<EOD
+        $tableSetupSQL = <<<EOD
             DROP TABLE IF EXISTS `test_table_bad_1`;
             CREATE TABLE IF NOT EXISTS `test_table_bad_1` (
               $idCol varchar(100) NOT NULL,
@@ -231,6 +228,6 @@ EOD;
 
     public function getTestUnitemporalDataTable(bool $resetTable = true, bool $newSession = false): UnitemporalDataTable
     {
-       return $this->getTestDataTable($resetTable, $newSession);
+        return $this->getTestDataTable($resetTable, $newSession);
     }
 }

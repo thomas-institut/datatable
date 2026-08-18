@@ -49,7 +49,8 @@ class ColumnDefArray
 
     public static function getColumnDef(array $columnDefinitions, string $rowKey): ColumnDefinition|null
     {
-        for ($i = 0; $i < count($columnDefinitions); $i++) {
+        $counter = count($columnDefinitions);
+        for ($i = 0; $i < $counter; $i++) {
             if ($columnDefinitions[$i]->rowKey === $rowKey) {
                 return $columnDefinitions[$i];
             }

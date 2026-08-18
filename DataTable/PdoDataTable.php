@@ -118,7 +118,7 @@ class PdoDataTable extends GenericDataTable
             $msg = "Could not prepare statements in constructor, " . $e->getMessage();
             $errorCode = self::ERROR_PREPARING_STATEMENTS;
             $this->setError($msg, $errorCode);
-            throw new RuntimeException($msg, $errorCode);
+            throw new RuntimeException($msg, $errorCode, $e);
             // @codeCoverageIgnoreEnd
         }
     }
@@ -172,7 +172,7 @@ class PdoDataTable extends GenericDataTable
             return false;
         }
 
-        if ($r->rowCount() != 1) {
+        if ($r->rowCount() !== 1) {
             $this->setError('Required column ' . $columnName . ' not found in table ' . $this->tableName,
                 self::ERROR_REQUIRED_COLUMN_NOT_FOUND);
             return false;
@@ -212,10 +212,7 @@ class PdoDataTable extends GenericDataTable
     {
         $this->resetError();
         $this->executeStatement('rowExistsById', ['id' => $rowId]);
-        if ($this->statements['rowExistsById']->rowCount() !== 1) {
-            return false;
-        }
-        return true;
+        return $this->statements['rowExistsById']->rowCount() === 1;
     }
 
     /**
@@ -233,12 +230,10 @@ class PdoDataTable extends GenericDataTable
         if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName])) {
             $theRow[$this->idColumnName] = 0;
         }
-        if ($theRow[$this->idColumnName] !== 0) {
-            if ($this->rowExists($theRow[$this->idColumnName])) {
-                $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
-                    self::ERROR_ROW_ALREADY_EXISTS);
-                throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
-            }
+        if ($theRow[$this->idColumnName] !== 0 && $this->rowExists($theRow[$this->idColumnName])) {
+            $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
+                self::ERROR_ROW_ALREADY_EXISTS);
+            throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
         }
         $this->doQuery($this->getInsertQuery($theRow), 'createRow');
         $lastInsertId = $this->pdoProvider->getPdo()->lastInsertId();
@@ -416,7 +411,8 @@ class PdoDataTable extends GenericDataTable
     protected function forceIntIds($theRows)
     {
         $rows = $theRows;
-        for ($i = 0; $i < count($rows); $i++) {
+        $counter = count($rows);
+        for ($i = 0; $i < $counter; $i++) {
             if (!is_int($rows[$i][$this->idColumnName])) {
                 $rows[$i][$this->idColumnName] = (int)$rows[$i][$this->idColumnName];
             }
@@ -433,7 +429,7 @@ class PdoDataTable extends GenericDataTable
                 . $e->getMessage() . '", query = "' . $sql . '"',
                 self::ERROR_MYSQL_QUERY_ERROR
             );
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode(), $e);
         }
         if ($r === false) {
             // @codeCoverageIgnoreStart
@@ -470,7 +466,7 @@ class PdoDataTable extends GenericDataTable
             $this->setError($this->sqlDialect->getName() . ' error when executing '
                 . 'prepared statement "' . $statement . '": '
                 . $e->getMessage(), self::ERROR_MYSQL_QUERY_ERROR);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode(), $e);
         }
 
         if ($result === false) {
@@ -495,7 +491,7 @@ class PdoDataTable extends GenericDataTable
         }
 
         $sqlLogicalOperator = 'AND';
-        if ($searchType == self::SEARCH_OR) {
+        if ($searchType === self::SEARCH_OR) {
             $sqlLogicalOperator = 'OR';
         }
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE '
@@ -536,7 +532,7 @@ class PdoDataTable extends GenericDataTable
             // @codeCoverageIgnoreStart
             $this->setError('Query error in realFindRows: code  ' . $e->getCode() . ' : '
                 . $e->getMessage() . ' :: query = ' . $sql, self::ERROR_MYSQL_QUERY_ERROR);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode(), $e);
             // @codeCoverageIgnoreEnd
         }
 

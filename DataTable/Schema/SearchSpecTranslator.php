@@ -21,7 +21,7 @@ class SearchSpecTranslator
     public static function toDataTableSearchSpec(SearchSpec $searchSpec, array $columnDefs, RowTranslator $rowTranslator, array $supportedSearchConditions): array
     {
         $columnDef = ColumnDefArray::getColumnDef($columnDefs, $searchSpec->column);
-        if ($columnDef === null) {
+        if (!$columnDef instanceof \ThomasInstitut\DataTable\Schema\ColumnDefinition) {
             throw new InvalidSearchSpec("Column '$searchSpec->column' does not exist.");
         }
         if (!ColumnDefinition::valueIsValidForColumn($searchSpec->value, $columnDef)) {

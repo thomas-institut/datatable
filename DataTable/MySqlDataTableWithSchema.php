@@ -65,12 +65,10 @@ class MySqlDataTableWithSchema extends GenericDataTableWithSchema
 
                 if (is_null($defValue)) {
                     $defaultValueSql = "DEFAULT NULL";
+                } elseif (!is_string($defValue)) {
+                    $defaultValueSql = "DEFAULT ($defValue)";
                 } else {
-                    if (!is_string($defValue)) {
-                        $defaultValueSql = "DEFAULT ($defValue)";
-                    } else {
-                        $defaultValueSql = "DEFAULT '$defValue'";
-                    }
+                    $defaultValueSql = "DEFAULT '$defValue'";
                 }
             }
             $rowSqlSpec = match ($colDef->type) {

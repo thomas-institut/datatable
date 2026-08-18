@@ -95,7 +95,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
         try {
             $this->unitemporalDataTable->updateRowWithTime($this->rowTranslator->inputRowToDb($theRow), $timeString);
         } catch (InvalidRowForUpdate $e) {
-            throw new InvalidRow($e->getMessage());
+            throw new InvalidRow($e->getMessage(), $e->getCode(), $e);
         }
     }
 

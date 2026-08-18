@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\ResultsIterator;
 
 use PHPUnit\Framework\Attributes\CoversClass;

@@ -42,7 +42,7 @@ readonly class GenericRowTranslator implements RowTranslator
             $supportedDataTypes = ColumnDataType::cases();
         }
         $errors = ColumnDefArray::validate($columnDefinitions, $supportedDataTypes);
-        if (!empty($errors)) {
+        if ($errors !== []) {
             throw new InvalidColumnDefinitionsArray();
         }
         $this->defsByDbKey = ColumnDefArray::getDefsByDbKey($columnDefinitions);
@@ -65,7 +65,7 @@ readonly class GenericRowTranslator implements RowTranslator
         try {
             return $this->translateRow($dbRow, true);
         } catch (InvalidRow $e) {
-            throw new InvalidRowFromDatabase($e->getMessage());
+            throw new InvalidRowFromDatabase($e->getMessage(), $e->getCode(), $e);
         }
     }
 

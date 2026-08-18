@@ -123,7 +123,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             // @codeCoverageIgnoreStart
             $this->setError("Could not prepare statements "
                 . "in constructor, " . $e->getMessage(), self::ERROR_PREPARING_STATEMENTS);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode(), $e);
             // @codeCoverageIgnoreEnd
         }
     }
@@ -363,7 +363,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         try {
             $this->makeRowInvalid($currentRow, $timeString);
             foreach (array_keys($currentRow) as $key) {
-                if ($key === $this->validFromColumn or $key === $this->validUntilColumn) {
+                if ($key === $this->validFromColumn || $key === $this->validUntilColumn) {
                     continue;
                 }
                 if (!array_key_exists($key, $theRow)) {
@@ -403,7 +403,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             $conditions[] = $this->getSqlConditionFromSpec($spec);
         }
         $sqlLogicalOperator = 'AND';
-        if ($searchType == self::SEARCH_OR) {
+        if ($searchType === self::SEARCH_OR) {
             $sqlLogicalOperator = 'OR';
         }
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE '
@@ -522,7 +522,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key) {
-            if ($key === $this->validFromColumn or $key === $this->validUntilColumn) {
+            if ($key === $this->validFromColumn || $key === $this->validUntilColumn) {
                 // Ignore time info keys
                 continue;
             }
@@ -666,7 +666,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         try {
             return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
         } catch (InvalidTimeStringException $e) {
-            throw new RuntimeException("Unexpected error: " . $e->getMessage());
+            throw new RuntimeException("Unexpected error: " . $e->getMessage(), $e->getCode(), $e);
         }
     }
 

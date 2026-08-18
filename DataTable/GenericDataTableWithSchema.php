@@ -237,7 +237,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         try {
             $this->dataTable->updateRow($this->rowTranslator->inputRowToDb($theRow));
         } catch (InvalidRowForUpdate $e) {
-            throw new InvalidRow($e->getMessage());
+            throw new InvalidRow($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -301,7 +301,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function getMaxValueInColumn(string $columnName): int
     {
         $colDef = $this->getDefForColumn($columnName);
-        if ($colDef === null) {
+        if (!$colDef instanceof \ThomasInstitut\DataTable\Schema\ColumnDefinition) {
             throw new InvalidArgumentException("Column $columnName not found");
         }
 
@@ -317,7 +317,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
 
     private function getDefForColumn(string $columnName): ColumnDefinition|null
     {
-        for ($i = 0; $i < count($this->columnDefinitions); $i++) {
+        $counter = count($this->columnDefinitions);
+        for ($i = 0; $i < $counter; $i++) {
             if ($this->columnDefinitions[$i]->rowKey === $columnName) {
                 return $this->columnDefinitions[$i];
             }

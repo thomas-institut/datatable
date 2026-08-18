@@ -9,7 +9,7 @@ class ArrayResultsIterator implements ResultsIterator
      * @var mixed|null
      */
     private readonly mixed $first;
-    private int $currentKey;
+    private int $currentKey = 0;
     private array $theArray;
 
     public function __construct(array $results)
@@ -17,7 +17,6 @@ class ArrayResultsIterator implements ResultsIterator
         $this->theArray = array_values($results);
         $this->count = count($results);
         $this->first = $this->theArray[0] ?? null;
-        $this->currentKey = 0;
     }
 
     public function current(): ?array
