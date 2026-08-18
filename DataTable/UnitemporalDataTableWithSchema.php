@@ -105,6 +105,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      *
      * Assumes that the given time is later than the last version of the row.
      *
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
      * @throws InvalidRow
@@ -127,6 +128,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * Returns an array with all the different versions of the row with the given $rowId
      *
      * @throws RowDoesNotExist
+     * @return array<array<string, mixed>>
      */
     public function getRowHistory(int $rowId) : array;
 

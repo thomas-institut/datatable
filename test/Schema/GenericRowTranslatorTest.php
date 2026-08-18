@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable\Schema;
 
+use Iterator;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -34,7 +35,7 @@ final class GenericRowTranslatorTest extends TestCase
         $this->assertSame($row, $translator->dbRowToOutputRow($databaseRow));
     }
 
-    public static function roundTripProvider(): \Iterator
+    public static function roundTripProvider(): Iterator
     {
         yield 'no-op values with database aliases' => [
             new NoOpRowValueTranslator(),

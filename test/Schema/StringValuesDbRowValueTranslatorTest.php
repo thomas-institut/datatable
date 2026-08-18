@@ -24,6 +24,10 @@ final class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorRefer
         $this->translator = new StringValuesDbRowValueTranslator();
     }
 
+    /**
+     * @param array<string, mixed> $optionValues
+     * @throws InvalidArgumentException
+     */
     #[DataProvider('invalidOptionsProvider')]
     public function testInvalidOptionsAreRejected(array $optionValues, string $expectedMessage): void
     {

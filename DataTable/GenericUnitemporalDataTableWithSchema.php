@@ -7,6 +7,7 @@ use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\TranslatedResultsIterator;
+use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefArray;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
@@ -29,6 +30,9 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
         $this->unitemporalDataTable = $dataTable;
     }
 
+    /**
+     * @param array<ColumnDataType> $supportedDataTypes
+     */
     private function getCompliantSupportedDataTypes(array $supportedDataTypes): array
     {
         foreach (UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes as $dataType) {

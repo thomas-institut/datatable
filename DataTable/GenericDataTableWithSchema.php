@@ -36,6 +36,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     /** @var array<ColumnDataType> */
     protected readonly array $supportedDataTypes;
 
+    /** @var array<ColumnDefinition> */
     protected readonly array $columnDefinitions;
 
     protected readonly GenericRowTranslator $rowTranslator;

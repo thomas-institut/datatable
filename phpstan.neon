@@ -1,6 +1,6 @@
 # phpstan.neon
 parameters:
-    level: 5
+    level: 6
     phpVersion: 80300 # Targets PHP 8.3
     treatPhpDocTypesAsCertain: false
     paths:
