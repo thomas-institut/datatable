@@ -35,6 +35,9 @@ final class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
+    /**
+     * @var array<int, array<string, mixed>>|null
+     */
     static private ?array $theData = null;
     
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable

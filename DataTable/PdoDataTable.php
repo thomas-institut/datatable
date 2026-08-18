@@ -244,6 +244,9 @@ class PdoDataTable extends GenericDataTable
         return intval($lastInsertId);
     }
 
+    /**
+     * @param array<string, mixed> $theRow
+     */
     protected function getInsertQuery(array $theRow): string
     {
         $keys = array_keys($theRow);
@@ -291,10 +294,8 @@ class PdoDataTable extends GenericDataTable
 
     /**
      * Returns a string with a correctly quoted value for use in MySQL
-     *
-     * @param $var
      */
-    public function quoteValue($var): string
+    public function quoteValue(mixed $var): string
     {
         if (is_string($var)) {
             return $this->pdoProvider->getPdo()->quote($var);
@@ -408,7 +409,11 @@ class PdoDataTable extends GenericDataTable
         return 1;
     }
 
-    protected function forceIntIds($theRows) : array
+    /**
+     * @param array<int, array<string, mixed>> $theRows
+     * @return array<int, array<string, mixed>>
+     */
+    protected function forceIntIds(array $theRows): array
     {
         $rows = $theRows;
         $counter = count($rows);
@@ -458,6 +463,9 @@ class PdoDataTable extends GenericDataTable
      * Executes a named prepared statement,
      * if there's any problem, throws a Runtime exception
      */
+    /**
+     * @param array<int|string, mixed> $param
+     */
     protected function executeStatement(string $statement, array $param): void
     {
         try {
@@ -481,6 +489,8 @@ class PdoDataTable extends GenericDataTable
 
     /**
      * Returns the sql query needed to get the search results
+     *
+     * @param array<int, array<string, mixed>> $searchSpecArray
      */
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
     {
@@ -546,6 +556,9 @@ class PdoDataTable extends GenericDataTable
         return new PdoResultsIterator($r, $this->idColumnName);
     }
 
+    /**
+     * @param array<string, mixed> $spec
+     */
     protected function getSqlConditionFromSpec(array $spec): string
     {
         $column = $spec['column'];

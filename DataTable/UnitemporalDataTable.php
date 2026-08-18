@@ -71,6 +71,7 @@ interface UnitemporalDataTable extends DataTable
      * Creates a row that exists starting from the given time
      * Returns the id of the newly created row.
      *
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
      */
@@ -87,6 +88,7 @@ interface UnitemporalDataTable extends DataTable
      * Gets the version of the row with the given $rowId at the given time.
      * If the row does not exist at the given time, it returns null.
      *
+     * @return array<string, mixed>|null
      * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array;
@@ -95,6 +97,7 @@ interface UnitemporalDataTable extends DataTable
      * Returns an iterator with versions of rows that match the key/value pairs in the given $theRow
      * at the given time
      *
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      */
     public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator;
@@ -103,6 +106,7 @@ interface UnitemporalDataTable extends DataTable
      * Searches the datatable for rows that match the given $searchSpec array and $searchType
      * at the given time
      *
+     * @param array<int, array<string, mixed>> $searchSpecArray
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      * @throws InvalidTimeStringException
@@ -114,6 +118,7 @@ interface UnitemporalDataTable extends DataTable
      *
      * Assumes that the given time is later than the last version of the row.
      *
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
@@ -138,6 +143,7 @@ interface UnitemporalDataTable extends DataTable
      * Be aware that this method will return rows even if the given $rowId is not valid now. Only if $rowId has
      * never existed will this method throw a RowDoesNotExist exception.
      *
+     * @return array<int, array<string, mixed>>
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId): array;

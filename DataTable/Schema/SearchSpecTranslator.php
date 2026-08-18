@@ -53,6 +53,8 @@ class SearchSpecTranslator
     /**
      * @param array<SupportedSearchCondition> $supportedSearchConditions
      * @return array<array<string, int|string>>
+     * @param array<int, SearchSpec> $searchSpecArray
+     * @param array<int, ColumnDefinition> $columnDefs
      * @throws InvalidRow
      * @throws InvalidSearchSpec
      */

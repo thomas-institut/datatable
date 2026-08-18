@@ -62,6 +62,7 @@ readonly class TranslatedResultsIterator implements ResultsIterator
 
     /**
      * @inheritDoc
+     * @return array<string, mixed>|null
      */
     public function getFirst(): ?array
     {

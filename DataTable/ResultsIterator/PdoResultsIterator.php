@@ -24,6 +24,10 @@ class PdoResultsIterator implements ResultsIterator
         $this->source = $this->statement->getIterator();
     }
 
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function normalizeResultRowArray(array $row) : array {
         $row[$this->idColumnName] = intval($row[$this->idColumnName]);
         return $row;
@@ -62,6 +66,9 @@ class PdoResultsIterator implements ResultsIterator
         return $this->statement->rowCount();
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getFirst(): ?array
     {
         if ($this->statement->rowCount() === 0) {

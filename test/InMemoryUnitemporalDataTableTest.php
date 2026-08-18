@@ -9,6 +9,9 @@ use PHPUnit\Framework\Attributes\Test;
 final class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalDataTableReferenceTestCase
 {
     private static ?InMemoryUnitemporalDataTable $motherTable = null;
+    /**
+     * @var array<int, array<string, mixed>>|null
+     */
     private static ?array $theData = null;
 
     public function multipleDataAccessSessionsAvailable(): bool

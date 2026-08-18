@@ -248,6 +248,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      *
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
+     * @param array<string, mixed> $theRow
      */
     public function createRowWithTime(array $theRow, string $timeString): int
     {
@@ -263,6 +264,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * not check for already used Ids
      *
      * @throws InvalidTimeStringException
+     */
+    /**
+     * @param array<string, mixed> $theRow
      */
     protected function realCreateRowWithTime(array $theRow, string $timeString): int
     {
@@ -288,6 +292,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Makes a row invalid from the given time
      *
      * @throws InvalidTimeStringException
+     */
+    /**
+     * @param array<string, mixed> $theRow
      */
     protected function makeRowInvalid(array $theRow, string $timeString): int
     {
@@ -334,6 +341,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
+     */
+    /**
+     * @param array<string, mixed> $theRow
      */
     public function realUpdateRowWithTime(array $theRow, string $timeString): void
     {
@@ -396,6 +406,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * Returns the sql query needed to get the search results
+     *
+     * @param array<int, array<string, mixed>> $searchSpecArray
      */
     #[Override]
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
@@ -457,6 +469,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $this->realGetRow($rowId, true);
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function realGetRow(int $rowId, bool $stripTimeInfo = false): ?array
     {
 
@@ -477,6 +492,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRowWithTime(int $rowId, string $timeString): ?array
     {
         $this->resetError();
@@ -516,7 +534,10 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * @throws InvalidTimeStringException
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator
+    /**
+     * @param array<string, mixed> $theRow
+     */
+    public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator
     {
         $this->resetError();
 
@@ -636,6 +657,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $searchSpecArray
+     */
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
         $this->checkSpec($searchSpecArray, $searchType);
@@ -675,6 +699,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
+    /**
+     * @param array<string, mixed> $theRow
+     */
     public function updateRowWithTime(array $theRow, string $timeString): void
     {
         $this->resetError();
@@ -689,6 +716,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Each version has the same fields as any row in the datatable plus
      *  'valid_from' and a 'valid_until' fields.
      *
+     * @return array<int, array<string, mixed>>
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId): array

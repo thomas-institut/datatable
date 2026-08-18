@@ -100,6 +100,9 @@ class MySqlDataTableTest extends PdoDataTableReferenceTestCase
         return new MySqlDataTable($pdoOrProvider, $tableName, false, $this->getIdColumnName());
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function getMockColumnInfoResponse(): array
     {
         return ['Type' => 'int'];

@@ -16,12 +16,18 @@ interface SqlDialect
 
     public function isTableNotFoundException(PDOException $e): bool;
 
+    /**
+     * @param array<string, mixed> $columnInfo
+     */
     public function getColumnType(array $columnInfo): string;
 
     public function matchesRequiredType(string $columnType, string $requiredType): bool;
 
     public function getTableStatusQuery(string $tableName): string;
 
+    /**
+     * @param array<string, mixed> $tableInfo
+     */
     public function tableSupportsTransactions(array $tableInfo): bool;
 
     public function isSearchErrorRecoverable(PDOException $e): bool;

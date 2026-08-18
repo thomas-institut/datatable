@@ -29,6 +29,9 @@ class MySqlDialect implements SqlDialect
         return $e->getCode() === '42S02';
     }
 
+    /**
+     * @param array<string, mixed> $columnInfo
+     */
     public function getColumnType(array $columnInfo): string
     {
         if (!isset($columnInfo['Type']) || !is_string($columnInfo['Type'])) {
@@ -48,6 +51,9 @@ class MySqlDialect implements SqlDialect
         return "SHOW TABLE STATUS WHERE Name='$tableName'";
     }
 
+    /**
+     * @param array<string, mixed> $tableInfo
+     */
     public function tableSupportsTransactions(array $tableInfo): bool
     {
         if (!isset($tableInfo['Engine'])) {

@@ -6,6 +6,9 @@ use Iterator;
 use PDO;
 use PDOStatement;
 
+/**
+ * @implements Iterator<int, int>
+ */
 class PdoUniqueIdsIterator implements Iterator
 {
 
@@ -18,6 +21,9 @@ class PdoUniqueIdsIterator implements Iterator
         $this->source = $this->statement->getIterator();
     }
 
+    /**
+     * @param array<int, mixed> $row
+     */
     private function getValueFromResultRow(array $row) : int {
         return intval($row[0]);
     }

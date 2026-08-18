@@ -85,6 +85,7 @@ interface ResultsIterator extends Iterator, Countable
      * in many cases it will not be possible to use a foreach loop on the iterator once this
      * method is called, or, conversely, it will not be possible to execute this method after
      * a foreach loop.
+     * @return array<string, mixed>|null
      */
     public function getFirst() : ?array;
 

@@ -47,6 +47,9 @@ class ColumnDefArray
         return null;
     }
 
+    /**
+     * @param array<int, ColumnDefinition> $columnDefinitions
+     */
     public static function getColumnDef(array $columnDefinitions, string $rowKey): ColumnDefinition|null
     {
         $counter = count($columnDefinitions);
@@ -92,6 +95,10 @@ class ColumnDefArray
         return $defsByRowKey;
     }
 
+    /**
+     * @param array<int, ColumnDefinition> $columnDefArray
+     * @return array<int, string>
+     */
     public static function validateUnitemporal(array $columnDefArray): array
     {
         $errors = [];

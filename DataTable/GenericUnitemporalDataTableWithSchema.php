@@ -32,6 +32,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
 
     /**
      * @param array<ColumnDataType> $supportedDataTypes
+     * @return array<int, ColumnDataType>
      */
     private function getCompliantSupportedDataTypes(array $supportedDataTypes): array
     {

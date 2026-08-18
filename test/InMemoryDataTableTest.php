@@ -36,6 +36,9 @@ final class InMemoryDataTableTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
+    /**
+     * @var array<int, array<string, mixed>>|null
+     */
     static private ?array $theData = null;
 
     public function multipleDataAccessSessionsAvailable(): bool

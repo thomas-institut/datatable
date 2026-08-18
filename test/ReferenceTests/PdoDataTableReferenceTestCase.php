@@ -120,6 +120,8 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
      * Return mock column info matching the dialect's format.
      *
      * For MySqlDialect this would be ['Type' => 'int'].
+     *
+     * @return array<string, string>
      */
     abstract protected function getMockColumnInfoResponse(): array;
 

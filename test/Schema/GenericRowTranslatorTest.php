@@ -17,6 +17,9 @@ use ThomasInstitut\DataTable\Exception\InvalidRow;
 final class GenericRowTranslatorTest extends TestCase
 {
     /**
+     * @param array<int, ColumnDefinition> $columnDefinitions
+     * @param array<string, mixed> $row
+     * @param array<string, mixed> $expectedDatabaseRow
      * @throws InvalidColumnDefinitionsArray|InvalidRow
      */
     #[DataProvider('roundTripProvider')]

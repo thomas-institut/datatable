@@ -17,6 +17,9 @@ final class SupportedSearchCondition
     {
     }
 
+    /**
+     * @return array<int, SupportedSearchCondition>
+     */
     public static function reasonableDefaults(): array
     {
         return [

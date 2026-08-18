@@ -31,6 +31,7 @@ readonly class GenericRowTranslator implements RowTranslator
 
     /**
      * @param array<ColumnDefinition> $columnDefinitions The definitions of the columns in the table.
+     * @param array<int, ColumnDataType>|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
@@ -54,12 +55,20 @@ readonly class GenericRowTranslator implements RowTranslator
     /**
      * @inheritDoc
      */
+    /**
+     * @param array<string, mixed> $inputRow
+     * @return array<string, mixed>
+     */
     public function inputRowToDb(array $inputRow, bool $failOnMissingRequired = true): array
     {
         $this->validateInputRow($inputRow, $failOnMissingRequired);
         return $this->translateRow($inputRow, false);
     }
 
+    /**
+     * @param array<string, mixed> $dbRow
+     * @return array<string, mixed>
+     */
     public function dbRowToOutputRow(array $dbRow): array
     {
         try {
@@ -71,6 +80,9 @@ readonly class GenericRowTranslator implements RowTranslator
 
     /**
      * @throws InvalidRow
+     */
+    /**
+     * @param array<string, mixed> $inputRow
      */
     private function validateInputRow(array $inputRow, bool $failOnMissingRequired): void
     {
@@ -95,6 +107,10 @@ readonly class GenericRowTranslator implements RowTranslator
 
     /**
      * @throws InvalidRow
+     */
+    /**
+     * @param array<string, mixed> $theRow
+     * @return array<string, mixed>
      */
     private function translateRow(array $theRow, bool $fromDatabase): array
     {

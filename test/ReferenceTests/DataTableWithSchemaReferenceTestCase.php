@@ -143,6 +143,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
      * @throws InvalidSearchType
      * @throws InvalidRow
      * @throws RowAlreadyExists
+     * @param array<int, mixed> $values
      */
     #[Test]
     #[DataProvider('searchProvider')]
@@ -196,6 +197,9 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $this->assertCount($expectedCount, $results);
     }
 
+    /**
+     * @return array<string, array{ColumnDataType, SearchCondition, mixed, array<int, mixed>, int}>
+     */
     public static function searchProvider(): array
     {
         $testCases = [];
@@ -411,6 +415,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @param array<string, mixed> $badRow
      */
     #[Test]
     #[DataProvider('badRowProvider')]
