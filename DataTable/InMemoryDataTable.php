@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use LogicException;
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
@@ -101,7 +102,11 @@ class InMemoryDataTable extends GenericDataTable
     public function getMaxValueInColumn(string $columnName): int
     {
         if (count($this->theData) !== 0) {
-            return max(array_column($this->theData, $columnName));
+            $colValues = array_column($this->theData, $columnName);
+            if (count($colValues) === 0) {
+                throw new RuntimeException('Column ' . $columnName . ' does not exist');
+            }
+            return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $colValues));
         } else {
             return 0;
         }
@@ -133,6 +138,9 @@ class InMemoryDataTable extends GenericDataTable
         if ($id === false) {
             $this->logWarning('Value ' . $value . ' for key \'' . $key .  '\' not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
+        }
+        if (is_string($id)) {
+            throw new RuntimeException('Found non-integer row ID');
         }
         return $id;
     }

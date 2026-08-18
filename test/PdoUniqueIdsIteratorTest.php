@@ -26,6 +26,9 @@ final class PdoUniqueIdsIteratorTest extends TestCase
         $pdo->query("INSERT INTO test_ids VALUES (10), (20), (30)");
 
         $stmt = $pdo->query("SELECT id FROM test_ids ORDER BY id ");
+        if ($stmt === false) {
+            $this->fail('Failed to execute query');
+        }
         $iterator = new PdoUniqueIdsIterator($stmt);
 
         $expected = [10, 20, 30];
@@ -38,6 +41,9 @@ final class PdoUniqueIdsIteratorTest extends TestCase
 
         // Test basic methods
         $stmt = $pdo->query("SELECT id FROM test_ids ORDER BY id ");
+        if ($stmt === false) {
+            $this->fail('Failed to execute query');
+        }
         $iterator = new PdoUniqueIdsIterator($stmt);
         $this->assertSame(10, $iterator->current());
         $this->assertSame(0, $iterator->key());

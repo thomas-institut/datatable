@@ -213,7 +213,6 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $table->createRowWithTime([$colName => 'George'], TimeString::fromTimestamp($referenceTimestamp+1));
         $table->createRowWithTime([$colName => 'Mary'], TimeString::fromTimestamp($referenceTimestamp+1));
         $rowId = $table->createRowWithTime([$colName => 'John'], TimeString::fromTimestamp($referenceTimestamp));
-
         $this->assertTrue($table->rowExistsWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp + 1)));
         $retrievedRow = $table->getRowWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp + 1));
         $this->assertEquals($rowId, $retrievedRow[$idCol]);

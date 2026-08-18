@@ -164,6 +164,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     /**
      * @param array<string, mixed> $theRow
+     * @throws InvalidTimeStringException
      */
     public function createRowWithTime(array $theRow, string $timeString): int
     {
@@ -199,6 +200,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     /**
      * @return array<string, mixed>|null
+     * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array
     {
@@ -646,7 +648,10 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
             $this->getDataRowsValidAtTime($this->theData, TimeString::now()),
             $columnName
         );
-        return $values === [] ? 0 : max($values);
+        if ($values === []) {
+            throw new RuntimeException('Column ' . $columnName . ' is empty');
+        }
+        return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $values));
     }
 
     public function getMaxId(): int
@@ -654,7 +659,12 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         if (count($this->theData) === 0) {
             return 0;
         }
-        return max(array_column($this->theData, $this->idColumnName));
+        $ids = array_column($this->theData, $this->idColumnName);
+        if ($ids === []) {
+            throw new RuntimeException('Column ' . $this->idColumnName . ' is empty');
+        }
+
+        return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $this->idColumnName . ' contains non-integer values'), $ids));
     }
 
     public function getUniqueIds(): Iterator
