@@ -85,7 +85,7 @@ interface UnitemporalDataTable extends DataTable
 
     /**
      * Gets the version of the row with the given $rowId at the given time.
-     * If the row does not exist at the given time, returns null.
+     * If the row does not exist at the given time, it returns null.
      *
      * @throws InvalidTimeStringException
      */
@@ -95,11 +95,9 @@ interface UnitemporalDataTable extends DataTable
      * Returns an iterator with versions of rows that match the key/value pairs in the given $theRow
      * at the given time
      *
-     * @param $theRow
-     * @param $maxResults
      * @throws InvalidTimeStringException
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator;
+    public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator;
 
     /**
      * Searches the datatable for rows that match the given $searchSpec array and $searchType

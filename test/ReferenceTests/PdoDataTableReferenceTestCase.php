@@ -27,6 +27,7 @@ declare(strict_types=1);
  */
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
+use Override;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -42,6 +43,7 @@ use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\PdoDataTable;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
+use Throwable;
 
 
 /**
@@ -60,7 +62,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
     abstract protected function getTableName(): string;
 
     /**
-     * Returns the name of the first "bad" table (ID column has wrong type).
+     * Returns the name of the first "bad" table (ID column has the wrong type).
      */
     abstract protected function getBadTableName1(): string;
 
@@ -187,7 +189,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
     }
 
     #[Test]
-    #[\Override]
+    #[Override]
     public function testEscaping(): void
     {
         parent::testEscaping();
@@ -249,7 +251,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
      * @throws RowAlreadyExists
      */
     #[Test]
-    #[\Override]
+    #[Override]
     public function testUpdateRow(): void
     {
         parent::testUpdateRow();
@@ -275,14 +277,14 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
             $dataTable->updateRow([$this->getIdColumnName() => 1, self::STRING_COLUMN_2 => null]);
         } catch (RuntimeException) {
             $exceptionCaught = true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fail('Unexpected exception thrown: ' . $e->getMessage());
         }
         $this->assertFalse($exceptionCaught);
     }
 
     #[Test]
-    #[\Override]
+    #[Override]
     public function testNonExistentRows(): void
     {
         parent::testNonExistentRows();

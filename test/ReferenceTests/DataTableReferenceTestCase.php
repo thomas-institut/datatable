@@ -40,7 +40,6 @@ use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
-use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 
 
 /**

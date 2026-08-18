@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Rector\Config\RectorConfig;
 use Rector\Exception\Configuration\InvalidConfigurationException;
+use Rector\Privatization\Rector\Class_\FinalizeTestCaseClassRector;
 
 try {
     return RectorConfig::configure()
@@ -19,7 +20,12 @@ try {
             codeQuality: true,
             typeDeclarations: true,
             phpunitCodeQuality: true
-        );
+        )
+        ->withSkip([
+                FinalizeTestCaseClassRector::class => [
+                    __DIR__ . '/test/MySqlDataTableTest.php' // need it to be extendable for MySqlDataTableWithAutoIncTest
+                ]
+            ]);
 } catch (InvalidConfigurationException $e) {
     print $e->getMessage();
 }

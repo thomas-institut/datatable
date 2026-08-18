@@ -107,7 +107,7 @@ class MySqlDataTableTest extends PdoDataTableReferenceTestCase
 
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoDataTable
     {
-        if (!self::$motherSession instanceof \PDO) {
+        if (!self::$motherSession instanceof PDO) {
             self::$motherSession = $this->getPdo();
             $pdo = self::$motherSession;
             self::$pdoCount = 1;

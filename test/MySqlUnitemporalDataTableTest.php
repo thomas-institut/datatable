@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable;
 
+use Override;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\ReferenceTests\PdoUnitemporalDataTableReferenceTestCase;
 
@@ -61,17 +64,17 @@ final class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferen
         return 'row_id';
     }
 
-    protected function constructPdoUnitemporalDataTable(PDO $pdo): PdoUnitemporalDataTable
+    protected function constructPdoUnitemporalDataTable(PDO $pdo): MySqlUnitemporalDataTable
     {
         return new MySqlUnitemporalDataTable($pdo, $this->getTableName(), $this->getIdColumnName());
     }
 
-    protected function constructPdoUnitemporalDataTableForTable(PDO|PdoProvider $pdoOrProvider, string $tableName): PdoUnitemporalDataTable
+    protected function constructPdoUnitemporalDataTableForTable(PDO|PdoProvider $pdoOrProvider, string $tableName): MySqlUnitemporalDataTable
     {
         return new MySqlUnitemporalDataTable($pdoOrProvider, $tableName, $this->getIdColumnName());
     }
 
-    #[\Override]
+    #[Override]
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
         if (!self::$motherSession instanceof PDO) {
@@ -92,7 +95,7 @@ final class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferen
         return $this->constructPdoDataTable($pdo);
     }
 
-    protected function getRestrictedDt(): PdoDataTable
+    protected function getRestrictedDt(): MySqlUnitemporalDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlUnitemporalDataTable($restrictedPdo, $this->getTableName(), $this->getIdColumnName());
@@ -112,7 +115,7 @@ final class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferen
         return new PDO($dsn, 'restricted', 'restricted');
     }
 
-    protected function resetTestDb(PDO $pdo, bool $autoInc = false): void
+    protected function resetTestDb(PDO $pdo): void
     {
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
@@ -193,6 +196,10 @@ EOD;
         $pdo->query($tableSetupSQL);
     }
 
+    /**
+     * @throws InvalidTimeStringException
+     * @throws RowAlreadyExists
+     */
     #[Test]
     public function testCustomValidTimeColumnNames(): void
     {
