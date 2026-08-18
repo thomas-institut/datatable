@@ -61,8 +61,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         if (count($errors) > 0) {
             throw new InvalidColumnDefinitionsArray('Invalid column definitions: ' . implode(', ', $errors));
         }
-        $this->idKey = ColumnDefArray::getIdKey($this->columnDefinitions);
-        $this->idDbColumn = ColumnDefArray::getIdDbColumn($this->columnDefinitions);
+        $this->idKey = ColumnDefArray::getIdKey($this->columnDefinitions) ?? throw new RuntimeException("No id key defined in column definitions");
+        $this->idDbColumn = ColumnDefArray::getIdDbColumn($this->columnDefinitions) ?? throw new RuntimeException("No id DB column defined in column definitions");
         $this->dataTable->setIdColumnName($this->idDbColumn);
         $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions);
         $this->logger = new NullLogger();

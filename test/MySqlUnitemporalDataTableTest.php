@@ -8,6 +8,7 @@ use Override;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
@@ -199,6 +200,7 @@ EOD;
     /**
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
+     * @throws InvalidArgumentException
      */
     #[Test]
     public function testCustomValidTimeColumnNames(): void
@@ -227,6 +229,9 @@ EOD;
         );
         $rowId = $table->createRowWithTime(['a_string' => 'custom'], '2010-01-01');
         $row = $table->getRowWithTime($rowId, '2010-01-02');
+        if ($row === null) {
+            $this->fail("Null value when getting just created row with time");
+        }
 
         $this->assertSame($validFromColumn, $table->getValidFromColumnName());
         $this->assertSame($validUntilColumn, $table->getValidUntilColumnName());

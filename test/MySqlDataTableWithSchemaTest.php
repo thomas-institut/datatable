@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
@@ -21,7 +22,7 @@ final class MySqlDataTableWithSchemaTest extends DataTableWithSchemaReferenceTes
 
     private ?string $instancePrefix = null;
 
-    private ?PdoProvider $pdoProvider = null;
+    private PdoProvider $pdoProvider;
 
 
     public function setUp(): void
@@ -58,7 +59,7 @@ final class MySqlDataTableWithSchemaTest extends DataTableWithSchemaReferenceTes
         $tableName = $this->getNewTableName();
         $schema = new DataTableSchema($columnDefinitions);
         $pdo  = $this->pdoProvider->getPdo();
-        $dbIdColumnName = $schema->getIdDbColumn();
+        $dbIdColumnName = $schema->getIdDbColumn() ?? throw new RuntimeException("Id column name not found in schema");
         $pdo->exec("DROP TABLE IF EXISTS $tableName");
         MySqlDataTableWithSchema::createTableInDatabase($pdo, $tableName, $schema);
         $this->createdTableNames[] = $tableName;

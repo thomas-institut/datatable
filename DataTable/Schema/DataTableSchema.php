@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 /**
@@ -16,7 +18,7 @@ class DataTableSchema
     {
     }
 
-    public function getIdDbColumn(): string
+    public function getIdDbColumn(): string|null
     {
         return ColumnDefArray::getIdDbColumn($this->columnDefinitions);
     }

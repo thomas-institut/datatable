@@ -110,9 +110,10 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
      * @param array<int, array<string, mixed>> $rows
      * @return array<int, array<string, mixed>>
      */
-    private function sanitizedRowSet(array $rows, bool $stripTimeInfo = false): array
+    private function sanitizedRowSet(array $rows): array
     {
-        return array_values(array_map(fn(array $row): ?array => $this->sanitizedRow($row, $stripTimeInfo), $rows));
+        $values = array_map(fn(array $row): ?array => $this->sanitizedRow($row), $rows);
+        return array_values(array_map( fn(?array $row): array => $row ?? throw new RuntimeException('Found null row in row set'),$values));
     }
 
 

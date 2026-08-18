@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\Test;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 
 final class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalDataTableReferenceTestCase
 {
@@ -35,6 +37,10 @@ final class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalD
         return $dataTable;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws InvalidTimeStringException
+     */
     #[Test]
     public function testCustomValidTimeColumnNames(): void
     {
@@ -45,6 +51,9 @@ final class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalD
 
         $rowId = $table->createRowWithTime([self::STRING_COLUMN => 'custom'], '2010-01-01');
         $row = $table->getRowWithTime($rowId, '2010-01-02');
+        if ($row === null) {
+            $this->fail("Null value when getting just created row with time");
+        }
 
         $this->assertSame('custom_valid_from', $table->getValidFromColumnName());
         $this->assertSame('custom_valid_until', $table->getValidUntilColumnName());

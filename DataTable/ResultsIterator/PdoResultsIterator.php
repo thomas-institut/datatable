@@ -25,10 +25,14 @@ class PdoResultsIterator implements ResultsIterator
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
+     * @param array<string, mixed>|null $row
+     * @return array<string, mixed>|null
      */
-    private function normalizeResultRowArray(array $row) : array {
+    private function normalizeResultRowArray(?array $row) : array|null {
+        if ($row === null) {
+            return null;
+        }
+
         $row[$this->idColumnName] = intval($row[$this->idColumnName]);
         return $row;
     }

@@ -198,6 +198,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
      * @throws InvalidTimeStringException
      * @throws InvalidTimeZoneException
      * @throws RowAlreadyExists
+
      */
     #[Test]
     public function testCreateRowWithTime(): void
@@ -215,9 +216,13 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $rowId = $table->createRowWithTime([$colName => 'John'], TimeString::fromTimestamp($referenceTimestamp));
         $this->assertTrue($table->rowExistsWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp + 1)));
         $retrievedRow = $table->getRowWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp + 1));
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals($rowId, $retrievedRow[$idCol]);
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals('John', $retrievedRow[$colName]);
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals(TimeString::fromTimestamp($referenceTimestamp), $retrievedRow[$validFromCol]);
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals(TimeString::END_OF_TIMES, $retrievedRow[$validUntilCol]);
         $this->assertFalse($table->rowExistsWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp - 1)));
         $this->assertNull($table->getRowWithTime($rowId, TimeString::fromTimestamp($referenceTimestamp - 1)));
@@ -274,7 +279,9 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $this->assertFalse($table->rowExistsWithTime($rowId, '2009-12-31'));
         $this->assertNull($table->getRowWithTime($rowId, '2009-12-31'));
         $this->assertTrue($table->rowExistsWithTime($rowId, '2010-01-01'));
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame('first', $table->getRowWithTime($rowId, '2014-12-31')[self::STRING_COLUMN]);
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame('second', $table->getRowWithTime($rowId, '2015-01-01')[self::STRING_COLUMN]);
     }
 
@@ -372,6 +379,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $rowId = $table->createRowWithTime([self::INT_COLUMN => 1], '2010-01-01');
 
         $table->updateRowWithTime([$idColumn => $rowId, self::INT_COLUMN => 2], '2015-01-01');
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame(2, $table->getRowWithTime($rowId, '2015-01-01')[self::INT_COLUMN]);
 
         try {

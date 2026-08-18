@@ -70,6 +70,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             $fetchedRow = $table->getRow($id);
             $originalRow = $rowsToTest[$index];
             foreach ($originalRow as $columnName => $value) {
+                /** @phpstan-ignore offsetAccess.notFound */
                 $this->assertEquals($value, $fetchedRow[$columnName]);
             }
         }
@@ -103,6 +104,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
         $this->assertCount(1, $table->findRows(['age' => 30], 1));
         $this->assertCount(0, $table->findRows(['name' => 'Missing']));
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame($janeId, $table->findRows(['name' => 'Jane'])->getFirst()['id']);
 
         $booleanTable = $this->getTestTable([
@@ -114,6 +116,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
         $this->assertCount(1, $booleanTable->findRows(['active' => true]));
         $this->assertSame(['id' => $activeId, 'active' => true], $booleanTable->findRows(['active' => true])->getFirst());
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame($inactiveId, $booleanTable->findRows(['active' => false])->getFirst()['id']);
 
         $supportedDataTypes = $this->getTestTable([

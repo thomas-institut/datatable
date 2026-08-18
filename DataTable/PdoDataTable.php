@@ -395,7 +395,11 @@ class PdoDataTable extends GenericDataTable
             $this->setError('Value ' . $value . ' for key ' . $key . 'not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
         }
-        return $rows->getFirst()[$this->idColumnName];
+        $first = $rows->getFirst();
+        if ($first === null) {
+            throw new RuntimeException("Unexpected null values in getFirst() when find rows result is not empty");
+        }
+        return $first[$this->idColumnName];
     }
 
     public function deleteRow(int $rowId): int

@@ -163,9 +163,11 @@ abstract class DataTableReferenceTestCase extends TestCase
             $testMsg = "Random searches,  iteration $i, int=$someInt";
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
             $this->assertCount(1, $theRows, $testMsg);
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertIsInt($theRows->getFirst()[$idColumn], $testMsg);
             $theRows2 = $dataTable->findRows([self::STRING_COLUMN => $someTextValue], 1);
             $this->assertCount(1, $theRows2, $testMsg);
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertEquals($theRows->getFirst()[$idColumn], $theRows2->getFirst()[$idColumn], $testMsg);
             $rowId = $dataTable->getIdForKeyValue(
                 self::STRING_COLUMN,
@@ -176,6 +178,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $theRows3 = $dataTable->findRows([self::INT_COLUMN => $someInt,
                 self::STRING_COLUMN => $someTextValue]);
             $this->assertCount(1, $theRows3, $testMsg);
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertIsInt($theRows3->getFirst()[$idColumn], $testMsg);
             $this->assertSame($theRows->getFirst()[$idColumn], $theRows3->getFirst()[$idColumn], $testMsg);
         }
@@ -417,6 +420,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $theRows = $dataTable->findRows([self::INT_COLUMN => $someInt], 1);
             $this->assertCount(1, $theRows, $testMsg);
             $theRow = $theRows->getFirst();
+            /** @phpstan-ignore offsetAccess.notFound */
             $theId = $theRow[$idColumn];
             $dataTable->updateRow([$idColumn=>$theId,  self::STRING_COLUMN => $newTextValue]);
             $theRow2 = $dataTable->getRow($theId);
@@ -608,7 +612,9 @@ abstract class DataTableReferenceTestCase extends TestCase
         $dataTable[] = [ $idColumn => 2, self::STRING_COLUMN_2 => 'two'];
         $dataTable[25]  = [self::STRING_COLUMN_2 => '25'];
 
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals('one', $dataTable[1][self::STRING_COLUMN_2]);
+        /** @phpstan-ignore offsetAccess.notFound */
         $this->assertEquals('two', $dataTable[2][self::STRING_COLUMN_2]);
         $this->assertSame('25', $dataTable[25][self::STRING_COLUMN_2]);
         $this->assertArrayNotHasKey(20, $dataTable);
@@ -766,17 +772,20 @@ abstract class DataTableReferenceTestCase extends TestCase
 
             $this->assertTrue($dataTable->rowExists(1));
             $this->assertTrue($dataTable->rowExists(2));
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertEquals('newValue', $dataTable[20][self::STRING_COLUMN]);
             $this->assertFalse($dataTable->rowExists(22));
 
             $this->assertTrue($dtSameSession->rowExists(1));
             $this->assertTrue($dtSameSession->rowExists(2));
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertEquals('newValue', $dtSameSession[20][self::STRING_COLUMN]);
             $this->assertFalse($dtSameSession->rowExists(22));
 
 
             $dtOtherSession && $this->assertFalse($dtOtherSession->rowExists(1));
             $dtOtherSession && $this->assertFalse($dtOtherSession->rowExists(2));
+            /** @phpstan-ignore offsetAccess.notFound */
             $dtOtherSession && $this->assertNotEquals('newValue', $dtOtherSession[20][self::STRING_COLUMN]);
             $dtOtherSession && $this->assertTrue($dtOtherSession->rowExists(22));
 
@@ -787,6 +796,7 @@ abstract class DataTableReferenceTestCase extends TestCase
                 $dt && $this->assertFalse($dt->isUnderlyingDatabaseInTransaction());
                 $dt && $this->assertTrue($dt->rowExists(1));
                 $dt && $this->assertTrue($dt->rowExists(2));
+                /** @phpstan-ignore offsetAccess.notFound */
                 $dt && $this->assertEquals('newValue', $dt[20][self::STRING_COLUMN]);
                 $dt && $this->assertFalse($dt->rowExists(22));
             }
@@ -803,11 +813,13 @@ abstract class DataTableReferenceTestCase extends TestCase
 
             $this->assertTrue($dataTable->rowExists(3));
             $this->assertTrue($dataTable->rowExists(4));
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertEquals('evenNewerValue', $dataTable[20][self::STRING_COLUMN]);
             $this->assertFalse($dataTable->rowExists(21));
 
             $this->assertTrue($dtSameSession->rowExists(3));
             $this->assertTrue($dtSameSession->rowExists(4));
+            /** @phpstan-ignore offsetAccess.notFound */
             $this->assertEquals('evenNewerValue', $dtSameSession[20][self::STRING_COLUMN]);
             $this->assertFalse($dtSameSession->rowExists(21));
 
@@ -818,6 +830,7 @@ abstract class DataTableReferenceTestCase extends TestCase
 
             $dtOtherSession && $this->assertFalse($dtOtherSession->rowExists(3));
             $dtOtherSession && $this->assertFalse($dtOtherSession->rowExists(4));
+            /** @phpstan-ignore offsetAccess.notFound */
             $dtOtherSession && $this->assertNotEquals('evenNewerValue', $dtOtherSession[20][self::STRING_COLUMN]);
             $dtOtherSession && $this->assertTrue($dtOtherSession->rowExists(21));
 
@@ -828,6 +841,7 @@ abstract class DataTableReferenceTestCase extends TestCase
                 $dt && $this->assertFalse($dt->isUnderlyingDatabaseInTransaction());
                 $dt && $this->assertFalse($dt->rowExists(3));
                 $dt && $this->assertFalse($dt->rowExists(4));
+                /** @phpstan-ignore offsetAccess.notFound */
                 $dt && $this->assertEquals('newValue', $dt[20][self::STRING_COLUMN]);
                 $dt && $this->assertTrue($dt->rowExists(21));
             }

@@ -166,6 +166,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
 
         $rows = $restrictedDataTable->getAllRows();
         $this->assertCount(1, $rows);
+        // @phpstan-ignore-next-line
         $this->assertEquals($rowId, $rows->getFirst()[$this->getIdColumnName()]);
 
         $result = $restrictedDataTable->rowExists($rowId);
@@ -187,6 +188,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $dataTable->createRow($row);
 
         $this->assertTrue($dataTable->rowExists($rowId));
+        // @phpstan-ignore-next-line
         $this->assertEquals('test', $dataTable->getRow($rowId)[self::STRING_COLUMN]);
     }
 
