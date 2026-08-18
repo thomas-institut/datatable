@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -14,7 +16,7 @@ use ThomasInstitut\DataTable\SearchSpec;
 use ThomasInstitut\DataTable\SearchType;
 
 #[CoversClass(SearchSpecTranslator::class)]
-class SearchSpecTranslatorTest extends TestCase
+final class SearchSpecTranslatorTest extends TestCase
 {
     #[DataProvider('searchTypeProvider')]
     public function testSearchTypesAreTranslated(SearchType $searchType, int $expectedSearchType): void
@@ -25,12 +27,10 @@ class SearchSpecTranslatorTest extends TestCase
         );
     }
 
-    public static function searchTypeProvider(): array
+    public static function searchTypeProvider(): \Iterator
     {
-        return [
-            'and' => [SearchType::And, DataTable::SEARCH_AND],
-            'or' => [SearchType::Or, DataTable::SEARCH_OR],
-        ];
+        yield 'and' => [SearchType::And, DataTable::SEARCH_AND];
+        yield 'or' => [SearchType::Or, DataTable::SEARCH_OR];
     }
 
     #[DataProvider('searchConditionProvider')]
@@ -44,16 +44,14 @@ class SearchSpecTranslatorTest extends TestCase
         );
     }
 
-    public static function searchConditionProvider(): array
+    public static function searchConditionProvider(): \Iterator
     {
-        return [
-            'equals' => [SearchCondition::Equals, DataTable::COND_EQUAL_TO],
-            'not equals' => [SearchCondition::NotEquals, DataTable::COND_NOT_EQUAL_TO],
-            'less than' => [SearchCondition::LessThan, DataTable::COND_LESS_THAN],
-            'less than or equals' => [SearchCondition::LessThanOrEquals, DataTable::COND_LESS_OR_EQUAL_TO],
-            'greater than' => [SearchCondition::GreaterThan, DataTable::COND_GREATER_THAN],
-            'greater than or equals' => [SearchCondition::GreaterThanOrEquals, DataTable::COND_GREATER_OR_EQUAL_TO],
-        ];
+        yield 'equals' => [SearchCondition::Equals, DataTable::COND_EQUAL_TO];
+        yield 'not equals' => [SearchCondition::NotEquals, DataTable::COND_NOT_EQUAL_TO];
+        yield 'less than' => [SearchCondition::LessThan, DataTable::COND_LESS_THAN];
+        yield 'less than or equals' => [SearchCondition::LessThanOrEquals, DataTable::COND_LESS_OR_EQUAL_TO];
+        yield 'greater than' => [SearchCondition::GreaterThan, DataTable::COND_GREATER_THAN];
+        yield 'greater than or equals' => [SearchCondition::GreaterThanOrEquals, DataTable::COND_GREATER_OR_EQUAL_TO];
     }
 
     /**
@@ -222,14 +220,12 @@ class SearchSpecTranslatorTest extends TestCase
         );
     }
 
-    public static function invalidBooleanConditionProvider(): array
+    public static function invalidBooleanConditionProvider(): \Iterator
     {
-        return [
-            'less than' => [SearchCondition::LessThan],
-            'less than or equals' => [SearchCondition::LessThanOrEquals],
-            'greater than' => [SearchCondition::GreaterThan],
-            'greater than or equals' => [SearchCondition::GreaterThanOrEquals],
-        ];
+        yield 'less than' => [SearchCondition::LessThan];
+        yield 'less than or equals' => [SearchCondition::LessThanOrEquals];
+        yield 'greater than' => [SearchCondition::GreaterThan];
+        yield 'greater than or equals' => [SearchCondition::GreaterThanOrEquals];
     }
 
     /**
@@ -256,23 +252,21 @@ class SearchSpecTranslatorTest extends TestCase
         );
     }
 
-    public static function invalidSearchValueProvider(): array
+    public static function invalidSearchValueProvider(): \Iterator
     {
-        return [
-            'text receives integer' => [
-                (new ColumnDefinition('description', ColumnDataType::Text))->withRequired(true),
-                123,
-            ],
-            'varchar exceeds maximum length' => [
-                (new ColumnDefinition('name', ColumnDataType::VarChar))->withTypeLength(3),
-                'long',
-            ],
-            'integer receives numeric string' => [new ColumnDefinition('age', ColumnDataType::Integer), '42'],
-            'boolean receives integer' => [new ColumnDefinition('enabled', ColumnDataType::Boolean), 1],
-            'non-nullable column receives null' => [
-                (new ColumnDefinition('value', ColumnDataType::Text))->withRequired(true),
-                null,
-            ],
+        yield 'text receives integer' => [
+            (new ColumnDefinition('description', ColumnDataType::Text))->withRequired(true),
+            123,
+        ];
+        yield 'varchar exceeds maximum length' => [
+            (new ColumnDefinition('name', ColumnDataType::VarChar))->withTypeLength(3),
+            'long',
+        ];
+        yield 'integer receives numeric string' => [new ColumnDefinition('age', ColumnDataType::Integer), '42'];
+        yield 'boolean receives integer' => [new ColumnDefinition('enabled', ColumnDataType::Boolean), 1];
+        yield 'non-nullable column receives null' => [
+            (new ColumnDefinition('value', ColumnDataType::Text))->withRequired(true),
+            null,
         ];
     }
 

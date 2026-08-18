@@ -31,7 +31,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
-class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
+final class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;

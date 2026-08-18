@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -23,7 +25,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use PDO;
@@ -143,11 +144,11 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
 
         $rowId = $dataTable->createRow([$stringCol => 25]);
         $this->assertNotFalse($rowId);
-        $this->assertEquals(DataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
+        $this->assertSame(DataTable::ERROR_NO_ERROR, $dataTable->getErrorCode());
 
         $exceptionCaught = false;
         try {
@@ -156,11 +157,11 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_QUERY_ERROR, $restrictedDataTable->getErrorCode());
 
 
         $rows = $restrictedDataTable->getAllRows();
-        $this->assertEquals(1, $rows->count());
+        $this->assertCount(1, $rows);
         $this->assertEquals($rowId, $rows->getFirst()[$this->getIdColumnName()]);
 
         $result = $restrictedDataTable->rowExists($rowId);
@@ -264,9 +265,9 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_QUERY_ERROR,
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_QUERY_ERROR,
             $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
         // Null values are fine (because the table schema allows them)
         $exceptionCaught = false;
@@ -290,9 +291,9 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         for ($i = 1; $i < 100; $i++) {
             $row = $dataTable->getRow($i);
             $this->assertNull($row);
-            $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST,
+            $this->assertSame(DataTable::ERROR_ROW_DOES_NOT_EXIST,
                 $dataTable->getErrorCode());
-            $this->assertNotEquals('', $dataTable->getErrorMessage());
+            $this->assertNotSame('', $dataTable->getErrorMessage());
         }
     }
 
@@ -313,7 +314,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         try {
             $r = $dataTable->select('*', $this->getIdColumnName() . '=1', 0, $this->getIdColumnName() . ' ASC', 'testSelect2');
 
-            $this->assertEquals(0, $r->rowCount());
+            $this->assertSame(0, $r->rowCount());
         } catch (InvalidWhereClauseException) {
 
         }
@@ -331,17 +332,17 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         // Test startTransaction when already in transaction
         $this->assertTrue($dataTable->startTransaction());
         $this->assertFalse($dataTable->startTransaction());
-        $this->assertEquals(PdoDataTable::ERROR_TABLE_ALREADY_IN_TRANSACTION, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_TABLE_ALREADY_IN_TRANSACTION, $dataTable->getErrorCode());
 
         $this->assertTrue($dataTable->commit());
 
         // Test commit when not in transaction
         $this->assertFalse($dataTable->commit());
-        $this->assertEquals(PdoDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
 
         // Test rollBack when not in transaction
         $this->assertFalse($dataTable->rollBack());
-        $this->assertEquals(PdoDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_TABLE_NOT_IN_TRANSACTION, $dataTable->getErrorCode());
 
         // Test startTransaction when underlying PDO is already in transaction
         $pdo = $this->getPdo();
@@ -350,7 +351,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
 
         $this->assertTrue($dt1->startTransaction());
         $this->assertFalse($dt2->startTransaction());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_ALREADY_IN_TRANSACTION, $dt2->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_ALREADY_IN_TRANSACTION, $dt2->getErrorCode());
 
         $this->assertTrue($dt1->commit());
     }
@@ -378,7 +379,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $pdo->method('inTransaction')->willReturn(false);
         $pdo->method('beginTransaction')->willReturn(false);
         $this->assertFalse($dataTable->startTransaction());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_COULD_NOT_BEGIN_TRANSACTION, $dataTable->getErrorCode());
 
         // Test commit failure
         $pdo = $this->createStub(PDO::class); // Fresh stub for fresh state
@@ -392,7 +393,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $this->assertTrue($dataTable->startTransaction());
         $pdo->method('commit')->willReturn(false);
         $this->assertFalse($dataTable->commit());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
         $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
 
         // Test commit failure where transaction ended
@@ -403,11 +404,11 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
 
         $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
+        $pdo->method('inTransaction')->willReturn(false);
         $this->assertTrue($dataTable->startTransaction());
         $pdo->method('commit')->willReturn(false);
         $this->assertFalse($dataTable->commit());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_COULD_NOT_COMMIT, $dataTable->getErrorCode());
         $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
 
         // Test rollBack failure
@@ -422,7 +423,7 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $this->assertTrue($dataTable->startTransaction());
         $pdo->method('rollBack')->willReturn(false);
         $this->assertFalse($dataTable->rollBack());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
         $this->assertStringContainsString('table still in a transaction', $dataTable->getErrorMessage());
 
         // Test rollBack failure where transaction ended
@@ -433,11 +434,11 @@ abstract class PdoDataTableReferenceTestCase extends DataTableReferenceTestCase
         $dataTable = $this->constructPdoDataTableWithProvider($pdoProvider);
 
         $pdo->method('beginTransaction')->willReturn(true);
-        $pdo->method('inTransaction')->willReturnOnConsecutiveCalls(false, false);
+        $pdo->method('inTransaction')->willReturn(false);
         $this->assertTrue($dataTable->startTransaction());
         $pdo->method('rollBack')->willReturn(false);
         $this->assertFalse($dataTable->rollBack());
-        $this->assertEquals(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
+        $this->assertSame(PdoDataTable::ERROR_MYSQL_COULD_NOT_ROLLBACK, $dataTable->getErrorCode());
         $this->assertStringContainsString('transaction ended', $dataTable->getErrorMessage());
     }
 }

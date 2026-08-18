@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -30,7 +32,7 @@ use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
-class InMemoryDataTableTest extends DataTableReferenceTestCase
+final class InMemoryDataTableTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
@@ -59,7 +61,7 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
     public function testEmptyDataInitialization(): void
     {
          $dataTable = new InMemoryDataTable();
-        $this->assertEquals(0, $dataTable->getAllRows()->count());
+        $this->assertCount(0, $dataTable->getAllRows());
     }
 
     public function testIdGeneratorInitialization(): void
@@ -68,6 +70,6 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
         $data = [];
         $dataTable = new InMemoryDataTable($data, $idGenerator);
         $rowId = $dataTable->createRow(['name' => 'test']);
-        $this->assertEquals(1, $rowId);
+        $this->assertSame(1, $rowId);
     }
 }

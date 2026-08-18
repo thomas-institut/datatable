@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -296,12 +298,12 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
             self::STRING_COLUMN => 'new',
         ], '2015-01-01');
 
-        $this->assertSame(1, $table->findRowsWithTime([self::STRING_COLUMN => 'old'], 0, '2014-12-31')->count());
-        $this->assertSame(1, $table->findRowsWithTime([self::STRING_COLUMN => 'new'], 0, '2015-01-01')->count());
-        $this->assertSame(0, $table->findRowsWithTime([self::STRING_COLUMN => 'old'], 0, '2015-01-01')->count());
+        $this->assertCount(1, $table->findRowsWithTime([self::STRING_COLUMN => 'old'], 0, '2014-12-31'));
+        $this->assertCount(1, $table->findRowsWithTime([self::STRING_COLUMN => 'new'], 0, '2015-01-01'));
+        $this->assertCount(0, $table->findRowsWithTime([self::STRING_COLUMN => 'old'], 0, '2015-01-01'));
         // The PDO reference cannot build a SQL predicate for an empty row,
         // so both reference implementations return no rows for this input.
-        $this->assertSame(0, $table->findRowsWithTime([], 1, '2015-01-01')->count());
+        $this->assertCount(0, $table->findRowsWithTime([], 1, '2015-01-01'));
     }
 
     /**

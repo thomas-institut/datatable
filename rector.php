@@ -18,6 +18,7 @@ try {
             deadCode: true,
             codeQuality: true,
             typeDeclarations: true,
+            phpunitCodeQuality: true
         );
 } catch (InvalidConfigurationException $e) {
     print $e->getMessage();

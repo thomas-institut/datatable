@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -7,7 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ColumnDefArray::class)]
-class ColumnDefArrayTest extends TestCase
+final class ColumnDefArrayTest extends TestCase
 {
 
     public function testReturnsNullOnNotFound(): void
@@ -20,7 +22,7 @@ class ColumnDefArrayTest extends TestCase
 
         $this->assertNull(ColumnDefArray::getIdDbColumn($columnDefinitions));
         $this->assertNull(ColumnDefArray::getIdKey($columnDefinitions));
-        $this->assertNull(ColumnDefArray::getColumnDef($columnDefinitions, 'missing'));
+        $this->assertNotInstanceOf(\ThomasInstitut\DataTable\Schema\ColumnDefinition::class, ColumnDefArray::getColumnDef($columnDefinitions, 'missing'));
     }
 
     public function testValidColumnDefinitionsHaveNoErrors(): void
@@ -117,14 +119,12 @@ class ColumnDefArrayTest extends TestCase
         );
     }
 
-    public static function invalidKeyProvider(): array
+    public static function invalidKeyProvider(): \Iterator
     {
-        return [
-            'empty' => [''],
-            'leading space' => [' name'],
-            'trailing space' => ['name '],
-            'internal space' => ['first name'],
-        ];
+        yield 'empty' => [''];
+        yield 'leading space' => [' name'];
+        yield 'trailing space' => ['name '];
+        yield 'internal space' => ['first name'];
     }
 
     public function testInvalidDatabaseColumnIsReported(): void
@@ -205,12 +205,10 @@ class ColumnDefArrayTest extends TestCase
         );
     }
 
-    public static function invalidVarcharLengthProvider(): array
+    public static function invalidVarcharLengthProvider(): \Iterator
     {
-        return [
-            'zero' => [0],
-            'negative' => [-1],
-        ];
+        yield 'zero' => [0];
+        yield 'negative' => [-1];
     }
 
     public function testPositiveVarcharLengthIsValid(): void

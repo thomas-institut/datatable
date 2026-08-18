@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -125,7 +127,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $testMsg = "Random deletions and additions,  iteration $i, "
                     . "$idColumn=$theId";
             $this->assertTrue($dataTable->rowExists($theId), $testMsg);
-            $this->assertEquals(1, $dataTable->deleteRow($theId), $testMsg);
+            $this->assertSame(1, $dataTable->deleteRow($theId), $testMsg);
             $this->assertFalse($dataTable->rowExists($theId), $testMsg);
             $this->assertFalse($this->inIterator($theId, $dataTable->getUniqueIds()), $testMsg);
             $newId = $dataTable->createRow([ $idColumn => $theId,
@@ -170,13 +172,13 @@ abstract class DataTableReferenceTestCase extends TestCase
                 self::STRING_COLUMN,
                 $someTextValue
             );
-            $this->assertNotEquals(DataTable::NULL_ROW_ID, $rowId, $testMsg);
-            $this->assertEquals($theRows->getFirst()[$idColumn], $rowId);
+            $this->assertNotSame(DataTable::NULL_ROW_ID, $rowId, $testMsg);
+            $this->assertSame($theRows->getFirst()[$idColumn], $rowId);
             $theRows3 = $dataTable->findRows([self::INT_COLUMN => $someInt,
                 self::STRING_COLUMN => $someTextValue]);
             $this->assertCount(1, $theRows3, $testMsg);
             $this->assertIsInt($theRows3->getFirst()[$idColumn], $testMsg);
-            $this->assertEquals($theRows->getFirst()[$idColumn], $theRows3->getFirst()[$idColumn], $testMsg);
+            $this->assertSame($theRows->getFirst()[$idColumn], $theRows3->getFirst()[$idColumn], $testMsg);
         }
     }
 
@@ -195,14 +197,14 @@ abstract class DataTableReferenceTestCase extends TestCase
         }
         
         for ($i = 1; $i <= $this->numRows; $i++) {
-            $this->assertEquals($i, $dataTable->findRows([self::INT_COLUMN => 100], $i)->count());
+            $this->assertCount($i, $dataTable->findRows([self::INT_COLUMN => 100], $i));
         }
         
         for ($i = $this->numRows+1;
             $i <= $this->numRows+1+ $this->numIterations; $i++) {
-            $this->assertEquals(
+            $this->assertCount(
                 $this->numRows,
-                $dataTable->findRows([self::INT_COLUMN => 100], $i)->count()
+                $dataTable->findRows([self::INT_COLUMN => 100], $i)
             );
         }
     }
@@ -318,7 +320,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = false;
             try {
                 $resultSet = $dataTable->search($testCase['specArray'], $testCase['searchType']);
-                $this->assertEquals($testCase['expectedCount'], $resultSet->count(), $testCase['title']);
+                $this->assertCount($testCase['expectedCount'], $resultSet, $testCase['title']);
             } catch(InvalidSearchSpec) {
                 $exceptionCaught = true;
             }
@@ -439,14 +441,14 @@ abstract class DataTableReferenceTestCase extends TestCase
         $row = $dataTable->getRow(1);
         $this->assertNull($row);
 
-        $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
-        $this->assertEquals(0, $dataTable->findRows(['key' => 'someValue'], 1)->count());
+        $this->assertCount(0, $dataTable->findRows(['key' => 'someValue'], 1));
 
-        $this->assertEquals(DataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'someValue'));
-        $this->assertEquals(0, $dataTable->getAllRows()->count());
-        $this->assertEquals(0, $dataTable->deleteRow(1));
+        $this->assertSame(DataTable::NULL_ROW_ID, $dataTable->getIdForKeyValue('key', 'someValue'));
+        $this->assertCount(0, $dataTable->getAllRows());
+        $this->assertSame(0, $dataTable->deleteRow(1));
     }
 
     /**
@@ -459,7 +461,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         $idColumn = $dataTable->getIdColumnName();
 
         $res = $dataTable->createRow([$idColumn => 1, self::STRING_COLUMN_2 => 'test']);
-        $this->assertEquals(1, $res);
+        $this->assertSame(1, $res);
 
         // Trying to create an existing row
         $exceptionCaught = false;
@@ -470,20 +472,20 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ROW_ALREADY_EXISTS, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
         $row = $dataTable->getRow(1);
         $this->assertNotNull($row);
         $this->assertEquals('test', $row[self::STRING_COLUMN_2]);
 
         // invalid ID: a new one must be generated
         $newId = $dataTable->createRow([$idColumn => 'notaNumber', self::STRING_COLUMN_2 => 'test']);
-        $this->assertNotEquals(1, $newId);
+        $this->assertNotSame(1, $newId);
 
         // no ID: a new one must be generated
         $newId2 = $dataTable->createRow([self::STRING_COLUMN_2 => 'test2']);
-        $this->assertNotEquals(1, $newId2);
-        $this->assertNotEquals($newId, $newId2);
+        $this->assertNotSame(1, $newId2);
+        $this->assertNotSame($newId, $newId2);
 
     }
 
@@ -502,7 +504,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             self::STRING_COLUMN => '0'
         ];
         $res = $dataTable->createRow($theRow);
-        $this->assertEquals(1, $res);
+        $this->assertSame(1, $res);
         $createdRow = $dataTable->getRow(1);
         $this->assertEquals($theRow, $createdRow);
         
@@ -514,8 +516,8 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
 
         // no id in row
@@ -526,8 +528,8 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ID_NOT_SET, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
         // Check that not updates were made!
         $updatedRow = $dataTable->getRow(1);
@@ -541,8 +543,8 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_IS_ZERO, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ID_IS_ZERO, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!
         $updatedRow = $dataTable->getRow(1);
@@ -556,8 +558,8 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ID_NOT_INTEGER, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ID_NOT_INTEGER, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!
         $updatedRow = $dataTable->getRow(1);
@@ -571,8 +573,8 @@ abstract class DataTableReferenceTestCase extends TestCase
             $exceptionCaught = true;
         }
         $this->assertTrue($exceptionCaught);
-        $this->assertEquals(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
-        $this->assertNotEquals('', $dataTable->getErrorMessage());
+        $this->assertSame(DataTable::ERROR_ROW_DOES_NOT_EXIST, $dataTable->getErrorCode());
+        $this->assertNotSame('', $dataTable->getErrorMessage());
 
         // Check that no updates were made!
         $updatedRow = $dataTable->getRow(1);
@@ -590,7 +592,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         $theRow = [$idColumn => 1, self::STRING_COLUMN_2 => 'test'];
         
         $res = $dataTable->createRow($theRow);
-        $this->assertEquals(1, $res);
+        $this->assertSame(1, $res);
         
         $this->assertTrue($dataTable->rowExists(1));
         $this->assertFalse($dataTable->rowExists(0));
@@ -605,12 +607,12 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         $dataTable[] = [ $idColumn => 1, self::STRING_COLUMN_2 => 'one'];
         $dataTable[] = [ $idColumn => 2, self::STRING_COLUMN_2 => 'two'];
-        $dataTable[25]  = [self::STRING_COLUMN_2 => 25];
+        $dataTable[25]  = [self::STRING_COLUMN_2 => '25'];
 
         $this->assertEquals('one', $dataTable[1][self::STRING_COLUMN_2]);
         $this->assertEquals('two', $dataTable[2][self::STRING_COLUMN_2]);
-        $this->assertEquals(25, $dataTable[25][self::STRING_COLUMN_2]);
-        $this->assertFalse(isset($dataTable[20]));
+        $this->assertSame('25', $dataTable[25][self::STRING_COLUMN_2]);
+        $this->assertArrayNotHasKey(20, $dataTable);
         unset($dataTable[25]);
         $this->assertFalse($dataTable->rowExists(25));
     }
@@ -631,12 +633,12 @@ abstract class DataTableReferenceTestCase extends TestCase
         $this->assertNotNull($theRow);
         $this->assertSame($rowId, $theRow[$idColumn]);
         $this->assertEquals(120, $theRow[self::INT_COLUMN]);
-        $this->assertFalse(isset($theRow[self::STRING_COLUMN]));
+        $this->assertTrue(!array_key_exists(self::STRING_COLUMN, $theRow) || is_null($theRow[self::STRING_COLUMN]));
         $dataTable->updateRow([$idColumn => $rowId, self::INT_COLUMN => null,
             self::STRING_COLUMN => 'Some string']);
         $theRow2 = $dataTable->getRow($rowId);
         $this->assertNotNull($theRow2);
-        $this->assertTrue(is_null($theRow2[self::INT_COLUMN]));
+        $this->assertNull($theRow2[self::INT_COLUMN]);
         $this->assertEquals('Some string', $theRow2[self::STRING_COLUMN]);
 
     }
@@ -659,8 +661,8 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         $allRows = $dataTable->getAllRows();
         $allRowsTwo = $dataTableTwo->getAllRows();
-        $this->assertEquals(2, $allRows->count());
-        $this->assertEquals(2, $allRowsTwo->count());
+        $this->assertCount(2, $allRows);
+        $this->assertCount(2, $allRowsTwo);
 
         unset($dataTableTwo[2]);
 
@@ -671,8 +673,8 @@ abstract class DataTableReferenceTestCase extends TestCase
 
         $allRows = $dataTable->getAllRows();
         $allRowsTwo = $dataTableTwo->getAllRows();
-        $this->assertEquals(1, $allRows->count());
-        $this->assertEquals(1, $allRowsTwo->count());
+        $this->assertCount(1, $allRows);
+        $this->assertCount(1, $allRowsTwo);
     }
 
     /**
@@ -700,7 +702,7 @@ abstract class DataTableReferenceTestCase extends TestCase
             $this->assertEquals($rows[$count][self::STRING_COLUMN_2], $row[self::STRING_COLUMN_2]);
             $count++;
         }
-        $this->assertEquals(3, $count);
+        $this->assertSame(3, $count);
     }
 
     #[Test]
@@ -725,7 +727,7 @@ abstract class DataTableReferenceTestCase extends TestCase
         $dataTable = $this->getTestDataTable();
         $originalName = $dataTable->getName();
         $dataTable->setName('TestTable');
-        $this->assertEquals('TestTable', $dataTable->getName());
+        $this->assertSame('TestTable', $dataTable->getName());
         $dataTable->setName($originalName);
     }
 

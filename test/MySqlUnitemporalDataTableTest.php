@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable;
 
@@ -11,7 +12,7 @@ use ThomasInstitut\DataTable\ReferenceTests\PdoUnitemporalDataTableReferenceTest
 
 
 #[CoversClass(MySqlUnitemporalDataTable::class)]
-class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTestCase
+final class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTestCase
 {
 
     public int $numRows = 100;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -9,7 +11,7 @@ use RuntimeException;
 use ThomasInstitut\DataTable\IdGenerator\RandomIdGenerator;
 
 #[CoversClass(RandomIdGenerator::class)]
-class RandomIdGeneratorTest extends TestCase
+final class RandomIdGeneratorTest extends TestCase
 {
     #[AllowMockObjectsWithoutExpectations]
     public function testGetOneUnusedId(): void
@@ -20,13 +22,13 @@ class RandomIdGeneratorTest extends TestCase
 
         $dataTable = $this->createMock(DataTable::class);
         $dataTable->method('rowExists')
-            ->willReturnCallback(fn($id): bool => $id === 15);
+            ->willReturnCallback(fn(int $id): bool => $id === 15);
 
         $id = $generator->getOneUnusedId($dataTable);
 
         $this->assertGreaterThanOrEqual($min, $id);
         $this->assertLessThanOrEqual($max, $id);
-        $this->assertNotEquals(15, $id);
+        $this->assertNotSame(15, $id);
     }
 
     #[AllowMockObjectsWithoutExpectations]

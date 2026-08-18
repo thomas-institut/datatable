@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
@@ -72,7 +73,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
     {
         $iterator = $this->getEmptyIterator();
 
-        $this->assertEquals(0, $iterator->count());
+        $this->assertCount(0, $iterator);
 
         $this->assertNull($iterator->getFirst());
         $this->assertNull($iterator->current());
@@ -81,7 +82,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
         foreach ($iterator as $ignored) {
             $numIterations++;
         }
-        $this->assertEquals(0, $numIterations);
+        $this->assertSame(0, $numIterations);
     }
 
     /**
@@ -91,7 +92,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
     public function testGetFirst() : void{
 
         $iterator = $this->getNonEmptyIterator();
-        $this->assertNotEquals(0, $iterator->count());
+        $this->assertNotCount(0, $iterator);
         $this->assertNotNull($iterator->getFirst());
         $firstResult = $iterator->getFirst();
         $this->assertValidResultRow($firstResult, __FUNCTION__);
@@ -108,7 +109,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
             $this->assertValidResultRow($row, __FUNCTION__);
             $numIterations++;
         }
-        $this->assertEquals($iterator->count(), $numIterations);
+        $this->assertSame($iterator->count(), $numIterations);
     }
 
 
@@ -122,8 +123,8 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
             $this->assertIsNotInt($key, $context . ": row keys must not be int");
         }
         $this->assertIsInt($row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
-        $this->assertTrue(isset($row[self::INT_COLUM]), $context);
-        $this->assertNotEquals(0, $row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
+        $this->assertArrayHasKey(self::INT_COLUM, $row, $context);
+        $this->assertNotSame(0, $row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
     }
 
 }

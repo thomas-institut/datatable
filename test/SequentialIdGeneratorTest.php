@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -7,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 
 #[CoversClass(SequentialIdGenerator::class)]
-class SequentialIdGeneratorTest extends TestCase
+final class SequentialIdGeneratorTest extends TestCase
 {
     public function testGetOneUnusedIdReturnsTheIdAfterTheMaximum(): void
     {

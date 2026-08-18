@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -11,7 +13,7 @@ use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
 
 #[CoversClass(GenericDataTableWithSchema::class)]
-class GenericDataTableWithSchemaTest extends TestCase
+final class GenericDataTableWithSchemaTest extends TestCase
 {
 
     /**

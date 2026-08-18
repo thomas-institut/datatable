@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -8,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 
 #[CoversClass(ColumnDefinition::class)]
-class ColumnDefinitionTest extends TestCase
+final class ColumnDefinitionTest extends TestCase
 {
     #[DataProvider('constructorDefaultsProvider')]
     public function testConstructorSetsPropertiesAndDefaultValue(
@@ -26,17 +28,15 @@ class ColumnDefinitionTest extends TestCase
         $this->assertSame($expectedDefaultValue, $columnDefinition->defaultValue);
     }
 
-    public static function constructorDefaultsProvider(): array
+    public static function constructorDefaultsProvider(): \Iterator
     {
-        return [
-            'serializable' => [ColumnDataType::Serializable, null],
-            'varchar' => [ColumnDataType::VarChar, -1],
-            'text' => [ColumnDataType::Text, null],
-            'integer' => [ColumnDataType::Integer, -1],
-            'boolean' => [ColumnDataType::Boolean, false],
-            'id' => [ColumnDataType::Id, -1],
-            'time string' => [ColumnDataType::TimeString, '1000-01-01 00:00:00.000000'],
-        ];
+        yield 'serializable' => [ColumnDataType::Serializable, null];
+        yield 'varchar' => [ColumnDataType::VarChar, -1];
+        yield 'text' => [ColumnDataType::Text, null];
+        yield 'integer' => [ColumnDataType::Integer, -1];
+        yield 'boolean' => [ColumnDataType::Boolean, false];
+        yield 'id' => [ColumnDataType::Id, -1];
+        yield 'time string' => [ColumnDataType::TimeString, '1000-01-01 00:00:00.000000'];
     }
     public function testNullableColumnAcceptsNull(): void
     {
@@ -69,14 +69,12 @@ class ColumnDefinitionTest extends TestCase
         $this->assertTrue(ColumnDefinition::valueIsValidForColumn($value, $columnDefinition));
     }
 
-    public static function anyValueProvider(): array
+    public static function anyValueProvider(): \Iterator
     {
-        return [
-            'string' => ['value'],
-            'integer' => [1],
-            'array' => [['value']],
-            'object' => [new \stdClass()],
-        ];
+        yield 'string' => ['value'];
+        yield 'integer' => [1];
+        yield 'array' => [['value']];
+        yield 'object' => [new \stdClass()];
     }
 
     #[DataProvider('varcharValueProvider')]
@@ -91,14 +89,12 @@ class ColumnDefinitionTest extends TestCase
         );
     }
 
-    public static function varcharValueProvider(): array
+    public static function varcharValueProvider(): \Iterator
     {
-        return [
-            'empty string' => ['', true],
-            'maximum length' => ['12345', true],
-            'too long' => ['123456', false],
-            'integer' => [12345, false],
-        ];
+        yield 'empty string' => ['', true];
+        yield 'maximum length' => ['12345', true];
+        yield 'too long' => ['123456', false];
+        yield 'integer' => [12345, false];
     }
 
     #[DataProvider('textValueProvider')]
@@ -112,13 +108,11 @@ class ColumnDefinitionTest extends TestCase
         );
     }
 
-    public static function textValueProvider(): array
+    public static function textValueProvider(): \Iterator
     {
-        return [
-            'string' => ['description', true],
-            'integer' => [1, false],
-            'array' => [['description'], false],
-        ];
+        yield 'string' => ['description', true];
+        yield 'integer' => [1, false];
+        yield 'array' => [['description'], false];
     }
 
     #[DataProvider('integerValueProvider')]
@@ -135,14 +129,12 @@ class ColumnDefinitionTest extends TestCase
         );
     }
 
-    public static function integerValueProvider(): array
+    public static function integerValueProvider(): \Iterator
     {
-        return [
-            'id integer' => [ColumnDataType::Id, 1, true],
-            'regular integer' => [ColumnDataType::Integer, -1, true],
-            'string number' => [ColumnDataType::Integer, '1', false],
-            'float number' => [ColumnDataType::Id, 1.0, false],
-        ];
+        yield 'id integer' => [ColumnDataType::Id, 1, true];
+        yield 'regular integer' => [ColumnDataType::Integer, -1, true];
+        yield 'string number' => [ColumnDataType::Integer, '1', false];
+        yield 'float number' => [ColumnDataType::Id, 1.0, false];
     }
 
     #[DataProvider('booleanValueProvider')]
@@ -156,14 +148,12 @@ class ColumnDefinitionTest extends TestCase
         );
     }
 
-    public static function booleanValueProvider(): array
+    public static function booleanValueProvider(): \Iterator
     {
-        return [
-            'true' => [true, true],
-            'false' => [false, true],
-            'integer one' => [1, false],
-            'string true' => ['true', false],
-        ];
+        yield 'true' => [true, true];
+        yield 'false' => [false, true];
+        yield 'integer one' => [1, false];
+        yield 'string true' => ['true', false];
     }
 
     #[DataProvider('timeStringValueProvider')]
@@ -177,13 +167,11 @@ class ColumnDefinitionTest extends TestCase
         );
     }
 
-    public static function timeStringValueProvider(): array
+    public static function timeStringValueProvider(): \Iterator
     {
-        return [
-            'valid time string' => ['2024-01-02 03:04:05.123456', true],
-            'invalid time string' => ['not a time string', false],
-            'integer' => [123, false],
-        ];
+        yield 'valid time string' => ['2024-01-02 03:04:05.123456', true];
+        yield 'invalid time string' => ['not a time string', false];
+        yield 'integer' => [123, false];
     }
 
     /**
@@ -205,17 +193,15 @@ class ColumnDefinitionTest extends TestCase
         $this->assertSame($defaultValue, $columnDefinition->defaultValue);
     }
 
-    public static function validDefaultValueProvider(): array
+    public static function validDefaultValueProvider(): \Iterator
     {
-        return [
-            'serializable' => [ColumnDataType::Serializable, ['key' => 'value']],
-            'varchar' => [ColumnDataType::VarChar, 'default'],
-            'text' => [ColumnDataType::Text, 'default'],
-            'integer' => [ColumnDataType::Integer, 42],
-            'boolean' => [ColumnDataType::Boolean, true],
-            'id' => [ColumnDataType::Id, 42],
-            'time string' => [ColumnDataType::TimeString, '2024-01-02 03:04:05.123456'],
-        ];
+        yield 'serializable' => [ColumnDataType::Serializable, ['key' => 'value']];
+        yield 'varchar' => [ColumnDataType::VarChar, 'default'];
+        yield 'text' => [ColumnDataType::Text, 'default'];
+        yield 'integer' => [ColumnDataType::Integer, 42];
+        yield 'boolean' => [ColumnDataType::Boolean, true];
+        yield 'id' => [ColumnDataType::Id, 42];
+        yield 'time string' => [ColumnDataType::TimeString, '2024-01-02 03:04:05.123456'];
     }
 
     #[DataProvider('invalidDefaultValueProvider')]
@@ -235,16 +221,14 @@ class ColumnDefinitionTest extends TestCase
         $columnDefinition->withDefaultValue($defaultValue);
     }
 
-    public static function invalidDefaultValueProvider(): array
+    public static function invalidDefaultValueProvider(): \Iterator
     {
-        return [
-            'varchar too long' => [ColumnDataType::VarChar, '1234', 3],
-            'text integer' => [ColumnDataType::Text, 123],
-            'integer string' => [ColumnDataType::Integer, '42'],
-            'boolean integer' => [ColumnDataType::Boolean, 1],
-            'id null' => [ColumnDataType::Id, null],
-            'time string invalid' => [ColumnDataType::TimeString, 'not a time string'],
-        ];
+        yield 'varchar too long' => [ColumnDataType::VarChar, '1234', 3];
+        yield 'text integer' => [ColumnDataType::Text, 123];
+        yield 'integer string' => [ColumnDataType::Integer, '42'];
+        yield 'boolean integer' => [ColumnDataType::Boolean, 1];
+        yield 'id null' => [ColumnDataType::Id, null];
+        yield 'time string invalid' => [ColumnDataType::TimeString, 'not a time string'];
     }
 
     /**
@@ -288,14 +272,12 @@ class ColumnDefinitionTest extends TestCase
         $this->assertSame($expected, $columnDefinition->required);
     }
 
-    public static function requiredValueProvider(): array
+    public static function requiredValueProvider(): \Iterator
     {
-        return [
-            'optional integer' => [ColumnDataType::Integer, false, false],
-            'required integer' => [ColumnDataType::Integer, true, true],
-            'serializable always required' => [ColumnDataType::Serializable, false, true],
-            'text always required' => [ColumnDataType::Text, false, true],
-        ];
+        yield 'optional integer' => [ColumnDataType::Integer, false, false];
+        yield 'required integer' => [ColumnDataType::Integer, true, true];
+        yield 'serializable always required' => [ColumnDataType::Serializable, false, true];
+        yield 'text always required' => [ColumnDataType::Text, false, true];
     }
 
     public function testWithTypeLengthSetsLengthAndReturnsSameDefinition(): void

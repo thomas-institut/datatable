@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 use ThomasInstitut\DataTable\ReferenceTests\RowValueTranslatorReferenceTestCase;
 
-class NoOpRowValueTranslatorTest extends RowValueTranslatorReferenceTestCase
+final class NoOpRowValueTranslatorTest extends RowValueTranslatorReferenceTestCase
 {
     public function getRowValueTranslator(): RowValueTranslator
     {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
 use LogicException;
@@ -58,7 +60,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $this->assertSame($createdIds, iterator_to_array($table->getUniqueIds()));
 
         $allRows = $table->getAllRows();
-        $this->assertEquals($numRows, $allRows->count());
+        $this->assertCount($numRows, $allRows);
 
         $this->assertNull($table->getRow(999999999));
         $this->assertFalse($table->rowExists(8888888));
@@ -92,15 +94,15 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
         $rows = $table->findRows(['name' => 'John', 'age' => 30]);
 
-        $this->assertSame(1, $rows->count());
+        $this->assertCount(1, $rows);
         $this->assertSame([
             'id' => $johnId,
             'name' => 'John',
             'age' => 30,
         ], $rows->getFirst());
 
-        $this->assertSame(1, $table->findRows(['age' => 30], 1)->count());
-        $this->assertSame(0, $table->findRows(['name' => 'Missing'])->count());
+        $this->assertCount(1, $table->findRows(['age' => 30], 1));
+        $this->assertCount(0, $table->findRows(['name' => 'Missing']));
         $this->assertSame($janeId, $table->findRows(['name' => 'Jane'])->getFirst()['id']);
 
         $booleanTable = $this->getTestTable([
@@ -110,7 +112,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $activeId = $booleanTable->createRow(['active' => true]);
         $inactiveId = $booleanTable->createRow(['active' => false]);
 
-        $this->assertSame(1, $booleanTable->findRows(['active' => true])->count());
+        $this->assertCount(1, $booleanTable->findRows(['active' => true]));
         $this->assertSame(['id' => $activeId, 'active' => true], $booleanTable->findRows(['active' => true])->getFirst());
         $this->assertSame($inactiveId, $booleanTable->findRows(['active' => false])->getFirst()['id']);
 
@@ -127,12 +129,12 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
             $rows = $varCharTable->findRows(['description' => 'movie']);
 
-            $this->assertSame(1, $rows->count());
+            $this->assertCount(1, $rows);
             $this->assertSame([
                 'id' => $descriptionId,
                 'description' => 'movie',
             ], $rows->getFirst());
-            $this->assertSame(0, $varCharTable->findRows(['description' => 'missing'])->count());
+            $this->assertCount(0, $varCharTable->findRows(['description' => 'missing']));
         }
     }
 
@@ -191,7 +193,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             new SearchSpec('value', $condition, $searchValue),
         ]);
 
-        $this->assertSame($expectedCount, $results->count());
+        $this->assertCount($expectedCount, $results);
     }
 
     public static function searchProvider(): array
@@ -396,7 +398,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
         unset($table[$rowId]);
 
-        $this->assertFalse(isset($table[$rowId]));
+        $this->assertArrayNotHasKey($rowId, $table);
         $this->assertNull($table[$rowId]);
 
         $table[25] = ['name' => 'Peter', 'age' => 45];
@@ -425,14 +427,12 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table->createRow($badRow);
     }
 
-    public static function badRowProvider(): array
+    public static function badRowProvider(): \Iterator
     {
-        return [
-            'missing required key' => [['name' => 'John']],
-            'bad Name' => [['name' => 123, 'active' => true]],
-            'bad Age' => [['name' => 'John', 'age' => '30', 'active' => true]],
-            'bad Boolean' => [['name' => 'John', 'active' => 'true']],
-        ];
+        yield 'missing required key' => [['name' => 'John']];
+        yield 'bad Name' => [['name' => 123, 'active' => true]];
+        yield 'bad Age' => [['name' => 'John', 'age' => '30', 'active' => true]];
+        yield 'bad Boolean' => [['name' => 'John', 'active' => 'true']];
     }
 
     /**

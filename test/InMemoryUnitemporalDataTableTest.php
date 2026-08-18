@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PHPUnit\Framework\Attributes\Test;
 
-class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalDataTableReferenceTestCase
+final class InMemoryUnitemporalDataTableTest extends ReferenceTests\UnitemporalDataTableReferenceTestCase
 {
     private static ?InMemoryUnitemporalDataTable $motherTable = null;
     private static ?array $theData = null;

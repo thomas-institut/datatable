@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\SearchCondition;
 
 #[CoversClass(SupportedSearchCondition::class)]
-class SupportedSearchConditionTest extends TestCase
+final class SupportedSearchConditionTest extends TestCase
 {
     public function testReasonableDefaultsContainFlatConditionLists(): void
     {

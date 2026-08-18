@@ -11,7 +11,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 
 #[CoversClass(InMemoryDataTableWithSchema::class)]
-class InMemoryDataTableWithSchemaTest extends DataTableWithSchemaReferenceTestCase
+final class InMemoryDataTableWithSchemaTest extends DataTableWithSchemaReferenceTestCase
 {
     /**
      * @param array<ColumnDefinition> $columnDefinitions

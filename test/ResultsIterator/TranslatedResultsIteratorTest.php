@@ -15,7 +15,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 
 #[CoversClass(TranslatedResultsIterator::class)]
-class TranslatedResultsIteratorTest extends ResultsIteratorReferenceTestCase
+final class TranslatedResultsIteratorTest extends ResultsIteratorReferenceTestCase
 {
     /**
      * @throws InvalidColumnDefinitionsArray

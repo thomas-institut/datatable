@@ -12,7 +12,7 @@ use ThomasInstitut\DataTable\MySqlDataTableTest;
 use ThomasInstitut\DataTable\ReferenceTests\ResultsIteratorReferenceTestCase;
 
 #[CoversClass(PdoResultsIterator::class)]
-class PdoResultsIteratorTest extends ResultsIteratorReferenceTestCase
+final class PdoResultsIteratorTest extends ResultsIteratorReferenceTestCase
 {
     const string TEST_TABLE_NAME = 'iterator_dt';
     public function createDataTable() : DataTable {

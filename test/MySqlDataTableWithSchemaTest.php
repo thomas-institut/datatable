@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PDO;
@@ -9,7 +11,7 @@ use ThomasInstitut\DataTable\PdoProvider\SimplePdoProvider;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableWithSchemaReferenceTestCase;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 
-class MySqlDataTableWithSchemaTest extends DataTableWithSchemaReferenceTestCase
+final class MySqlDataTableWithSchemaTest extends DataTableWithSchemaReferenceTestCase
 {
 
     /**

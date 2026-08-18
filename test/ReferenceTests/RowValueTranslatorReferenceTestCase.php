@@ -28,16 +28,14 @@ abstract class RowValueTranslatorReferenceTestCase extends TestCase
         );
     }
 
-    public static function allColumnDataTypeValueProvider(): array
+    public static function allColumnDataTypeValueProvider(): \Iterator
     {
-        return [
-            'any' => [ColumnDataType::Serializable, ['name' => 'Ada']],
-            'varchar' => [ColumnDataType::VarChar, 'name'],
-            'text' => [ColumnDataType::Text, 'description'],
-            'integer' => [ColumnDataType::Integer, -12],
-            'boolean' => [ColumnDataType::Boolean, true],
-            'time' => [ColumnDataType::TimeString, TimeString::now()],
-            'id' => [ColumnDataType::Id, 42],
-        ];
+        yield 'any' => [ColumnDataType::Serializable, ['name' => 'Ada']];
+        yield 'varchar' => [ColumnDataType::VarChar, 'name'];
+        yield 'text' => [ColumnDataType::Text, 'description'];
+        yield 'integer' => [ColumnDataType::Integer, -12];
+        yield 'boolean' => [ColumnDataType::Boolean, true];
+        yield 'time' => [ColumnDataType::TimeString, TimeString::now()];
+        yield 'id' => [ColumnDataType::Id, 42];
     }
 }

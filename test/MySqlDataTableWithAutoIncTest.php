@@ -6,7 +6,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(MySqlDataTable::class)]
-class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
+final class MySqlDataTableWithAutoIncTest extends MySqlDataTableTest
 {
 
     #[\Override]

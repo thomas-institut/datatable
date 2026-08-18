@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Schema;
 
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -8,7 +10,7 @@ use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\ReferenceTests\RowValueTranslatorReferenceTestCase;
 
 #[CoversClass(StringValuesDbRowValueTranslator::class)]
-class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTestCase
+final class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTestCase
 {
     private StringValuesDbRowValueTranslator $translator;
 
@@ -36,53 +38,51 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         new StringValuesDbRowValueTranslator($options);
     }
 
-    public static function invalidOptionsProvider(): array
+    public static function invalidOptionsProvider(): \Iterator
     {
-        return [
-            'empty literal string prefix' => [
-                ['literalStringPrefix' => ''],
-                'Literal string prefix must be a non-empty string, "" given',
-            ],
-            'blank literal string prefix' => [
-                ['literalStringPrefix' => ' '],
-                'Literal string prefix must be a non-empty string, " " given',
-            ],
-            'empty database null value' => [
-                ['dbNullValue' => ''],
-                'Null value must be a non-empty string or one of [ LitVal= ], "" given',
-            ],
-            'database null value equals literal prefix' => [
-                ['dbNullValue' => 'LitVal='],
-                'Null value must be a non-empty string or one of [ LitVal= ], "LitVal=" given',
-            ],
-            'empty false value' => [
-                ['falseValue' => ''],
-                'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "" given',
-            ],
-            'false value equals database null value' => [
-                ['dbNullValue' => 'NULL', 'falseValue' => 'NULL'],
-                'False value must be a non-empty string or one of [ LitVal=, NULL ], "NULL" given',
-            ],
-            'false value equals literal prefix' => [
-                ['falseValue' => 'LitVal='],
-                'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "LitVal=" given',
-            ],
-            'empty true value' => [
-                ['trueValue' => ''],
-                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "" given',
-            ],
-            'true value equals database null value' => [
-                ['dbNullValue' => 'NULL', 'trueValue' => 'NULL'],
-                'True value must be a non-empty string or one of [ LitVal=, NULL, 0 ], "NULL" given',
-            ],
-            'true value equals false value' => [
-                ['falseValue' => 'FALSE', 'trueValue' => 'FALSE'],
-                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, FALSE ], "FALSE" given',
-            ],
-            'true value equals literal prefix' => [
-                ['trueValue' => 'LitVal='],
-                'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "LitVal=" given',
-            ],
+        yield 'empty literal string prefix' => [
+            ['literalStringPrefix' => ''],
+            'Literal string prefix must be a non-empty string, "" given',
+        ];
+        yield 'blank literal string prefix' => [
+            ['literalStringPrefix' => ' '],
+            'Literal string prefix must be a non-empty string, " " given',
+        ];
+        yield 'empty database null value' => [
+            ['dbNullValue' => ''],
+            'Null value must be a non-empty string or one of [ LitVal= ], "" given',
+        ];
+        yield 'database null value equals literal prefix' => [
+            ['dbNullValue' => 'LitVal='],
+            'Null value must be a non-empty string or one of [ LitVal= ], "LitVal=" given',
+        ];
+        yield 'empty false value' => [
+            ['falseValue' => ''],
+            'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "" given',
+        ];
+        yield 'false value equals database null value' => [
+            ['dbNullValue' => 'NULL', 'falseValue' => 'NULL'],
+            'False value must be a non-empty string or one of [ LitVal=, NULL ], "NULL" given',
+        ];
+        yield 'false value equals literal prefix' => [
+            ['falseValue' => 'LitVal='],
+            'False value must be a non-empty string or one of [ LitVal=, ___NULL___ ], "LitVal=" given',
+        ];
+        yield 'empty true value' => [
+            ['trueValue' => ''],
+            'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "" given',
+        ];
+        yield 'true value equals database null value' => [
+            ['dbNullValue' => 'NULL', 'trueValue' => 'NULL'],
+            'True value must be a non-empty string or one of [ LitVal=, NULL, 0 ], "NULL" given',
+        ];
+        yield 'true value equals false value' => [
+            ['falseValue' => 'FALSE', 'trueValue' => 'FALSE'],
+            'True value must be a non-empty string or one of [ LitVal=, ___NULL___, FALSE ], "FALSE" given',
+        ];
+        yield 'true value equals literal prefix' => [
+            ['trueValue' => 'LitVal='],
+            'True value must be a non-empty string or one of [ LitVal=, ___NULL___, 0 ], "LitVal=" given',
         ];
     }
 
@@ -99,15 +99,13 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function typesProvider(): array
+    public static function typesProvider(): \Iterator
     {
-        return [
-            [ColumnDataType::Serializable],
-            [ColumnDataType::Text],
-            [ColumnDataType::VarChar],
-            [ColumnDataType::Boolean],
-            [ColumnDataType::Integer],
-        ];
+        yield [ColumnDataType::Serializable];
+        yield [ColumnDataType::Text];
+        yield [ColumnDataType::VarChar];
+        yield [ColumnDataType::Boolean];
+        yield [ColumnDataType::Integer];
     }
 
     /**
@@ -132,14 +130,12 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function problematicStringsProvider(): array
+    public static function problematicStringsProvider(): \Iterator
     {
-        return [
-            'varchar with null' => [ColumnDataType::VarChar, 'NULL'],
-            'text with null' => [ColumnDataType::Text, 'NULL'],
-            'text with literal prefix' => [ColumnDataType::Text, 'Start:Today'],
-            'varchar with literal prefix' => [ColumnDataType::VarChar, 'Start:Tomorrow'],
-        ];
+        yield 'varchar with null' => [ColumnDataType::VarChar, 'NULL'];
+        yield 'text with null' => [ColumnDataType::Text, 'NULL'];
+        yield 'text with literal prefix' => [ColumnDataType::Text, 'Start:Today'];
+        yield 'varchar with literal prefix' => [ColumnDataType::VarChar, 'Start:Tomorrow'];
     }
 
 
@@ -165,12 +161,10 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function integerRowValueProvider(): array
+    public static function integerRowValueProvider(): \Iterator
     {
-        return [
-            'integer' => [ColumnDataType::Integer, -12],
-            'id' => [ColumnDataType::Id, 42],
-        ];
+        yield 'integer' => [ColumnDataType::Integer, -12];
+        yield 'id' => [ColumnDataType::Id, 42];
     }
 
     #[DataProvider('booleanRowValueProvider')]
@@ -182,13 +176,11 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function booleanRowValueProvider(): array
+    public static function booleanRowValueProvider(): \Iterator
     {
         $defaultOptions = new StringValuesDbRowValueTranslatorOptions();
-        return [
-            'true' => [true, $defaultOptions->trueValue],
-            'false' => [false, $defaultOptions->falseValue],
-        ];
+        yield 'true' => [true, $defaultOptions->trueValue];
+        yield 'false' => [false, $defaultOptions->falseValue];
     }
 
     #[DataProvider('unchangedRowValueProvider')]
@@ -197,12 +189,10 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         $this->assertSame($value, $this->translator->rowValueToDbValue($value, $type));
     }
 
-    public static function unchangedRowValueProvider(): array
+    public static function unchangedRowValueProvider(): \Iterator
     {
-        return [
-            'varchar' => ['name', ColumnDataType::VarChar],
-            'text' => ['description', ColumnDataType::Text],
-        ];
+        yield 'varchar' => ['name', ColumnDataType::VarChar];
+        yield 'text' => ['description', ColumnDataType::Text];
     }
 
     public function testAnyDatabaseValueIsUnserialized(): void
@@ -228,12 +218,10 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function integerDatabaseValueProvider(): array
+    public static function integerDatabaseValueProvider(): \Iterator
     {
-        return [
-            'integer' => [ColumnDataType::Integer, '-12', -12],
-            'id' => [ColumnDataType::Id, '42', 42],
-        ];
+        yield 'integer' => [ColumnDataType::Integer, '-12', -12];
+        yield 'id' => [ColumnDataType::Id, '42', 42];
     }
 
     #[DataProvider('booleanDatabaseValueProvider')]
@@ -245,13 +233,11 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         );
     }
 
-    public static function booleanDatabaseValueProvider(): array
+    public static function booleanDatabaseValueProvider(): \Iterator
     {
-        return [
-            'one' => ['1', true],
-            'zero' => ['0', false],
-            'other string' => ['true', false],
-        ];
+        yield 'one' => ['1', true];
+        yield 'zero' => ['0', false];
+        yield 'other string' => ['true', false];
     }
 
     #[DataProvider('unchangedDatabaseValueProvider')]
@@ -260,11 +246,9 @@ class StringValuesDbRowValueTranslatorTest extends RowValueTranslatorReferenceTe
         $this->assertSame($value, $this->translator->dbValueToRowValue($value, $type));
     }
 
-    public static function unchangedDatabaseValueProvider(): array
+    public static function unchangedDatabaseValueProvider(): \Iterator
     {
-        return [
-            'varchar' => ['name', ColumnDataType::VarChar],
-            'text' => ['description', ColumnDataType::Text],
-        ];
+        yield 'varchar' => ['name', ColumnDataType::VarChar];
+        yield 'text' => ['description', ColumnDataType::Text];
     }
 }
