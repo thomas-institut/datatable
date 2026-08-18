@@ -71,6 +71,7 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return new MySqlUnitemporalDataTable($pdoOrProvider, $tableName, $this->getIdColumnName());
     }
 
+    #[\Override]
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
         if (self::$motherSession === null) {

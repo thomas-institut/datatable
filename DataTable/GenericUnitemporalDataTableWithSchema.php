@@ -15,24 +15,23 @@ use ThomasInstitut\DataTable\Schema\SearchSpecTranslator;
 
 class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema implements UnitemporalDataTableWithSchema
 {
-
     protected UnitemporalDataTable $unitemporalDataTable;
+
     public function __construct(UnitemporalDataTable $dataTable, DataTableSchema $dataTableSchema, RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(), ?array $supportedSearchConditions = null, ?array $supportedDataTypes = null)
     {
         $errors = ColumnDefArray::validateUnitemporal($dataTableSchema->columnDefinitions);
-        if (count($errors) > 0)
-        {
+        if (count($errors) > 0) {
             throw new InvalidColumnDefinitionsArray('Invalid column definitions: ' . implode(', ', $errors));
         }
-        $supportedDataTypes = $supportedDataTypes ?? array_merge(DataTableWithSchema::MandatorySupportedDataTypes, UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes);
+        $supportedDataTypes ??= array_merge(DataTableWithSchema::MandatorySupportedDataTypes, UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes);
         $supportedDataTypes = $this->getCompliantSupportedDataTypes($supportedDataTypes);
         parent::__construct($dataTable, $dataTableSchema, $rowValueTranslator, $supportedSearchConditions, $supportedDataTypes);
         $this->unitemporalDataTable = $dataTable;
     }
 
-    private function getCompliantSupportedDataTypes(array $supportedDataTypes) : array
+    private function getCompliantSupportedDataTypes(array $supportedDataTypes): array
     {
-        foreach(UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes as $dataType) {
+        foreach (UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes as $dataType) {
             if (!in_array($dataType, $supportedDataTypes)) {
                 $supportedDataTypes[] = $dataType;
             }
@@ -113,6 +112,6 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
      */
     public function getRowHistory(int $rowId): array
     {
-       return $this->unitemporalDataTable->getRowHistory($rowId);
+        return $this->unitemporalDataTable->getRowHistory($rowId);
     }
 }

@@ -8,12 +8,6 @@ use ThomasInstitut\TimeString\TimeString;
 class ColumnDefinition
 {
     /**
-     * The column type
-     * @var ColumnDataType
-     */
-    public ColumnDataType $type;
-
-    /**
      * If true, the column can be null.
      * @var bool
      */
@@ -27,13 +21,6 @@ class ColumnDefinition
      * @var int
      */
     public int $typeLength = -1;
-
-    /**
-     * The key of the column in the row array.
-     *
-     * @var string
-     */
-    public string $rowKey;
 
     /**
      * The column name in the database if it differs from the row key.
@@ -56,13 +43,16 @@ class ColumnDefinition
     public mixed $defaultValue;
 
 
-    public function __construct(string $rowKey, ColumnDataType $type)
+    public function __construct(/**
+        * The key of the column in the row array.
+        */
+        public string $rowKey, /**
+        * The column type
+        */
+        public ColumnDataType $type)
     {
-        $this->type = $type;
-        $this->rowKey = $rowKey;
-
         // set a sensible default value
-        $this->defaultValue = match ($type) {
+        $this->defaultValue = match ($this->type) {
             ColumnDataType::VarChar,
             ColumnDataType::Integer, ColumnDataType::Id => -1,
             ColumnDataType::Boolean => false,
