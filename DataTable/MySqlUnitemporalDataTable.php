@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
 
@@ -38,6 +39,7 @@ class MySqlUnitemporalDataTable extends PdoUnitemporalDataTable
     /**
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
+     * @throws InvalidArgumentException
      */
     public function __construct(
         PDO|PdoProvider $pdoOrProvider,

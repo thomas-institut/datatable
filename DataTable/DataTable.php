@@ -35,7 +35,6 @@ use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
-use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
@@ -109,7 +108,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
     public const int ERROR_SPEC_INVALID_CONDITION = 114;
 
     public const int ERROR_TRANSACTIONS_NOT_SUPPORTED = 115;
-    public const int ERROR_NOT_IMPLEMENTED = 116;
 
     /**
      * Assigns an IdGenerator to the DataTable

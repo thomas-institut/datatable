@@ -408,7 +408,7 @@ class PdoDataTable extends GenericDataTable
         return 1;
     }
 
-    protected function forceIntIds($theRows)
+    protected function forceIntIds($theRows) : array
     {
         $rows = $theRows;
         $counter = count($rows);

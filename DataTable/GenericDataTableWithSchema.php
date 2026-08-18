@@ -301,7 +301,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function getMaxValueInColumn(string $columnName): int
     {
         $colDef = $this->getDefForColumn($columnName);
-        if (!$colDef instanceof \ThomasInstitut\DataTable\Schema\ColumnDefinition) {
+        if (!$colDef instanceof ColumnDefinition) {
             throw new InvalidArgumentException("Column $columnName not found");
         }
 

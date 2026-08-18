@@ -60,7 +60,7 @@ abstract class GenericDataTable implements DataTable
     public function __construct(?IdGenerator $idGenerator = null)
     {
 
-        if (!$idGenerator instanceof \ThomasInstitut\DataTable\IdGenerator\IdGenerator) {
+        if (!$idGenerator instanceof IdGenerator) {
             $this->idGenerator = new SequentialIdGenerator();
         } else {
             $this->idGenerator = $idGenerator;

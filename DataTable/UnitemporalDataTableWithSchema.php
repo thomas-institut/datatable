@@ -65,6 +65,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
 
     /**
      * Returns true if the row with the given $rowId exists at the given time
+     * @throws InvalidTimeStringException
      */
     public function rowExistsWithTime(int $rowId, string $timeString) : bool;
 
@@ -73,6 +74,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * If the row does not exist at the given time, it returns null.
      *
      * @return array<string, mixed>|null
+     * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString) : ?array;
 
@@ -82,6 +84,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      *
      * @param array<string, mixed> $rowToMatch
      * @throws InvalidRow
+     * @throws InvalidTimeStringException
      */
     public function findRowsWithTime(array $rowToMatch, int $maxResults, string $timeString) : ResultsIterator;
 
@@ -93,6 +96,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      * @throws InvalidRow
+     * @throws InvalidTimeStringException
      */
     public function searchWithTime(array $searchSpecArray, SearchType $searchType, string $timeString, int $maxResults = 0): ResultsIterator;
 
@@ -115,6 +119,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * be invalid after the given time.
      *
      * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime
      */
     public function deleteRowWithTime(int $rowId, string $timeString) : int;
 

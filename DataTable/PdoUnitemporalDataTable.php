@@ -153,6 +153,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         }
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     private function validateTimeColumnName(string $columnName): void
     {
         if ($columnName === '' || trim($columnName) !== $columnName || preg_match('/\s/', $columnName) === 1) {
@@ -581,8 +584,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     {
         try {
             return $this->deleteRowWithTime($rowId, TimeString::now());
-        } catch (InvalidTimeStringException) { // @codeCoverageIgnore
-            throw new RuntimeException('deleteRow should never throw an exception'); // @codeCoverageIgnore
+        } catch (InvalidTimeStringException|InvalidRowUpdateTime $e) { // @codeCoverageIgnore
+            throw new RuntimeException('Unexpected error in deleteRow', $e->getCode(), $e); // @codeCoverageIgnore
         }
     }
 
@@ -595,6 +598,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Returns 1 if the row was deleted, 0 if the row did not exist in the first place.
      *
      * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime
      */
     public function deleteRowWithTime(int $rowId, string $timeString): int
     {

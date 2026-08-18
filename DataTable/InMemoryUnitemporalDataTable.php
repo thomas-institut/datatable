@@ -538,7 +538,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
     {
-        return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
+        try {
+            return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
+        } catch (Exception\InvalidTimeStringException $e) {
+            throw new RuntimeException("Unexpected exception: " . $e->getMessage(),  $e->getCode(), $e);
+        }
     }
 
     public function updateRow(array $theRow): void
@@ -672,6 +676,9 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         $this->validUntilColumn = $validUntilColumnName;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     private function validateTimeColumnName(string $columnName): void
     {
         if ($columnName === '' || trim($columnName) !== $columnName || preg_match('/\s/', $columnName) === 1) {
