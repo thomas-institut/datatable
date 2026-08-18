@@ -59,6 +59,7 @@ class ColumnDefArrayTest extends TestCase
                 'Element at index 0 is not a ColumnDef object.',
                 'No id column found in column definitions',
             ],
+            // @phpstan-ignore-next-line Testing bad array on purpose
             ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()),
         );
     }

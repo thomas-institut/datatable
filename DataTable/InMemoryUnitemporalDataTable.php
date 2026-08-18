@@ -45,25 +45,13 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
      */
     private array $theData;
 
-    /**
-     *
-     * @var string
-     */
     private string $errorMessage;
 
-    /**
-     *
-     * @var int
-     */
     private int $errorCode;
 
 
     /**
      * @param array<int, array<string, mixed>>|null $data the array to use to store the rows, if null a new array will be created
-     * @param IdGenerator|null $idGenerator
-     * @param LoggerInterface|null $logger
-     * @param string $validFromColumnName
-     * @param string $validUntilColumnName
      * @throws InvalidArgumentException
      */
     public function __construct(
@@ -88,7 +76,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     /**
      * @param array<int, array<string, mixed>> $theRow
-     * @return void
      */
     private function internalAddRow(array $theRow): void
     {
@@ -121,7 +108,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
      */
     private function sanitizedRowSet(array $rows, bool $stripTimeInfo = false): array
     {
-        return array_values(array_map(fn($row): ?array => $this->sanitizedRow($row, $stripTimeInfo), $rows));
+        return array_values(array_map(fn(array $row): ?array => $this->sanitizedRow($row, $stripTimeInfo), $rows));
     }
 
 
@@ -131,14 +118,14 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private function internalGetRowHistory(int $rowId): array
     {
 
-        $data = array_filter($this->theData, fn($row): bool => $row[$this->idColumnName] === $rowId);
+        $data = array_filter($this->theData, fn(array $row): bool => $row[$this->idColumnName] === $rowId);
 
         if (count($data) === 0) {
             throw new RowDoesNotExist("Row $rowId does not exist");
         }
 
         // return sorted by valid from time
-        usort($data, fn($a, $b): int => strcmp((string) $a[$this->validFromColumn], (string) $b[$this->validFromColumn]));
+        usort($data, fn(array $a, array $b): int => strcmp((string) $a[$this->validFromColumn], (string) $b[$this->validFromColumn]));
 
         return $data;
     }
@@ -510,7 +497,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->rowExistsWithTime($rowId, TimeString::now());
         } catch (Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error checking row existence', $e);
+            throw new RuntimeException('Unexpected error checking row existence', $e->getCode(), $e);
         }
     }
 
@@ -520,7 +507,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $row = $this->getRowWithTime($rowId, TimeString::now());
         } catch (InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error getting row', $e);
+            throw new RuntimeException('Unexpected error getting row',  $e->getCode(), $e);
         }
         if ($row === null) {
             $this->setError("The row with id $rowId does not exist", self::ERROR_ROW_DOES_NOT_EXIST);
@@ -535,13 +522,13 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->getAllRowsWithTime(TimeString::now());
         } catch (InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error getting rows', $e);
+            throw new RuntimeException('Unexpected error getting rows',  $e->getCode(), $e);
         }
     }
 
     public function getDataRowsValidAtTime(array $data, string $time): array
     {
-        return array_values(array_filter($data, fn($row): bool => $row[$this->validFromColumn] <= $time && $row[$this->validUntilColumn] > $time));
+        return array_values(array_filter($data, fn(array $row): bool => $row[$this->validFromColumn] <= $time && $row[$this->validUntilColumn] > $time));
     }
 
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
@@ -549,7 +536,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->findRowsWithTime($rowToMatch, $maxResults, TimeString::now());
         } catch (Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException("Unexpected exception: " . $e->getMessage(), $e);
+            throw new RuntimeException("Unexpected exception: " . $e->getMessage(),  $e->getCode(), $e);
         }
     }
 
@@ -563,7 +550,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $this->updateRowWithTime($theRow, TimeString::now());
         } catch (InvalidRowUpdateTime|Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error updating row', $e);
+            throw new RuntimeException('Unexpected error updating row',  $e->getCode(), $e);
         } catch (RowDoesNotExist $e) {
             throw new InvalidRowForUpdate($e->getMessage(), $e->getCode(), $e);
         }
@@ -696,17 +683,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         }
     }
 
-    /**
-     * @param string $message
-     */
     private function setErrorMessage(string $message): void
     {
         $this->errorMessage = $message;
     }
 
-    /**
-     * @param int $code
-     */
     private function setErrorCode(int $code): void
     {
         $this->errorCode = $code;

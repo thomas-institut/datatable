@@ -82,9 +82,6 @@ interface UnitemporalDataTable extends DataTable
      * Creates a row that exists starting from the given time
      * Returns the id of the newly created row.
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
      */
@@ -93,9 +90,6 @@ interface UnitemporalDataTable extends DataTable
     /**
      * Returns true if the row with the given $rowId exists at the given time
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return bool
      * @throws InvalidTimeStringException
      */
     public function rowExistsWithTime(int $rowId, string $timeString): bool;
@@ -104,9 +98,6 @@ interface UnitemporalDataTable extends DataTable
      * Gets the version of the row with the given $rowId at the given time.
      * If the row does not exist at the given time, returns null.
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return array|null
      * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array;
@@ -117,8 +108,6 @@ interface UnitemporalDataTable extends DataTable
      *
      * @param $theRow
      * @param $maxResults
-     * @param string $timeString
-     * @return ResultsIterator
      * @throws InvalidTimeStringException
      */
     public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator;
@@ -127,11 +116,6 @@ interface UnitemporalDataTable extends DataTable
      * Searches the datatable for rows that match the given $searchSpec array and $searchType
      * at the given time
      *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param string $timeString
-     * @param int $maxResults
-     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      * @throws InvalidTimeStringException
@@ -143,8 +127,6 @@ interface UnitemporalDataTable extends DataTable
      *
      * Assumes that the given time is later than the last version of the row.
      *
-     * @param array $theRow
-     * @param string $timeString
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
@@ -158,9 +140,6 @@ interface UnitemporalDataTable extends DataTable
      * It does not delete any previous version of the row. It simply makes the last version of the row
      * be invalid after the given time.
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      * @throws InvalidRowUpdateTime -- if the given time is not later than the last version of the row
      */
@@ -172,16 +151,12 @@ interface UnitemporalDataTable extends DataTable
      * Be aware that this method will return rows even if the given $rowId is not valid now. Only if $rowId has
      * never existed will this method throw a RowDoesNotExist exception.
      *
-     * @param int $rowId
-     * @return array
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId): array;
 
 
     /**
-     * @param string $timeString
-     * @return ResultsIterator
      * @throws InvalidTimeStringException
      */
     public function getAllRowsWithTime(string $timeString): ResultsIterator;
@@ -192,7 +167,6 @@ interface UnitemporalDataTable extends DataTable
      *
      * This is the name registered with the data table instance, it must match the name
      * in the underlying database, but this is not checked explicitly.
-     * @return string
      */
     public function getValidFromColumnName(): string;
 
@@ -202,7 +176,6 @@ interface UnitemporalDataTable extends DataTable
      *
      * This is the name registered with the data table instance, it must match the name
      * in the underlying database, but this is not checked explicitly.
-     * @return string
      */
     public function getValidUntilColumnName(): string;
 
@@ -215,8 +188,6 @@ interface UnitemporalDataTable extends DataTable
      * This is the name registered with the data table instance, it must match the name
      * in the underlying database, but this is not checked explicitly in this method.
      *
-     * @param string $validFromColumnName
-     * @return void
      * @throws InvalidArgumentException
      */
     public function setValidFromColumnName(string $validFromColumnName): void;
@@ -231,8 +202,6 @@ interface UnitemporalDataTable extends DataTable
      * This is the name registered with the data table instance, it must match the name
      * in the underlying database, but this is not checked explicitly in this method.
      *
-     * @param string $validUntilColumnName
-     * @return void
      * @throws InvalidArgumentException
      */
     public function setValidUntilColumnName(string $validUntilColumnName): void;

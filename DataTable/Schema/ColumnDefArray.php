@@ -21,10 +21,8 @@ class ColumnDefArray
 
     /**
      * Returns the column definition for the given type or an empty array if not found.
-     *
-     * @param array $columDefinitions
-     * @param ColumnDataType $type
-     * @return array
+     * @param ColumnDefinition[] $columDefinitions
+     * @return ColumnDefinition[]
      */
     public static function getColumnDefsForType(array $columDefinitions, ColumnDataType $type): array
     {
@@ -39,7 +37,6 @@ class ColumnDefArray
 
     /**
      * @param array<int, ColumnDefinition> $columnDefinitions
-     * @return string|null
      */
     public static function getIdDbColumn(array $columnDefinitions): string|null
     {
@@ -117,8 +114,8 @@ class ColumnDefArray
      * Checks the column definition array for validity.
      * Returns an array of errors if the column definition array is invalid.
      *
-     * @param array<ColumnDefinition> $columnDefArray
-     * @param array<ColumnDataType> $supportedDataTypes
+     * @param ColumnDefinition[] $columnDefArray
+     * @param ColumnDataType[] $supportedDataTypes
      * @return string[]
      */
     public static function validate(array $columnDefArray, array $supportedDataTypes): array

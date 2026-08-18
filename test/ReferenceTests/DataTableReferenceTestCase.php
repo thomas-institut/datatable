@@ -75,10 +75,6 @@ abstract class DataTableReferenceTestCase extends TestCase
      * If $newSession is true and the test scenario supports multiple sessions, the
      * returned DataTable should use a new session. If false, a single common session
      * must be used.
-     *
-     * @param bool $resetTable
-     * @param bool $newSession
-     * @return DataTable
      */
     abstract public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable;
 

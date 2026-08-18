@@ -1,2 +1,2 @@
 #!/bin/bash
-docker exec -t dt-dev-php vendor/bin/phpstan analyse -l 5 DataTable test
+docker exec -t dt-dev-php vendor/bin/phpstan analyse DataTable test

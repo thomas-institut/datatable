@@ -12,9 +12,7 @@ use ThomasInstitut\DataTable\SearchType;
 class SearchSpecTranslator
 {
     /**
-     * @param SearchSpec $searchSpec
      * @param array<int, ColumnDefinition> $columnDefs
-     * @param RowTranslator $rowTranslator
      * @param array<SupportedSearchCondition> $supportedSearchConditions
      * @return array<string, int|string>
      * @throws InvalidRow
@@ -53,9 +51,6 @@ class SearchSpecTranslator
     }
 
     /**
-     * @param array $searchSpecArray
-     * @param array $columnDefs
-     * @param RowTranslator $rowTranslator
      * @param array<SupportedSearchCondition> $supportedSearchConditions
      * @return array<array<string, int|string>>
      * @throws InvalidRow

@@ -38,9 +38,6 @@ class MySqlUnitemporalDataTable extends PdoUnitemporalDataTable
     /**
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
-     * @param string $idColumnName
-     * @param string $validFromColumnName
-     * @param string $validUntilColumnName
      */
     public function __construct(
         PDO|PdoProvider $pdoOrProvider,

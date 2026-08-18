@@ -46,10 +46,6 @@ use Traversable;
 
 abstract class GenericDataTable implements DataTable
 {
-    /**
-     *
-     * @var string
-     */
     protected string $tableName;
 
     protected string $idColumnName;
@@ -111,9 +107,6 @@ abstract class GenericDataTable implements DataTable
         return $this->errorMessage;
     }
 
-    /**
-     * @return int
-     */
     public function getErrorCode(): int
     {
         return $this->errorCode;
@@ -297,14 +290,11 @@ abstract class GenericDataTable implements DataTable
     /** *********************************************************************
      * ABSTRACT PROTECTED METHODS
      ************************************************************************/
-
-
     /**
      * Creates a row in the table, returns the id of the newly created
      * row.
      *
      * @param array<string, mixed> $theRow
-     * @return int
      */
     abstract protected function realCreateRow(array $theRow): int;
 
@@ -315,7 +305,6 @@ abstract class GenericDataTable implements DataTable
      * Must throw a Runtime Exception if the row was not updated
      *
      * @param array<string, mixed> $theRow
-     * @return void
      * @throws RowDoesNotExist
      */
     abstract protected function realUpdateRow(array $theRow): void;
@@ -355,7 +344,6 @@ abstract class GenericDataTable implements DataTable
      * defaults to a sequential id if the idGenerator cannot
      * come up with one
      *
-     * @return int
      *
      */
     protected function getOneUnusedId(): int
@@ -440,7 +428,6 @@ abstract class GenericDataTable implements DataTable
 
     /**
      * @param array<int, array<string, mixed>> $searchSpecArray
-     * @param int $searchType
      * @throws InvalidSearchType
      * @throws InvalidSearchSpec
      */
@@ -459,8 +446,6 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
      */
     protected function setError(string $msg, int $code, array $otherContext = []): void
@@ -477,11 +462,7 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $logLevel
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
-     * @return void
      */
     protected function log(string $logLevel, string $msg, int $code, array $otherContext): void
     {
@@ -489,10 +470,7 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
-     * @return void
      */
     protected function logWarning(string $msg, int $code, array $otherContext = []): void
     {
@@ -502,41 +480,20 @@ abstract class GenericDataTable implements DataTable
     /**********************************************************************
      * PRIVATE AREA
      ************************************************************************/
-
-    /**
-     * @var IdGenerator
-     */
     private IdGenerator $idGenerator;
 
 
-    /**
-     * @var LoggerInterface
-     */
     protected LoggerInterface $logger;
 
-    /**
-     *
-     * @var string
-     */
     private string $errorMessage;
 
-    /**
-     *
-     * @var int
-     */
     private int $errorCode;
 
-    /**
-     * @param string $message
-     */
     private function setErrorMessage(string $message): void
     {
         $this->errorMessage = $message;
     }
 
-    /**
-     * @param int $code
-     */
     private function setErrorCode(int $code): void
     {
         $this->errorCode = $code;
@@ -548,8 +505,6 @@ abstract class GenericDataTable implements DataTable
      * If not, sets an error and returns false;
      *
      * @param array<string, mixed> $theRow
-     * @param string $context
-     * @return bool
      */
     protected function isRowIdGoodForRowUpdate(array $theRow, string $context): bool
     {

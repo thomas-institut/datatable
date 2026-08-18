@@ -44,6 +44,9 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
 {
 
 
+    abstract protected function getPdo(): PDO;
+    abstract protected function resetTestDbWithBadTables(PDO $pdo): void;
+
     /**
      * Construct a PdoUnitemporalDataTable for the standard test table.
      */
@@ -58,6 +61,8 @@ abstract class PdoUnitemporalDataTableReferenceTestCase extends UnitemporalDataT
     {
         return $this->constructPdoUnitemporalDataTable($pdo);
     }
+
+
 
     #[Test]
     public function testBadTables(): void

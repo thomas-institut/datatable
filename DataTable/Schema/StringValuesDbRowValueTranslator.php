@@ -12,7 +12,6 @@ readonly class StringValuesDbRowValueTranslator implements RowValueTranslator
     /**
      * Constructor for the class.
      *
-     * @param StringValuesDbRowValueTranslatorOptions $options
      * @throws InvalidArgumentException
      */
     public function __construct(private StringValuesDbRowValueTranslatorOptions $options = new StringValuesDbRowValueTranslatorOptions())

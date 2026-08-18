@@ -437,7 +437,6 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @param array<ColumnDefinition> $columnDefinitions
-     * @param int $numRows
      * @return array<int, array<string, mixed>>
      * @throws RandomException
      */

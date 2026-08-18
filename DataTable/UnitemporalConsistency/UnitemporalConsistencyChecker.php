@@ -6,11 +6,7 @@ class UnitemporalConsistencyChecker
 {
 
     /**
-     * @param int $id
      * @param array<int, array<string, mixed>> $rowHistory
-     * @param string $validFromColumn
-     * @param string $validUntilColumn
-     * @return array
      */
     static public function getConsistencyIssues(int $id, array $rowHistory, string $validFromColumn, string $validUntilColumn): array
     {

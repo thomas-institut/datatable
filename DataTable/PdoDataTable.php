@@ -142,9 +142,7 @@ class PdoDataTable extends GenericDataTable
      * Returns false if the column or table does not exist or if its type is not
      * one in the given list.
      *
-     * @param string $columnName
      * @param string[] $requiredTypes
-     * @return bool
      */
     protected function isTableColumnValid(string $columnName, array $requiredTypes): bool
     {
@@ -221,8 +219,6 @@ class PdoDataTable extends GenericDataTable
     }
 
     /**
-     * @param array $theRow
-     * @return int
      * @throws RowAlreadyExists
      * @throws RuntimeException
      * @throws LastInsertIdNotAvailableException
@@ -266,8 +262,7 @@ class PdoDataTable extends GenericDataTable
         foreach ($keys as $key) {
             $values[] = $this->quoteValue($theRow[$key]);
         }
-        $sql .= '(' . implode(',', $values) . ');';
-        return $sql;
+        return $sql . ('(' . implode(',', $values) . ');');
     }
 
     public function realCreateRow(array $theRow): int
@@ -303,7 +298,6 @@ class PdoDataTable extends GenericDataTable
      * Returns a string with a correctly quoted value for use in MySQL
      *
      * @param $var
-     * @return string
      */
     public function quoteValue($var): string
     {
@@ -339,16 +333,10 @@ class PdoDataTable extends GenericDataTable
      *
      * $context is used to report errors
      *
-     * @param string $what
-     * @param string $where
-     * @param int $limit
-     * @param string $orderBy
-     * @param string $context
-     * @return PDOStatement
      * @throws InvalidWhereClauseException
      * @see DataTable::search()  Preferred alternative
      * @see DataTable::findRows() Preferred alternative
-      */
+     */
     public function select(string $what, string $where, int $limit, string $orderBy, string $context): PDOStatement
     {
 
@@ -473,9 +461,6 @@ class PdoDataTable extends GenericDataTable
     /**
      * Executes a named prepared statement,
      * if there's any problem, throws a Runtime exception
-     *
-     * @param string $statement
-     * @param array $param
      */
     protected function executeStatement(string $statement, array $param): void
     {
@@ -500,11 +485,6 @@ class PdoDataTable extends GenericDataTable
 
     /**
      * Returns the sql query needed to get the search results
-     *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return string
      */
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
     {
@@ -604,8 +584,6 @@ class PdoDataTable extends GenericDataTable
 
     /**
      * Returns true if db table supports transactions.
-     *
-     * @return bool
      */
     #[Override]
     public function supportsTransactions(): bool
@@ -630,10 +608,7 @@ class PdoDataTable extends GenericDataTable
      *
      * Returns false if the underlying database is in a transaction already or if it could not start the transaction.
      * The actual error can be retrieved with getErrorCode and getErrorMessage
-     *
-     * @return bool
      */
-
     #[Override]
     public function startTransaction(): bool
     {
@@ -661,8 +636,6 @@ class PdoDataTable extends GenericDataTable
      *
      * Returns false if the PdoDataTable is not in a transaction or if the underlying database could not execute the commit.
      * The actual error can be retrieved with getErrorCode and getErrorMessage
-     *
-     * @return bool
      */
     #[Override]
     public function commit(): bool

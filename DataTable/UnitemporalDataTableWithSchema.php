@@ -57,8 +57,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * Returns the id of the newly created row.
      *
      * @param array<string, mixed> $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
      * @throws InvalidRow
@@ -67,10 +65,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
 
     /**
      * Returns true if the row with the given $rowId exists at the given time
-     *
-     * @param int $rowId
-     * @param string $timeString
-     * @return bool
      */
     public function rowExistsWithTime(int $rowId, string $timeString) : bool;
 
@@ -78,8 +72,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * Gets the version of the row with the given $rowId at the given time.
      * If the row does not exist at the given time, it returns null.
      *
-     * @param int $rowId
-     * @param string $timeString
      * @return array<string, mixed>|null
      */
     public function getRowWithTime(int $rowId, string $timeString) : ?array;
@@ -89,9 +81,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * at the given time
      *
      * @param array<string, mixed> $rowToMatch
-     * @param int $maxResults
-     * @param string $timeString
-     * @return ResultsIterator
      * @throws InvalidRow
      */
     public function findRowsWithTime(array $rowToMatch, int $maxResults, string $timeString) : ResultsIterator;
@@ -101,10 +90,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * at the given time
      *
      * @param array<SearchSpec> $searchSpecArray
-     * @param SearchType $searchType
-     * @param string $timeString
-     * @param int $maxResults
-     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      * @throws InvalidRow
@@ -116,8 +101,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      *
      * Assumes that the given time is later than the last version of the row.
      *
-     * @param array $theRow
-     * @param string $timeString
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
      * @throws InvalidRow
@@ -131,9 +114,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * It does not delete any previous version of the row. It simply makes the last version of the row
      * be invalid after the given time.
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      */
     public function deleteRowWithTime(int $rowId, string $timeString) : int;
@@ -141,8 +121,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
     /**
      * Returns an array with all the different versions of the row with the given $rowId
      *
-     * @param int $rowId
-     * @return array
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId) : array;

@@ -78,10 +78,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      *
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
-     * @param SqlDialect $sqlDialect
-     * @param string $idColumnName
-     * @param string $validFromColumnName
-     * @param string $validUntilColumnName
      * @throws InvalidArgumentException
      */
     public function __construct(
@@ -195,8 +191,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Get all unique Ids in the table at the given time,
      * If the given time is not a valid timeString returns
      * all uniqueIds regardless of time.
-     * @param string $timeString
-     * @return Iterator
      */
     public function getUniqueIdsWithTime(string $timeString): Iterator
     {
@@ -237,8 +231,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Creates a row valid from the current time.
      *
-     * @param array $theRow
-     * @return int
      * @throws InvalidTimeStringException
      */
     #[Override]
@@ -251,9 +243,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Creates a new row that is valid from the given time and returns the new
      * row's id
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
      */
@@ -270,9 +259,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Uses PdoDataTable's realCreateRow to create a row since that method does
      * not check for already used Ids
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      */
     protected function realCreateRowWithTime(array $theRow, string $timeString): int
@@ -298,9 +284,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Makes a row invalid from the given time
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      */
     protected function makeRowInvalid(array $theRow, string $timeString): int
@@ -345,9 +328,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Updates the last version of a row marking the change as
      * occurring at the given $timeString
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return void
      * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
@@ -413,11 +393,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * Returns the sql query needed to get the search results
-     *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return string
      */
     #[Override]
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
@@ -619,9 +594,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      *
      * Returns 1 if the row was deleted, 0 if the row did not exist in the first place.
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
      */
     public function deleteRowWithTime(int $rowId, string $timeString): int
@@ -713,8 +685,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Each version has the same fields as any row in the datatable plus
      *  'valid_from' and a 'valid_until' fields.
      *
-     * @param int $rowId
-     * @return array
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId): array

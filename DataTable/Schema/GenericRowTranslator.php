@@ -30,9 +30,7 @@ readonly class GenericRowTranslator implements RowTranslator
 
 
     /**
-     * @param RowValueTranslator $rowValueTranslator
      * @param array<ColumnDefinition> $columnDefinitions The definitions of the columns in the table.
-     * @param array|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
@@ -72,8 +70,6 @@ readonly class GenericRowTranslator implements RowTranslator
     }
 
     /**
-     * @param array $inputRow
-     * @param bool $failOnMissingRequired
      * @throws InvalidRow
      */
     private function validateInputRow(array $inputRow, bool $failOnMissingRequired): void
@@ -98,9 +94,6 @@ readonly class GenericRowTranslator implements RowTranslator
 
 
     /**
-     * @param array $theRow
-     * @param bool $fromDatabase
-     * @return array
      * @throws InvalidRow
      */
     private function translateRow(array $theRow, bool $fromDatabase): array

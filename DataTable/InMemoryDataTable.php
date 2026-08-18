@@ -44,7 +44,6 @@ class InMemoryDataTable extends GenericDataTable
 
     /**
      * @param array<int, array<string, mixed>>|null $data
-     * @param IdGenerator|null $idGenerator
      */
     public function __construct(array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
@@ -167,8 +166,6 @@ class InMemoryDataTable extends GenericDataTable
      *
      * @param array<string, mixed> $dataRow
      * @param array<int, array<string, mixed>> $searchSpec
-     * @param int $searchType
-     * @return bool
      */
     private function matchSearchSpec(array $dataRow, array $searchSpec, int $searchType) : bool {
 

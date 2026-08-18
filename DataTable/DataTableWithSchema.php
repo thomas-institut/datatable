@@ -80,17 +80,11 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
     public function getSupportedDataTypes(): array;
     /**
      * Assigns an IdGenerator to the DataTable
-     *
-     * @param IdGenerator $ig
-     * @return void
      */
     public function setIdGenerator(IdGenerator $ig): void;
 
     /**
      * Returns true if the row with the given ID exists
-     *
-     * @param int $rowId
-     * @return bool
      */
     public function rowExists(int $rowId): bool;
 
@@ -103,7 +97,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Otherwise, if the given ID already exists in the table, the function will throw an exception.
      *
      * @param array<string, mixed> $theRow
-     * @return int
      * @throws RowAlreadyExists
      * @throws InvalidRow
      */
@@ -115,15 +108,12 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *
      * If the row does not exist, returns null
      *
-     * @param int $rowId
      * @return array<string, mixed>|null
      */
     public function getRow(int $rowId): ?array;
 
     /**
      * Returns an iterator with all rows in the table
-     *
-     * @return ResultsIterator
      */
     public function getAllRows(): ResultsIterator;
 
@@ -133,9 +123,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Returns the number of rows actually deleted without problems, which should be 1 if
      * the row the given ID existed in the datable, or 0 if there was no such row in
      * the first place.
-     *
-     * @param int $rowId
-     * @return int
      */
     public function deleteRow(int $rowId): int;
 
@@ -149,8 +136,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * if $maxResults <= 0, all results will be returned
      *
      * @param array<string, mixed> $rowToMatch
-     * @param int $maxResults
-     * @return ResultsIterator
      * @throws InvalidRow
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator;
@@ -183,9 +168,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * if $maxResults <= 0, an iterator with all results will be returned
      *
      * @param array<SearchSpec> $searchSpecArray
-     * @param SearchType $searchType
-     * @param int $maxResults
-     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      * @throws InvalidRow
@@ -224,7 +206,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *
      *
      * @param array<string, mixed> $theRow
-     * @return void
      * @throws InvalidRow
      */
     public function updateRow(array $theRow): void;
@@ -237,8 +218,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * a call to startTransaction() will not take effect until commit() is called.
      *
      * If transactions are not supported, startTransaction() and commit() will do nothing.
-     *
-     * @return bool
      */
     public function supportsTransactions(): bool;
 
@@ -251,8 +230,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Returns true if the transaction started successfully.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function startTransaction(): bool;
 
@@ -262,8 +239,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Returns true if the commit was successful.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function commit(): bool;
 
@@ -275,8 +250,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Returns true if the rollBack was successful.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function rollBack(): bool;
 
@@ -285,8 +258,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * Returns true if a transaction initiated by the table is currently going on.
      *
      * Always returns false if the DataTable does not support transactions.
-     *
-     * @return bool
      */
     public function isInTransaction(): bool;
 
@@ -296,8 +267,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * database.
      *
      * Always returns false if the DataTable does not support transactions.
-     *
-     * @return bool
      */
     public function isUnderlyingDatabaseInTransaction(): bool;
 
@@ -309,31 +278,23 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * to be meaningful. Implementations may throw a RunTime exception
      * if the column in the underlying database is not numeric.
      *
-     * @param string $columnName
-     * @return int
      * @throws InvalidArgumentException
      */
     public function getMaxValueInColumn(string $columnName): int;
 
     /**
      * Returns the max id in the table
-     *
-     * @return int
      */
     public function getMaxId(): int;
 
     /**
      * Returns an iterator with all the unique row ids in the table in ascending order.
-     *
-     * @return Iterator
      */
     public function getUniqueIds(): Iterator;
 
 
     /**
      * Returns the table's name
-     *
-     * @return string
      */
     public function getName(): string;
 

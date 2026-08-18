@@ -34,12 +34,6 @@ class MySqlDataTableWithSchema extends GenericDataTableWithSchema
      * Attempts to create a table in the database using the provided PDO connection, table name, schema, and optional ifNotExists flag.
      *
      * **WARNING**: At this point this method is intended for internal testing purposes. It may not be suitable for production use.
-     *
-     * @param PDO $pdo
-     * @param string $tableName
-     * @param DataTableSchema $schema
-     * @param bool $ifNotExists
-     * @return void
      */
     public static function createTableInDatabase(PDO $pdo, string $tableName, DataTableSchema $schema, bool $ifNotExists = false): void
     {

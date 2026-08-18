@@ -8,7 +8,6 @@ final class SupportedSearchCondition
 {
 
     /**
-     * @param ColumnDataType $type
      * @param array<SearchCondition> $conditions
      * @codeCoverageIgnore
      */

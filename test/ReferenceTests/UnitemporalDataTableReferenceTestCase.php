@@ -38,7 +38,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
     {
         $errors = array_filter(
             $table->getConsistencyIssues(null),
-            static fn($issue): bool => $issue->type === IssueType::Error
+            static fn(\ThomasInstitut\DataTable\UnitemporalConsistency\ConsistencyIssue $issue): bool => $issue->type === IssueType::Error
         );
 
         $this->assertCount(0, $errors);
@@ -157,7 +157,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
 
         $issues = $dataTable->getConsistencyIssues([2, 3, 4, 5]);
         $this->assertCount(4, $issues);
-        $this->assertSame([2, 3, 4, 5], array_map(static fn($issue): int => $issue->id, $issues));
+        $this->assertSame([2, 3, 4, 5], array_map(static fn(\ThomasInstitut\DataTable\UnitemporalConsistency\ConsistencyIssue $issue): int => $issue->id, $issues));
         $this->assertSame(
             [
                 IssueCode::InvalidTimeRange,
@@ -165,7 +165,7 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
                 IssueCode::OverlappingVersions,
                 IssueCode::Gap,
             ],
-            array_map(static fn($issue): IssueCode => $issue->code, $issues)
+            array_map(static fn(\ThomasInstitut\DataTable\UnitemporalConsistency\ConsistencyIssue $issue): IssueCode => $issue->code, $issues)
         );
     }
 

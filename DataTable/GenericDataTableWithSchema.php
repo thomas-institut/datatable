@@ -43,9 +43,6 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     protected LoggerInterface $logger;
 
     /**
-     * @param DataTable $dataTable
-     * @param DataTableSchema $dataTableSchema
-     * @param RowValueTranslator $rowValueTranslator
      * @param array<SupportedSearchCondition>|null $supportedSearchConditions
      * @param array<ColumnDataType>|null $supportedDataTypes
      * @throws InvalidColumnDefinitionsArray

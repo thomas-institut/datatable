@@ -14,9 +14,11 @@ try {
         // uncomment to reach your current PHP version
         ->withPhpSets(php83: true)
         ->withAttributesSets(phpunit: true)
-        ->withTypeCoverageLevel(6)
-        ->withDeadCodeLevel(6)
-        ->withCodeQualityLevel(6);
+        ->withPreparedSets(
+            deadCode: true,
+            codeQuality: true,
+            typeDeclarations: true,
+        );
 } catch (InvalidConfigurationException $e) {
     print $e->getMessage();
 }

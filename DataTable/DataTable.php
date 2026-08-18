@@ -112,17 +112,11 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
 
     /**
      * Assigns an IdGenerator to the DataTable
-     *
-     * @param IdGenerator $ig
-     * @return void
      */
     public function setIdGenerator(IdGenerator $ig): void;
 
     /**
      * Returns true if the row with the given ID exists
-     *
-     * @param int $rowId
-     * @return bool
      */
     public function rowExists(int $rowId): bool;
 
@@ -135,7 +129,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Otherwise, if the given ID already exists in the table, the function will throw an exception.
      *
      * @param array<string, mixed> $theRow
-     * @return int
      * @throws RowAlreadyExists
      */
     public function createRow(array $theRow): int;
@@ -146,15 +139,12 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      * If the row does not exist, returns null
      *
-     * @param int $rowId
      * @return array<string, mixed>|null
      */
     public function getRow(int $rowId): ?array;
 
     /**
      * Returns an iterator with all rows in the table
-     *
-     * @return ResultsIterator
      */
     public function getAllRows(): ResultsIterator;
 
@@ -164,9 +154,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns the number of rows actually deleted without problems, which should be 1 if
      * the row the given ID existed in the datable, or 0 if there was no such row in
      * the first place.
-     *
-     * @param int $rowId
-     * @return int
      */
     public function deleteRow(int $rowId): int;
 
@@ -180,8 +167,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * if $maxResults <= 0, all results will be returned
      *
      * @param array<string, mixed> $rowToMatch
-     * @param int $maxResults
-     * @return ResultsIterator
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator;
 
@@ -216,9 +201,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * if $maxResults <= 0, an iterator with all results will be returned
      *
      * @param array<int, array<string, mixed>> $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return ResultsIterator
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
      */
@@ -239,7 +221,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      *
      *
      * @param array<string, mixed> $theRow
-     * @return void
      * @throws InvalidRowForUpdate
      */
     public function updateRow(array $theRow): void;
@@ -252,8 +233,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * a call to startTransaction() will not take effect until commit() is called.
      *
      * If transactions are not supported, startTransaction() and commit() will do nothing.
-     *
-     * @return bool
      */
     public function supportsTransactions(): bool;
 
@@ -266,8 +245,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns true if the transaction started successfully.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function startTransaction(): bool;
 
@@ -277,8 +254,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns true if the commit was successful.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function commit(): bool;
 
@@ -290,8 +265,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns true if the rollBack was successful.
      *
      * If transactions are not supported, returns false.
-     *
-     * @return bool
      */
     public function rollBack(): bool;
 
@@ -300,8 +273,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns true if a transaction initiated by the table is currently going on.
      *
      * Always returns false if the DataTable does not support transactions.
-     *
-     * @return bool
      */
     public function isInTransaction(): bool;
 
@@ -311,8 +282,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * database.
      *
      * Always returns false if the DataTable does not support transactions.
-     *
-     * @return bool
      */
     public function isUnderlyingDatabaseInTransaction(): bool;
 
@@ -320,9 +289,6 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Returns the id of one row in which $row[$key] === $value
      * or -1 if no such row was found
      *
-     * @param string $key
-     * @param mixed $value
-     * @return int
      * @deprecated Use normal search functions
      */
     public function getIdForKeyValue(string $key, mixed $value): int;
@@ -333,39 +299,27 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * The actual column must exist and be numeric for the actual value returned
      * to be meaningful. Implementations may throw a RunTime exception
      * if the column in the underlying database is not numeric.
-     *
-     * @param string $columnName
-     * @return int
      */
     public function getMaxValueInColumn(string $columnName): int;
 
     /**
      * Returns the max id in the table
-     *
-     * @return int
      */
     public function getMaxId(): int;
 
     /**
      * Returns an iterator with all the unique row ids in the table in ascending order.
-     *
-     * @return Iterator
      */
     public function getUniqueIds(): Iterator;
 
 
     /**
      * Returns the table's name, which may be an empty string if the name is not set.
-     *
-     * @return string
      */
     public function getName(): string;
 
     /**
      * Sets the table's name.
-     *
-     * @param string $name
-     * @return void
      */
     public function setName(string $name): void;
 
@@ -374,16 +328,12 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * Normally, this will be called right after constructing the DataTable object.
      *
      * This method does not change anything in the underlying database.
-     *
-     * @param string $columnName
-     * @return void
      */
     public function setIdColumnName(string $columnName): void;
 
 
     /**
      * Returns the current id column name used in the DataTable object.
-     * @return string
      */
     public function getIdColumnName(): string;
 

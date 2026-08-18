@@ -9,7 +9,6 @@ class ColumnDefinition
 {
     /**
      * If true, the column can be null.
-     * @var bool
      */
     public bool $nullable = false;
 
@@ -17,20 +16,16 @@ class ColumnDefinition
      * The column type length.
      *
      * For example, the length of a VARCHAR column.
-     *
-     * @var int
      */
     public int $typeLength = -1;
 
     /**
      * The column name in the database if it differs from the row key.
-     * @var string|null
      */
     public string|null $dbColumn = null;
 
     /**
      * If true, the column must be present both in input and output rows.
-     * @var bool
      */
     public bool $required = false;
 
@@ -62,11 +57,6 @@ class ColumnDefinition
         };
     }
 
-    /**
-     * @param mixed $value
-     * @param ColumnDefinition $columnDefinition
-     * @return bool
-     */
     public static function valueIsValidForColumn(mixed $value, ColumnDefinition $columnDefinition): bool
     {
         if ($value === null) {
