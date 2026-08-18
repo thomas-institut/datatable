@@ -20,7 +20,7 @@ class RandomIdGeneratorTest extends TestCase
 
         $dataTable = $this->createMock(DataTable::class);
         $dataTable->method('rowExists')
-            ->willReturnCallback(fn($id) => $id === 15);
+            ->willReturnCallback(fn($id): bool => $id === 15);
 
         $id = $generator->getOneUnusedId($dataTable);
 

@@ -71,7 +71,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->dataTable->setLogger($this->logger);
 
         $searchConditions = $supportedSearchConditions ?? SupportedSearchCondition::reasonableDefaults();
-        $this->supportedSearchConditions = array_values(array_filter($searchConditions, fn(SupportedSearchCondition $condition) => in_array($condition->type, $this->getSupportedDataTypes())));
+        $this->supportedSearchConditions = array_values(array_filter($searchConditions, fn(SupportedSearchCondition $condition): bool => in_array($condition->type, $this->getSupportedDataTypes())));
     }
 
 

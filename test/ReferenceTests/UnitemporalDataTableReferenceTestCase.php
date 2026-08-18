@@ -456,11 +456,11 @@ abstract class UnitemporalDataTableReferenceTestCase extends DataTableReferenceT
         $rowId = $table->createRowWithTime([self::INT_COLUMN => 1], '2010-01-01');
 
         foreach ([
-            fn() => $table->rowExistsWithTime($rowId, 'BadTime'),
-            fn() => $table->getRowWithTime($rowId, 'BadTime'),
-            fn() => $table->findRowsWithTime([self::INT_COLUMN => 1], 0, 'BadTime'),
+            fn(): bool => $table->rowExistsWithTime($rowId, 'BadTime'),
+            fn(): ?array => $table->getRowWithTime($rowId, 'BadTime'),
+            fn(): \ThomasInstitut\DataTable\ResultsIterator\ResultsIterator => $table->findRowsWithTime([self::INT_COLUMN => 1], 0, 'BadTime'),
             fn() => $table->updateRowWithTime([$table->getIdColumnName() => $rowId], 'BadTime'),
-            fn() => $table->deleteRowWithTime($rowId, 'BadTime'),
+            fn(): int => $table->deleteRowWithTime($rowId, 'BadTime'),
         ] as $operation) {
             try {
                 $operation();

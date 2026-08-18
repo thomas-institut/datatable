@@ -30,7 +30,7 @@ class SearchSpecTranslator
             throw new InvalidSearchSpec("Value '$searchSpec->value' is not valid for column '$searchSpec->column'.");
         }
 
-        $supportedSearchCondition = array_values(array_filter($supportedSearchConditions, fn(SupportedSearchCondition $supportedSearchCondition) => $supportedSearchCondition->type === $columnDef->type));
+        $supportedSearchCondition = array_values(array_filter($supportedSearchConditions, fn(SupportedSearchCondition $supportedSearchCondition): bool => $supportedSearchCondition->type === $columnDef->type));
         if (count($supportedSearchCondition) === 0) {
             throw new InvalidSearchSpec("Search condition '{$searchSpec->condition->value}' is not supported for column '$searchSpec->column' of type '{$columnDef->type->value}'.");
         }
@@ -62,7 +62,7 @@ class SearchSpecTranslator
      * @throws InvalidSearchSpec
      */
     public static function toDataTableSearchSpecArray(array $searchSpecArray, array $columnDefs, RowTranslator $rowTranslator, array $supportedSearchConditions): array {
-        return array_map(fn(SearchSpec $searchSpec) => self::toDataTableSearchSpec($searchSpec, $columnDefs, $rowTranslator, $supportedSearchConditions), $searchSpecArray);
+        return array_map(fn(SearchSpec $searchSpec): array => self::toDataTableSearchSpec($searchSpec, $columnDefs, $rowTranslator, $supportedSearchConditions), $searchSpecArray);
     }
 
     public static function searchTypeToDataTableSearchType(SearchType $searchType): int {

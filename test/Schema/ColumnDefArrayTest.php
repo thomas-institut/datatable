@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 class ColumnDefArrayTest extends TestCase
 {
 
-    public function testReturnsNullOnNotFound()
+    public function testReturnsNullOnNotFound(): void
     {
         $columnDefinitions = [
             (new ColumnDefinition('name', ColumnDataType::VarChar))

@@ -121,7 +121,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
      */
     private function sanitizedRowSet(array $rows, bool $stripTimeInfo = false): array
     {
-        return array_values(array_map(fn($row) => $this->sanitizedRow($row, $stripTimeInfo), $rows));
+        return array_values(array_map(fn($row): ?array => $this->sanitizedRow($row, $stripTimeInfo), $rows));
     }
 
 
@@ -131,14 +131,14 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private function internalGetRowHistory(int $rowId): array
     {
 
-        $data = array_filter($this->theData, fn($row) => $row[$this->idColumnName] === $rowId);
+        $data = array_filter($this->theData, fn($row): bool => $row[$this->idColumnName] === $rowId);
 
         if (count($data) === 0) {
             throw new RowDoesNotExist("Row $rowId does not exist");
         }
 
         // return sorted by valid from time
-        usort($data, fn($a, $b) => strcmp((string) $a[$this->validFromColumn], (string) $b[$this->validFromColumn]));
+        usort($data, fn($a, $b): int => strcmp((string) $a[$this->validFromColumn], (string) $b[$this->validFromColumn]));
 
         return $data;
     }
@@ -541,7 +541,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
     public function getDataRowsValidAtTime(array $data, string $time): array
     {
-        return array_values(array_filter($data, fn($row) => $row[$this->validFromColumn] <= $time && $row[$this->validUntilColumn] > $time));
+        return array_values(array_filter($data, fn($row): bool => $row[$this->validFromColumn] <= $time && $row[$this->validUntilColumn] > $time));
     }
 
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator

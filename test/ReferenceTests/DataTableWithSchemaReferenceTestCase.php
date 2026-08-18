@@ -51,7 +51,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $numRows = 100;
         $rowsToTest = $this->makeFakeValidRows($columnDefinitions, $numRows);
 
-        $rowIdMap = array_map(fn(array $row): int => $table->createRow($row), $rowsToTest);
+        $rowIdMap = array_map($table->createRow(...), $rowsToTest);
 
         $createdIds = array_values($rowIdMap);
         sort($createdIds);
