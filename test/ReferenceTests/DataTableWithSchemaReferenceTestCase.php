@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
+use Iterator;
 use LogicException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -11,6 +12,7 @@ use PHPUnit\Framework\TestCase;
 use Random\RandomException;
 use ThomasInstitut\DataTable\DataTableWithSchema;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
@@ -32,11 +34,13 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 {
     /**
      * @param array<ColumnDefinition> $columnDefinitions
+     * @throws InvalidColumnDefinitionsArray
      */
     abstract public function getTestTable(array $columnDefinitions): DataTableWithSchema;
 
     /**
      * @throws RandomException
+     * @throws InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testBasic(): void
@@ -79,6 +83,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     /**
      * @throws InvalidRow
      * @throws RowAlreadyExists
+     * @throws InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testFindRows(): void
@@ -133,10 +138,10 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             $rows = $varCharTable->findRows(['description' => 'movie']);
 
             $this->assertCount(1, $rows);
-            $this->assertSame([
+            $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys([
                 'id' => $descriptionId,
                 'description' => 'movie',
-            ], $rows->getFirst());
+            ], $rows->getFirst() ?? $this->fail("Null getFirst"), ['id', 'description']);
             $this->assertCount(0, $varCharTable->findRows(['description' => 'missing']));
         }
     }
@@ -146,7 +151,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
      * @throws InvalidSearchType
      * @throws InvalidRow
      * @throws RowAlreadyExists
-     * @throws InvalidSearchSpec
+     * @throws InvalidSearchSpec|InvalidColumnDefinitionsArray
      */
     #[Test]
     #[DataProvider('searchProvider')]
@@ -241,7 +246,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     /**
      * @throws InvalidRow
      * @throws RowAlreadyExists
-     * @throws InvalidArgumentException
+     * @throws InvalidArgumentException|InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testGetMaxValueInColumn(): void
@@ -264,6 +269,9 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
 
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
     #[Test]
     public function testGetMaxValueInColumnRejectsUnknownColumn(): void
     {
@@ -276,6 +284,9 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table->getMaxValueInColumn('missing');
     }
 
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     */
     #[Test]
     public function testGetMaxValueInColumnRejectsNonNumericColumn(): void
     {
@@ -291,7 +302,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @throws InvalidRow
-     * @throws RowAlreadyExists|RandomException
+     * @throws RowAlreadyExists|RandomException|InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testDeleteRow(): void
@@ -314,7 +325,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @throws InvalidRow
-     * @throws RowAlreadyExists|RandomException
+     * @throws RowAlreadyExists|RandomException|InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testUpdateRow(): void
@@ -345,7 +356,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws InvalidRow
+     * @throws InvalidRow|InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testUpdateRowRejectsInvalidInput(): void
@@ -361,7 +372,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws InvalidRow
+     * @throws InvalidRow|InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testUpdateRowRejectsInvalidRowForUpdate(): void
@@ -377,6 +388,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
     /**
+     * @throws InvalidColumnDefinitionsArray
      */
     #[Test]
     public function testArrayAccess(): void
@@ -419,7 +431,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @param array<string, mixed> $badRow
-     * @throws RowAlreadyExists
+     * @throws RowAlreadyExists|InvalidColumnDefinitionsArray
      */
     #[Test]
     #[DataProvider('badRowProvider')]
@@ -436,7 +448,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table->createRow($badRow);
     }
 
-    public static function badRowProvider(): \Iterator
+    public static function badRowProvider(): Iterator
     {
         yield 'missing required key' => [['name' => 'John']];
         yield 'bad Name' => [['name' => 123, 'active' => true]];
@@ -487,6 +499,8 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
                         $row[$columnDefinition->rowKey] = $this->getRandomString($columnDefinition->typeLength);
                         break;
                     case ColumnDataType::Id:
+                    case ColumnDataType::ValidFrom:
+                    case ColumnDataType::ValidUntil:
                         break;
                 }
             }
@@ -519,7 +533,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
     /**
      * @return array<ColumnDefinition>
-     * @throws RandomException
+     * @throws RandomException|InvalidColumnDefinitionsArray
      */
     private function getOptionalColumnDefinitions(): array
     {

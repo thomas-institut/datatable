@@ -48,9 +48,9 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
         $defs = [
             new ColumnDefinition('id', ColumnDataType::Id),
             (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-            new ColumnDefinition('age', ColumnDataType::Integer),
-            new ColumnDefinition('validFrom', ColumnDataType::ValidFrom),
-            new ColumnDefinition('validUntil', ColumnDataType::ValidUntil)
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+            (new ColumnDefinition('validFrom', ColumnDataType::ValidFrom))->withDbColumn('valido_desde'),
+            (new ColumnDefinition('validUntil', ColumnDataType::ValidUntil))->withDbColumn('valido_hasta'),
         ];
 
         $table = $this->getUnitemporalTestTable($defs);
@@ -58,22 +58,20 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
         $refTimestamp = time();
 
         $testRows = [
-            [ 'John', 19],
-            [ 'Jane', 20],
-            [ 'Paul', 24],
-            [ 'Penny', 30],
+            ['John', 19],
+            ['Jane', 20],
+            ['Paul', 24],
+            ['Penny', 30],
         ];
         $testRowCount = count($testRows);
 
-
         $ids = [];
-
-        foreach($testRows as $index => $row) {
-            $theRow = [ 'name' => $row[0], 'age' => $row[1] ];
+        foreach ($testRows as $index => $row) {
+            $theRow = ['name' => $row[0], 'age' => $row[1]];
             $ids[] = $table->createRowWithTime($theRow, TimeString::fromTimeStamp($refTimestamp + $index));
         }
 
-        foreach($ids as $index => $id) {
+        foreach ($ids as $index => $id) {
             $row = $table->getRowWithTime($id, TimeString::fromTimeStamp($refTimestamp + $testRowCount));
             $this->assertNotNull($row);
             $this->assertEquals($testRows[$index][0], $row['name']);

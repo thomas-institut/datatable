@@ -13,6 +13,7 @@ use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
 use ThomasInstitut\DataTable\Schema\RowValueTranslator;
+use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 use ThomasInstitut\DataTable\UnitemporalDataTableWithSchema;
 use Traversable;
 
@@ -28,6 +29,6 @@ class InMemoryUnitemporalDataTableWithSchema extends GenericUnitemporalDataTable
         if (empty($validUntilDefs)) {
             $schema->columnDefinitions[] = new ColumnDefinition('valid_until', ColumnDataType::ValidUntil);
         }
-        parent::__construct($udt, $schema);
+        parent::__construct($udt, $schema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases());
     }
 }

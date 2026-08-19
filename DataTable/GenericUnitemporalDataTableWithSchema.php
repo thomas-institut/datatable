@@ -92,7 +92,11 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array
     {
-        return $this->unitemporalDataTable->getRowWithTime($rowId, $timeString);
+        $dbRow = $this->unitemporalDataTable->getRowWithTime($rowId, $timeString);
+        if ($dbRow === null) {
+            return null;
+        }
+        return $this->rowTranslator->dbRowToOutputRow($dbRow);
     }
 
     /**
@@ -146,4 +150,5 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
     {
         return $this->unitemporalDataTable->getRowHistory($rowId);
     }
+
 }
