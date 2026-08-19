@@ -22,7 +22,9 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
                                 DataTableSchema      $dataTableSchema,
                                 RowValueTranslator   $rowValueTranslator = new NoOpRowValueTranslator(),
                                 ?array               $supportedSearchConditions = null,
-                                ?array               $supportedDataTypes = null)
+                                ?array               $supportedDataTypes = null,
+                                bool                 $fillInDefaultValuesForDb = false
+    )
     {
 
         $validFromDefs = ColumnDefArray::getColumnDefsForType($dataTableSchema->columnDefinitions, ColumnDataType::ValidFrom);
@@ -53,7 +55,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
 
         $supportedDataTypes ??= array_merge(DataTableWithSchema::MandatorySupportedDataTypes, UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes);
         $supportedDataTypes = $this->getCompliantSupportedDataTypes($supportedDataTypes);
-        parent::__construct($unitemporalDataTable, $dataTableSchema, $rowValueTranslator, $supportedSearchConditions, $supportedDataTypes);
+        parent::__construct($unitemporalDataTable, $dataTableSchema, $rowValueTranslator, $supportedSearchConditions, $supportedDataTypes, $fillInDefaultValuesForDb);
         $this->unitemporalDataTable = $unitemporalDataTable;
     }
 

@@ -160,10 +160,22 @@ class ColumnDefArray
                 $errors[] = "Column at index $index has invalid dbColumn: '$columnDef->dbColumn'";
             }
 
-            // some types must be marked as required
-            if (in_array($columnDef->type, ColumnDataType::NoDefaultTypes) && $columnDef->required === false) {
-                $errors[] = "Column at index $index must have required = true since it is of type {$columnDef->type->value}.";
+            $specialTypes = [ColumnDataType::Id, ColumnDataType::ValidUntil, ColumnDataType::ValidFrom];
+            if (!in_array($columnDef->type, $specialTypes)) {
+                // some types must be marked as required
+                if (in_array($columnDef->type, ColumnDataType::NoDefaultTypes) && $columnDef->required === false) {
+                    $errors[] = "Column at index $index must have required = true since it is of type {$columnDef->type->value}.";
+                } elseif ($columnDef->required === false && $columnDef->defaultValueExplicitlySet === false) {
+                    // columns that are not required must have an explicitly set default value
+                    $errors[] = "Column '$columnDef->rowKey' at index $index must have an explicitly set default value since it is not required.";
+                }
+                // explicitly set default values must be valid for the column type
+                if ($columnDef->defaultValueExplicitlySet === true && !ColumnDefinition::valueIsValidForColumn($columnDef->defaultValue, $columnDef)) {
+                    $errors[] = "Column at index $index has an invalid default value: '{$columnDef->defaultValue}' for type {$columnDef->type->value}.";
+                }
+
             }
+
 
             // $rowKey and $dbColumn must be unique in the array.
             $effectiveDbColumn = $columnDef->dbColumn ?? $columnDef->rowKey;

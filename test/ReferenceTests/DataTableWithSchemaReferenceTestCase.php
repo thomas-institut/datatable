@@ -50,7 +50,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
         ];
         $columnDefinitions = array_merge($columnDefinitions, $this->getOptionalColumnDefinitions());
-        $columnDefinitions[] = (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad');
+        $columnDefinitions[] = (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withDefaultValue(0);
         $columnDefinitions[] = (new ColumnDefinition('active', ColumnDataType::Boolean))->withRequired(true);
         $table = $this->getTestTable($columnDefinitions);
 
@@ -91,7 +91,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table = $this->getTestTable([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withRequired(true),
         ]);
 
         $johnId = $table->createRow(['name' => 'John', 'age' => 30]);
@@ -110,7 +110,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
 
         $booleanTable = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('active', ColumnDataType::Boolean),
+            (new ColumnDefinition('active', ColumnDataType::Boolean))->withDefaultValue(false),
         ]);
         $activeId = $booleanTable->createRow(['active' => true]);
         $inactiveId = $booleanTable->createRow(['active' => false]);
@@ -130,7 +130,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         if (in_array(ColumnDataType::VarChar, $supportedDataTypes, true)) {
             $varCharTable = $this->getTestTable([
                 new ColumnDefinition('id', ColumnDataType::Id),
-                (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(64),
+                (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(64)->withDefaultValue(''),
             ]);
             $descriptionId = $varCharTable->createRow(['description' => 'movie']);
             $varCharTable->createRow(['description' => 'book']);
@@ -176,6 +176,12 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         }
         if (in_array($columnType, ColumnDataType::NoDefaultTypes)) {
             $columnDefinition->withRequired(true);
+        } elseif ($columnType === ColumnDataType::Integer) {
+            $columnDefinition->withDefaultValue(0);
+        } elseif ($columnType === ColumnDataType::Boolean) {
+            $columnDefinition->withDefaultValue(false);
+        } elseif ($columnType === ColumnDataType::VarChar) {
+            $columnDefinition->withDefaultValue('');
         }
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
@@ -254,7 +260,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $columnDefinitions = [
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withDefaultValue(0),
         ];
         $table = $this->getTestTable($columnDefinitions);
 
@@ -334,7 +340,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table = $this->getTestTable(array_merge([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withDefaultValue(0),
         ], $optionalColumnDefinitions));
 
         $optionalValues = $this->getSampleValues($optionalColumnDefinitions);
@@ -396,7 +402,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $table = $this->getTestTable([
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad'),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withDefaultValue(0),
         ]);
 
         $table[] = ['name' => 'John', 'age' => 30];
@@ -440,7 +446,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $columnDefinitions = [
             (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('idx'),
             (new ColumnDefinition('name', ColumnDataType::Text))->withDbColumn('nombre')->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withNullable(true),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withNullable(true)->withDefaultValue(null),
             (new ColumnDefinition('active', ColumnDataType::Boolean))->withDbColumn('activo')->withRequired(true),
         ];
         $table = $this->getTestTable($columnDefinitions);
@@ -544,14 +550,14 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $columnDefinitions = [];
 
         if (in_array(ColumnDataType::VarChar, $supportedDataTypes, true)) {
-            $columnDefinitions[] = (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(random_int(8, 512));
+            $columnDefinitions[] = (new ColumnDefinition('description', ColumnDataType::VarChar))->withTypeLength(random_int(8, 512))->withDefaultValue('');
         }
         if (in_array(ColumnDataType::Serializable, $supportedDataTypes, true)) {
             $columnDefinitions[] = (new ColumnDefinition('metadata', ColumnDataType::Serializable))->withRequired(true);
         }
 
         if (in_array(ColumnDataType::TimeString, $supportedDataTypes, true)) {
-            $columnDefinitions[] = (new ColumnDefinition('time', ColumnDataType::TimeString));
+            $columnDefinitions[] = (new ColumnDefinition('time', ColumnDataType::TimeString))->withDefaultValue(TimeString::now());
         }
 
         return $columnDefinitions;

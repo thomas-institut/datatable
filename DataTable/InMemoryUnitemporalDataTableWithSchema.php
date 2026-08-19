@@ -29,6 +29,6 @@ class InMemoryUnitemporalDataTableWithSchema extends GenericUnitemporalDataTable
         if ($validUntilDefs === []) {
             $schema->columnDefinitions[] = new ColumnDefinition('valid_until', ColumnDataType::ValidUntil);
         }
-        parent::__construct($udt, $schema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases());
+        parent::__construct($udt, $schema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases(), true);
     }
 }

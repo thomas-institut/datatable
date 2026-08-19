@@ -36,7 +36,8 @@ readonly class GenericRowTranslator implements RowTranslator
      */
     public function __construct(private RowValueTranslator $rowValueTranslator,
                                 array                      $columnDefinitions,
-                                ?array                     $supportedDataTypes = null
+                                ?array                     $supportedDataTypes = null,
+                                private bool               $fillInDefaultValuesForDb = false
     )
     {
         if ($supportedDataTypes === null) {
@@ -54,10 +55,6 @@ readonly class GenericRowTranslator implements RowTranslator
 
     /**
      * @inheritDoc
-     */
-    /**
-     * @param array<string, mixed> $inputRow
-     * @return array<string, mixed>
      */
     public function inputRowToDb(array $inputRow, bool $failOnMissingRequired = true): array
     {
@@ -79,10 +76,8 @@ readonly class GenericRowTranslator implements RowTranslator
     }
 
     /**
-     * @throws InvalidRow
-     */
-    /**
      * @param array<string, mixed> $inputRow
+     * @throws InvalidRow
      */
     private function validateInputRow(array $inputRow, bool $failOnMissingRequired): void
     {
@@ -106,11 +101,9 @@ readonly class GenericRowTranslator implements RowTranslator
 
 
     /**
-     * @throws InvalidRow
-     */
-    /**
      * @param array<string, mixed> $theRow
      * @return array<string, mixed>
+     * @throws InvalidRow
      */
     private function translateRow(array $theRow, bool $fromDatabase): array
     {
@@ -123,7 +116,7 @@ readonly class GenericRowTranslator implements RowTranslator
             }
 
             $type = $colDefs[$key]->type;
-            $type = match($type) {
+            $type = match ($type) {
                 ColumnDataType::Id => ColumnDataType::Integer,
                 ColumnDataType::ValidUntil, ColumnDataType::ValidFrom => ColumnDataType::TimeString,
                 default => $type,
@@ -135,6 +128,14 @@ readonly class GenericRowTranslator implements RowTranslator
                 $translatedValuesRow[$key] = $this->rowValueTranslator->rowValueToDbValue($value, $type);
             }
         }
+        if (!$fromDatabase && $this->fillInDefaultValuesForDb) {
+            foreach ($colDefs as $key => $columnDefinition) {
+                if ($columnDefinition->defaultValueExplicitlySet && !array_key_exists($key, $translatedValuesRow)) {
+                    $translatedValuesRow[$key] = $this->rowValueTranslator->rowValueToDbValue($columnDefinition->defaultValue, $columnDefinition->type);
+                }
+            }
+        }
+
         $translatedRow = [];
         foreach ($colDefs as $key => $columnDefinition) {
             if (!array_key_exists($key, $translatedValuesRow)) {

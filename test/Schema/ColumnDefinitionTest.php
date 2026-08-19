@@ -15,7 +15,6 @@ final class ColumnDefinitionTest extends TestCase
     #[DataProvider('constructorDefaultsProvider')]
     public function testConstructorSetsPropertiesAndDefaultValue(
         ColumnDataType $type,
-        mixed $expectedDefaultValue,
     ): void {
         $columnDefinition = new ColumnDefinition('column', $type);
 
@@ -25,18 +24,18 @@ final class ColumnDefinitionTest extends TestCase
         $this->assertSame(-1, $columnDefinition->typeLength);
         $this->assertNull($columnDefinition->dbColumn);
         $this->assertFalse($columnDefinition->required);
-        $this->assertSame($expectedDefaultValue, $columnDefinition->defaultValue);
+        $this->assertSame(null, $columnDefinition->defaultValue);
     }
 
     public static function constructorDefaultsProvider(): \Iterator
     {
-        yield 'serializable' => [ColumnDataType::Serializable, null];
-        yield 'varchar' => [ColumnDataType::VarChar, -1];
-        yield 'text' => [ColumnDataType::Text, null];
-        yield 'integer' => [ColumnDataType::Integer, -1];
-        yield 'boolean' => [ColumnDataType::Boolean, false];
-        yield 'id' => [ColumnDataType::Id, -1];
-        yield 'time string' => [ColumnDataType::TimeString, '1000-01-01 00:00:00.000000'];
+        yield 'serializable' => [ColumnDataType::Serializable];
+        yield 'varchar' => [ColumnDataType::VarChar];
+        yield 'text' => [ColumnDataType::Text];
+        yield 'integer' => [ColumnDataType::Integer];
+        yield 'boolean' => [ColumnDataType::Boolean];
+        yield 'id' => [ColumnDataType::Id];
+        yield 'time string' => [ColumnDataType::TimeString];
     }
     public function testNullableColumnAcceptsNull(): void
     {
@@ -216,7 +215,7 @@ final class ColumnDefinitionTest extends TestCase
         }
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid default value for column column');
+        $this->expectExceptionMessage('Invalid default value');
 
         $columnDefinition->withDefaultValue($defaultValue);
     }

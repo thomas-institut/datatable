@@ -17,6 +17,6 @@ class InMemoryDataTableWithSchema extends GenericDataTableWithSchema
      */
     public function __construct(DataTableSchema $dataTableSchema, array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
-        parent::__construct(new InMemoryDataTable($data, $idGenerator), $dataTableSchema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases());
+        parent::__construct(new InMemoryDataTable($data, $idGenerator), $dataTableSchema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases(), true);
     }
 }

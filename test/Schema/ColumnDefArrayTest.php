@@ -7,6 +7,7 @@ namespace ThomasInstitut\DataTable\Schema;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 
 #[CoversClass(ColumnDefArray::class)]
 final class ColumnDefArrayTest extends TestCase
@@ -25,13 +26,17 @@ final class ColumnDefArrayTest extends TestCase
         $this->assertNotInstanceOf(\ThomasInstitut\DataTable\Schema\ColumnDefinition::class, ColumnDefArray::getColumnDef($columnDefinitions, 'missing'));
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function testValidColumnDefinitionsHaveNoErrors(): void
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
             (new ColumnDefinition('name', ColumnDataType::VarChar))
                 ->withDbColumn('full_name')
-                ->withTypeLength(100),
+                ->withTypeLength(100)
+                ->withDefaultValue(''),
         ];
 
         $this->assertSame([], ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()));
@@ -211,12 +216,16 @@ final class ColumnDefArrayTest extends TestCase
         yield 'negative' => [-1];
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function testPositiveVarcharLengthIsValid(): void
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
             (new ColumnDefinition('name', ColumnDataType::VarChar))
-                ->withTypeLength(1),
+                ->withTypeLength(1)
+                ->withDefaultValue(''),
         ];
 
         $this->assertSame([], ColumnDefArray::validate($columnDefinitions, ColumnDataType::cases()));

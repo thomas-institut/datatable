@@ -10,6 +10,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 
@@ -38,6 +39,9 @@ final class GenericRowTranslatorTest extends TestCase
         $this->assertSame($row, $translator->dbRowToOutputRow($databaseRow));
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public static function roundTripProvider(): Iterator
     {
         yield 'no-op values with database aliases' => [
@@ -46,10 +50,10 @@ final class GenericRowTranslatorTest extends TestCase
                 (new ColumnDefinition('id', ColumnDataType::Id))->withDbColumn('row_id'),
                 (new ColumnDefinition('name', ColumnDataType::VarChar))
                     ->withDbColumn('full_name')
-                    ->withTypeLength(100),
+                    ->withTypeLength(100)->withDefaultValue(''),
                 (new ColumnDefinition('description', ColumnDataType::Text))->withRequired(true),
-                (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years'),
-                new ColumnDefinition('enabled', ColumnDataType::Boolean),
+                (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years')->withRequired(true),
+                (new ColumnDefinition('enabled', ColumnDataType::Boolean))->withDefaultValue(true),
                 (new ColumnDefinition('metadata', ColumnDataType::Serializable))
                     ->withDbColumn('extra_data')
                     ->withRequired(true),
@@ -75,12 +79,12 @@ final class GenericRowTranslatorTest extends TestCase
             new StringValuesDbRowValueTranslator(),
             [
                 (new ColumnDefinition('identifier', ColumnDataType::Id))->withDbColumn('id_value'),
-                (new ColumnDefinition('title', ColumnDataType::VarChar))->withTypeLength(100),
+                (new ColumnDefinition('title', ColumnDataType::VarChar))->withTypeLength(100)->withRequired(true),
                 (new ColumnDefinition('body', ColumnDataType::Text))
                     ->withDbColumn('text_value')
                     ->withRequired(true),
-                new ColumnDefinition('count', ColumnDataType::Integer),
-                (new ColumnDefinition('visible', ColumnDataType::Boolean))->withDbColumn('is_visible'),
+                (new ColumnDefinition('count', ColumnDataType::Integer))->withRequired(true),
+                ((new ColumnDefinition('visible', ColumnDataType::Boolean))->withDbColumn('is_visible'))->withRequired(true),
                 (new ColumnDefinition('attributes', ColumnDataType::Serializable))->withRequired(true),
             ],
             [
@@ -139,6 +143,31 @@ final class GenericRowTranslatorTest extends TestCase
     public function testConstructorThrowsOnInvalidColumnDefinitionsArray(): void
     {
         $this->expectException(InvalidColumnDefinitionsArray::class);
-        new GenericRowTranslator(new NoOpRowValueTranslator(), [ new ColumnDefinition('id', ColumnDataType::Serializable)]);
+        new GenericRowTranslator(new NoOpRowValueTranslator(), [new ColumnDefinition('id', ColumnDataType::Serializable)]);
+    }
+
+    /**
+     * @throws InvalidColumnDefinitionsArray
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testFillsInDefaultValuesForDb(): void
+    {
+        $translator = new GenericRowTranslator(
+            new NoOpRowValueTranslator(),
+            [
+                new ColumnDefinition('id', ColumnDataType::Id),
+                (new ColumnDefinition('age', ColumnDataType::Integer))
+                    ->withDbColumn('edad')
+                    ->withDefaultValue(-1),
+                (new ColumnDefinition('name', ColumnDataType::VarChar))
+                    ->withTypeLength(255)
+                    ->withDefaultValue('Unknown'),
+            ],
+            null,
+            true,
+        );
+
+        $this->assertEquals(['id' => 20, 'edad' => -1, 'name' => 'Unknown'], $translator->inputRowToDb(['id' => 20]));
     }
 }

@@ -31,11 +31,26 @@ class ColumnDefinition
 
 
     /**
-     * The default value to use for the column if the database requires one for optional columns.
+     * A flag to indicate if the default value was explicitly set.
+     * If false, datatables normally will ignore the default value.
+     *
+     * Prefer using the method ColumnDefinition::withDefaultValue() to manipulate default values
+     *
+     *
+     * @var bool
+     * @see ColumnDefinition::withDefaultValue()
+     */
+    public bool $defaultValueExplicitlySet = false;
+
+    /**
+     * The default value to use for the column.
+     *
+     * Prefer using the method ColumnDefinition::withDefaultValue() to manipulate default values
      *
      * @var mixed|null
+     * @see ColumnDefinition::withDefaultValue()
      */
-    public mixed $defaultValue;
+    public mixed $defaultValue = null;
 
 
     public function __construct(/**
@@ -46,17 +61,11 @@ class ColumnDefinition
         */
         public ColumnDataType $type)
     {
-        // set a sensible default value
-        $this->defaultValue = match ($this->type) {
-            ColumnDataType::VarChar,
-            ColumnDataType::Integer, ColumnDataType::Id => -1,
-            ColumnDataType::Boolean => false,
-            ColumnDataType::Serializable, ColumnDataType::Text => null,
-            ColumnDataType::TimeString, ColumnDataType::ValidFrom => '1000-01-01 00:00:00.000000',
-            ColumnDataType::ValidUntil => TimeString::END_OF_TIMES
-        };
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public static function valueIsValidForColumn(mixed $value, ColumnDefinition $columnDefinition): bool
     {
         if ($value === null) {
@@ -64,6 +73,13 @@ class ColumnDefinition
                 return false;
             }
             return $columnDefinition->nullable;
+        }
+
+        if ($columnDefinition->type === ColumnDataType::VarChar) {
+            if ($columnDefinition->typeLength < 0) {
+                throw new InvalidArgumentException("Invalid type length $columnDefinition->typeLength for column '$columnDefinition->rowKey' of type '{$columnDefinition->type->value}'");
+            }
+
         }
 
         return match ($columnDefinition->type) {
@@ -78,14 +94,17 @@ class ColumnDefinition
     }
 
     /**
+     * Set the default value for the column and flags it as explicitly set.
+     *
      * @throws InvalidArgumentException
      */
     public function withDefaultValue(mixed $defaultValue): ColumnDefinition
     {
         if (!self::valueIsValidForColumn($defaultValue, $this)) {
-            throw new InvalidArgumentException("Invalid default value for column $this->rowKey");
+            throw new InvalidArgumentException("Invalid default value ($defaultValue) for column '$this->rowKey' of type '{$this->type->value}'");
         }
         $this->defaultValue = $defaultValue;
+        $this->defaultValueExplicitlySet = true;
         return $this;
     }
 

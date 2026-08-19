@@ -23,7 +23,7 @@ final class TranslatedResultsIteratorTest extends ResultsIteratorReferenceTestCa
     public function createDataTable() : DataTableWithSchema {
         return new InMemoryDataTableWithSchema(new DataTableSchema([
             new ColumnDefinition(DataTable::DEFAULT_ID_COLUMN_NAME, ColumnDataType::Id),
-            new ColumnDefinition(ResultsIteratorReferenceTestCase::INT_COLUM, ColumnDataType::Integer)
+            (new ColumnDefinition(ResultsIteratorReferenceTestCase::INT_COLUM, ColumnDataType::Integer))->withDefaultValue(0)
         ]));
     }
 

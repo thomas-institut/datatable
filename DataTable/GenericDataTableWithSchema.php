@@ -52,7 +52,8 @@ class GenericDataTableWithSchema implements DataTableWithSchema
                                 DataTableSchema $dataTableSchema,
                                 protected readonly RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(),
                                 ?array $supportedSearchConditions = null,
-                                ?array $supportedDataTypes = null
+                                ?array $supportedDataTypes = null,
+                                bool $fillInDefaultValuesForDb = false
     )
     {
         $this->columnDefinitions = $dataTableSchema->columnDefinitions;
@@ -64,7 +65,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         $this->idKey = ColumnDefArray::getIdKey($this->columnDefinitions) ?? throw new RuntimeException("No id key defined in column definitions");
         $this->idDbColumn = ColumnDefArray::getIdDbColumn($this->columnDefinitions) ?? throw new RuntimeException("No id DB column defined in column definitions");
         $this->dataTable->setIdColumnName($this->idDbColumn);
-        $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions);
+        $this->rowTranslator = new GenericRowTranslator($this->rowValueTranslator, $this->columnDefinitions, $this->supportedDataTypes, $fillInDefaultValuesForDb);
         $this->logger = new NullLogger();
         $this->dataTable->setLogger($this->logger);
 

@@ -63,7 +63,7 @@ final class SearchSpecTranslatorTest extends TestCase
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
-            (new ColumnDefinition('enabled', ColumnDataType::Boolean))->withDbColumn('is_enabled'),
+            (new ColumnDefinition('enabled', ColumnDataType::Boolean))->withDbColumn('is_enabled')->withRequired(true),
         ];
         $rowTranslator = new GenericRowTranslator(new StringValuesDbRowValueTranslator(), $columnDefinitions);
 
@@ -93,7 +93,7 @@ final class SearchSpecTranslatorTest extends TestCase
             (new ColumnDefinition('name', ColumnDataType::Text))
                 ->withDbColumn('full_name')
                 ->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years'),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('years')->withRequired(true),
         ];
         $rowTranslator = new GenericRowTranslator(new StringValuesDbRowValueTranslator(), $columnDefinitions);
 
@@ -174,7 +174,7 @@ final class SearchSpecTranslatorTest extends TestCase
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('enabled', ColumnDataType::Boolean),
+            (new ColumnDefinition('enabled', ColumnDataType::Boolean))->withRequired(true),
         ];
 
         $this->expectException(InvalidSearchSpec::class);
@@ -204,7 +204,7 @@ final class SearchSpecTranslatorTest extends TestCase
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
-            new ColumnDefinition('enabled', ColumnDataType::Boolean),
+            (new ColumnDefinition('enabled', ColumnDataType::Boolean))->withRequired(true),
         ];
 
         $this->expectException(InvalidSearchSpec::class);
@@ -259,11 +259,11 @@ final class SearchSpecTranslatorTest extends TestCase
             123,
         ];
         yield 'varchar exceeds maximum length' => [
-            (new ColumnDefinition('name', ColumnDataType::VarChar))->withTypeLength(3),
+            (new ColumnDefinition('name', ColumnDataType::VarChar))->withTypeLength(3)->withDefaultValue(''),
             'long',
         ];
-        yield 'integer receives numeric string' => [new ColumnDefinition('age', ColumnDataType::Integer), '42'];
-        yield 'boolean receives integer' => [new ColumnDefinition('enabled', ColumnDataType::Boolean), 1];
+        yield 'integer receives numeric string' => [(new ColumnDefinition('age', ColumnDataType::Integer))->withRequired(true), '42'];
+        yield 'boolean receives integer' => [(new ColumnDefinition('enabled', ColumnDataType::Boolean))->withRequired(true), 1];
         yield 'non-nullable column receives null' => [
             (new ColumnDefinition('value', ColumnDataType::Text))->withRequired(true),
             null,
