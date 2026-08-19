@@ -258,7 +258,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         ];
         $table = $this->getTestTable($columnDefinitions);
 
-        $this->assertSame(null, $table->getMaxValueInColumn('age'));
+        $this->assertNull($table->getMaxValueInColumn('age'));
 
         $table->createRow(['name' => 'John', 'age' => 30]);
         $table->createRow(['name' => 'Jane', 'age' => 20]);

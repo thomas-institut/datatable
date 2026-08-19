@@ -26,7 +26,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
     {
 
         $validFromDefs = ColumnDefArray::getColumnDefsForType($dataTableSchema->columnDefinitions, ColumnDataType::ValidFrom);
-        if (empty($validFromDefs)) {
+        if ($validFromDefs === []) {
              throw new InvalidColumnDefinitionsArray('Missing valid_from column');
         }
         if (count($validFromDefs) > 1) {
@@ -36,7 +36,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
 
 
         $validUntilDefs = ColumnDefArray::getColumnDefsForType($dataTableSchema->columnDefinitions, ColumnDataType::ValidUntil);
-        if (empty($validUntilDefs)) {
+        if ($validUntilDefs === []) {
             throw new InvalidColumnDefinitionsArray('Missing valid_until column');
         }
         if (count($validUntilDefs) > 1) {

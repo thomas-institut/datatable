@@ -22,11 +22,11 @@ class InMemoryUnitemporalDataTableWithSchema extends GenericUnitemporalDataTable
     public function __construct(DataTableSchema $schema) {
         $udt = new InMemoryUnitemporalDataTable();
         $validFromDefs = ColumnDefArray::getColumnDefsForType($schema->columnDefinitions, ColumnDataType::ValidFrom);
-        if (empty($validFromDefs)) {
+        if ($validFromDefs === []) {
             $schema->columnDefinitions[] = new ColumnDefinition('valid_from', ColumnDataType::ValidFrom);
         }
         $validUntilDefs = ColumnDefArray::getColumnDefsForType($schema->columnDefinitions, ColumnDataType::ValidUntil);
-        if (empty($validUntilDefs)) {
+        if ($validUntilDefs === []) {
             $schema->columnDefinitions[] = new ColumnDefinition('valid_until', ColumnDataType::ValidUntil);
         }
         parent::__construct($udt, $schema, new NoOpRowValueTranslator(), SupportedSearchCondition::reasonableDefaults(), ColumnDataType::cases());

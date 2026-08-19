@@ -21,7 +21,6 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
 
     /**
      * @param array<ColumnDefinition> $columnDefinitions
-     * @return UnitemporalDataTableWithSchema
      * @throws InvalidColumnDefinitionsArray
      */
     abstract public function getUnitemporalTestTable(array $columnDefinitions): UnitemporalDataTableWithSchema;
@@ -76,7 +75,7 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
             $this->assertNotNull($row);
             $this->assertEquals($testRows[$index][0], $row['name']);
             $this->assertEquals($testRows[$index][1], $row['age']);
-            $this->assertEquals($refTimestamp + $index, intval(TimeString::toTimeStamp($row['validFrom'])));
+            $this->assertSame($refTimestamp + $index, intval(TimeString::toTimeStamp($row['validFrom'])));
             $this->assertEquals(TimeString::END_OF_TIMES, $row['validUntil']);
             $this->assertNull($table->getRowWithTime($id, TimeString::fromTimeStamp($refTimestamp + $index - 1)));
         }

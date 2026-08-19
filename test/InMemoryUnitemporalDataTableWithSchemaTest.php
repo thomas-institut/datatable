@@ -7,7 +7,7 @@ namespace ThomasInstitut\DataTable;
 
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 
-class InMemoryUnitemporalDataTableWithSchemaTest extends ReferenceTests\UnitemporalDataTableWithSchemaReferenceTestCase
+final class InMemoryUnitemporalDataTableWithSchemaTest extends ReferenceTests\UnitemporalDataTableWithSchemaReferenceTestCase
 {
 
     /**
