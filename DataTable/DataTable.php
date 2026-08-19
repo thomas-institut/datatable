@@ -298,8 +298,10 @@ interface DataTable extends ArrayAccess, IteratorAggregate, LoggerAwareInterface
      * The actual column must exist and must be of type integer
      * to be meaningful. Implementations may throw a RunTime exception
      * if the column in the underlying database is not integer.
+     *
+     * If there are no values in the column returns null.
      */
-    public function getMaxValueInColumn(string $columnName): int;
+    public function getMaxValueInColumn(string $columnName): int|null;
 
     /**
      * Returns the max id in the table

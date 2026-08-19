@@ -9,8 +9,8 @@ use LogicException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
-use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
@@ -22,9 +22,9 @@ use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\UnitemporalConsistency\UnitemporalConsistencyChecker;
-use ThomasInstitut\TimeString\TimeString;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
+use ThomasInstitut\TimeString\TimeString;
 use Traversable;
 
 class InMemoryUnitemporalDataTable implements UnitemporalDataTable
@@ -55,11 +55,11 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
      * @throws InvalidArgumentException
      */
     public function __construct(
-        ?array &$data = null,
-        ?IdGenerator $idGenerator = null,
+        ?array           &$data = null,
+        ?IdGenerator     $idGenerator = null,
         ?LoggerInterface $logger = null,
-        string $validFromColumnName = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN,
-        string $validUntilColumnName = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN
+        string           $validFromColumnName = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN,
+        string           $validUntilColumnName = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN
     )
     {
         $this->setValidFromColumnName($validFromColumnName);
@@ -113,13 +113,13 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
     private function sanitizedRowSet(array $rows): array
     {
         $values = array_map(fn(array $row): ?array => $this->sanitizedRow($row), $rows);
-        return array_values(array_map( fn(?array $row): array => $row ?? throw new RuntimeException('Found null row in row set'),$values));
+        return array_values(array_map(fn(?array $row): array => $row ?? throw new RuntimeException('Found null row in row set'), $values));
     }
 
 
     /**
-     * @throws RowDoesNotExist
      * @return array<int, array<string, mixed>>
+     * @throws RowDoesNotExist
      */
     private function internalGetRowHistory(int $rowId): array
     {
@@ -131,7 +131,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         }
 
         // return sorted by valid from time
-        usort($data, fn(array $a, array $b): int => strcmp((string) $a[$this->validFromColumn], (string) $b[$this->validFromColumn]));
+        usort($data, fn(array $a, array $b): int => strcmp((string)$a[$this->validFromColumn], (string)$b[$this->validFromColumn]));
 
         return $data;
     }
@@ -362,7 +362,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
 
         $rowValue = $dataRow[$column];
         $value = $spec[self::SEARCH_SPEC_VALUE];
-        $comparison = is_string($value) ? strcmp((string) $rowValue, $value) : $rowValue <=> $value;
+        $comparison = is_string($value) ? strcmp((string)$rowValue, $value) : $rowValue <=> $value;
 
         return match ($spec[self::SEARCH_SPEC_CONDITION]) {
             self::COND_EQUAL_TO => is_string($value) ? $comparison === 0 : $rowValue === $value,
@@ -457,6 +457,10 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
                 $this->setError('The given time is not later than the last version of the row', UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
                 throw new InvalidRowUpdateTime("The given time is not later than the last version of the row");
             }
+            if ($latestRow[$this->validUntilColumn] !== TimeString::END_OF_TIMES) {
+                // already deleted
+                return 0;
+            }
             $this->internalMarkRowAsInvalid($latestRow[self::InternalRowIdKey], $timeString);
             return 1;
         } catch (RowDoesNotExist) {
@@ -544,7 +548,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $row = $this->getRowWithTime($rowId, TimeString::now());
         } catch (InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error getting row',  $e->getCode(), $e);
+            throw new RuntimeException('Unexpected error getting row', $e->getCode(), $e);
         }
         if ($row === null) {
             $this->setError("The row with id $rowId does not exist", self::ERROR_ROW_DOES_NOT_EXIST);
@@ -559,7 +563,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->getAllRowsWithTime(TimeString::now());
         } catch (InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error getting rows',  $e->getCode(), $e);
+            throw new RuntimeException('Unexpected error getting rows', $e->getCode(), $e);
         }
     }
 
@@ -577,7 +581,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->findRowsWithTime($rowToMatch, $maxResults, TimeString::now());
         } catch (Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException("Unexpected exception: " . $e->getMessage(),  $e->getCode(), $e);
+            throw new RuntimeException("Unexpected exception: " . $e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -586,7 +590,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
         } catch (Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException("Unexpected exception: " . $e->getMessage(),  $e->getCode(), $e);
+            throw new RuntimeException("Unexpected exception: " . $e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -595,7 +599,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $this->updateRowWithTime($theRow, TimeString::now());
         } catch (InvalidRowUpdateTime|Exception\InvalidTimeStringException $e) {
-            throw new RuntimeException('Unexpected error updating row',  $e->getCode(), $e);
+            throw new RuntimeException('Unexpected error updating row', $e->getCode(), $e);
         } catch (RowDoesNotExist $e) {
             throw new InvalidRowForUpdate($e->getMessage(), $e->getCode(), $e);
         }
@@ -643,16 +647,16 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         return self::NULL_ROW_ID;
     }
 
-    public function getMaxValueInColumn(string $columnName): int
+    public function getMaxValueInColumn(string $columnName): int|null
     {
         $values = array_column(
             $this->getDataRowsValidAtTime($this->theData, TimeString::now()),
             $columnName
         );
         if ($values === []) {
-            throw new RuntimeException('Column ' . $columnName . ' is empty');
+            return null;
         }
-        return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $values));
+        return max(array_map(fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $values));
     }
 
     public function getMaxId(): int
@@ -665,7 +669,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
             throw new RuntimeException('Column ' . $this->idColumnName . ' is empty');
         }
 
-        return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $this->idColumnName . ' contains non-integer values'), $ids));
+        return max(array_map(fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $this->idColumnName . ' contains non-integer values'), $ids));
     }
 
     public function getUniqueIds(): Iterator
@@ -781,7 +785,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
             sort($idsToCheck, SORT_NUMERIC);
         }
         $issues = [];
-        foreach($idsToCheck as $id) {
+        foreach ($idsToCheck as $id) {
             $rowHistory = $this->getRowHistory($id);
             $issues = [...$issues, ...UnitemporalConsistencyChecker::getConsistencyIssues($id, $rowHistory, $this->validFromColumn, $this->validUntilColumn)];
         }

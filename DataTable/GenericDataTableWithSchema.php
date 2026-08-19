@@ -299,7 +299,7 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     /**
      * @inheritDoc
      */
-    public function getMaxValueInColumn(string $columnName): int
+    public function getMaxValueInColumn(string $columnName): int|null
     {
         $colDef = $this->getDefForColumn($columnName);
         if (!$colDef instanceof ColumnDefinition) {
@@ -311,7 +311,6 @@ class GenericDataTableWithSchema implements DataTableWithSchema
         if (!in_array($colDef->type, $numericTypes)) {
             throw new InvalidArgumentException("Column $columnName is not numeric");
         }
-
 
         return $this->dataTable->getMaxValueInColumn($colDef->dbColumn ?? $colDef->rowKey);
     }

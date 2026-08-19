@@ -273,7 +273,7 @@ final class SearchSpecTranslatorTest extends TestCase
     /**
      * @throws InvalidSearchSpec
      */
-    public function testInvalidRowFromRowTranslatorIsPropagated(): void
+    public function testInvalidRowFromRowTranslatorIsNotPropagated(): void
     {
         $columnDefinitions = [
             new ColumnDefinition('id', ColumnDataType::Id),
@@ -285,8 +285,7 @@ final class SearchSpecTranslatorTest extends TestCase
             ->with(['name' => 'Ada'], false)
             ->willThrowException(new InvalidRow('Unable to translate row'));
 
-        $this->expectException(InvalidRow::class);
-        $this->expectExceptionMessage('Unable to translate row');
+        $this->expectException(InvalidSearchSpec::class);
 
         SearchSpecTranslator::toDataTableSearchSpec(
             new SearchSpec('name', SearchCondition::Equals, 'Ada'),

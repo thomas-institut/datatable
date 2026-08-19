@@ -18,16 +18,43 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
 {
     protected UnitemporalDataTable $unitemporalDataTable;
 
-    public function __construct(UnitemporalDataTable $dataTable, DataTableSchema $dataTableSchema, RowValueTranslator $rowValueTranslator = new NoOpRowValueTranslator(), ?array $supportedSearchConditions = null, ?array $supportedDataTypes = null)
+    public function __construct(UnitemporalDataTable $unitemporalDataTable,
+                                DataTableSchema      $dataTableSchema,
+                                RowValueTranslator   $rowValueTranslator = new NoOpRowValueTranslator(),
+                                ?array               $supportedSearchConditions = null,
+                                ?array               $supportedDataTypes = null)
     {
-        $errors = ColumnDefArray::validateUnitemporal($dataTableSchema->columnDefinitions);
-        if (count($errors) > 0) {
-            throw new InvalidColumnDefinitionsArray('Invalid column definitions: ' . implode(', ', $errors));
+
+        $validFromDefs = ColumnDefArray::getColumnDefsForType($dataTableSchema->columnDefinitions, ColumnDataType::ValidFrom);
+        if (empty($validFromDefs)) {
+             throw new InvalidColumnDefinitionsArray('Missing valid_from column');
         }
+        if (count($validFromDefs) > 1) {
+             throw new InvalidColumnDefinitionsArray('Multiple valid_from columns');
+        }
+        $validFromDbColName = $validFromDefs[0]->dbColumn ?? $validFromDefs[0]->rowKey;
+
+
+        $validUntilDefs = ColumnDefArray::getColumnDefsForType($dataTableSchema->columnDefinitions, ColumnDataType::ValidUntil);
+        if (empty($validUntilDefs)) {
+            throw new InvalidColumnDefinitionsArray('Missing valid_until column');
+        }
+        if (count($validUntilDefs) > 1) {
+            throw new InvalidColumnDefinitionsArray('Multiple valid_until columns');
+        }
+        $validUntilDbColName = $validUntilDefs[0]->dbColumn ?? $validUntilDefs[0]->rowKey;
+
+        try {
+            $unitemporalDataTable->setValidFromColumnName($validFromDbColName);
+            $unitemporalDataTable->setValidUntilColumnName($validUntilDbColName);
+        } catch (Exception\InvalidArgumentException) {
+            throw new InvalidColumnDefinitionsArray('Invalid valid_from or valid_until column name');
+        }
+
         $supportedDataTypes ??= array_merge(DataTableWithSchema::MandatorySupportedDataTypes, UnitemporalDataTableWithSchema::AdditionalRequiredDataTypes);
         $supportedDataTypes = $this->getCompliantSupportedDataTypes($supportedDataTypes);
-        parent::__construct($dataTable, $dataTableSchema, $rowValueTranslator, $supportedSearchConditions, $supportedDataTypes);
-        $this->unitemporalDataTable = $dataTable;
+        parent::__construct($unitemporalDataTable, $dataTableSchema, $rowValueTranslator, $supportedSearchConditions, $supportedDataTypes);
+        $this->unitemporalDataTable = $unitemporalDataTable;
     }
 
     /**
@@ -49,7 +76,7 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
      */
     public function createRowWithTime(array $theRow, string $timeString): int
     {
-        return $this->unitemporalDataTable->createRowWithTime($theRow, $timeString);
+        return $this->unitemporalDataTable->createRowWithTime($this->rowTranslator->inputRowToDb($theRow), $timeString);
     }
 
     /**

@@ -36,7 +36,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     abstract public function getTestTable(array $columnDefinitions): DataTableWithSchema;
 
     /**
-     * @throws RowAlreadyExists|InvalidRow|RandomException
+     * @throws RandomException
      */
     #[Test]
     public function testBasic(): void
@@ -96,12 +96,8 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $rows = $table->findRows(['name' => 'John', 'age' => 30]);
 
         $this->assertCount(1, $rows);
-        $this->assertSame([
-            'id' => $johnId,
-            'name' => 'John',
-            'age' => 30,
-        ], $rows->getFirst());
-
+        $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys(
+            ['id' => $johnId, 'name' => 'John', 'age' => 30], $rows->getFirst() ?? $this->fail("Null first row"), ['id', 'name', 'age']);
         $this->assertCount(1, $table->findRows(['age' => 30], 1));
         $this->assertCount(0, $table->findRows(['name' => 'Missing']));
         /** @phpstan-ignore offsetAccess.notFound */
@@ -115,7 +111,11 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         $inactiveId = $booleanTable->createRow(['active' => false]);
 
         $this->assertCount(1, $booleanTable->findRows(['active' => true]));
-        $this->assertSame(['id' => $activeId, 'active' => true], $booleanTable->findRows(['active' => true])->getFirst());
+        $this->assertArrayIsEqualToArrayOnlyConsideringListOfKeys(
+            ['id' => $activeId, 'active' => true],
+            $booleanTable->findRows(['active' => true])->getFirst() ?? $this->fail("Null first row"),
+            ['id', 'active']
+        );
         /** @phpstan-ignore offsetAccess.notFound */
         $this->assertSame($inactiveId, $booleanTable->findRows(['active' => false])->getFirst()['id']);
 
@@ -142,21 +142,22 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws InvalidSearchSpec
+     * @param array<int, mixed> $values
      * @throws InvalidSearchType
      * @throws InvalidRow
      * @throws RowAlreadyExists
-     * @param array<int, mixed> $values
+     * @throws InvalidSearchSpec
      */
     #[Test]
     #[DataProvider('searchProvider')]
     public function testSearch(
-        ColumnDataType $columnType,
+        ColumnDataType  $columnType,
         SearchCondition $condition,
-        mixed $searchValue,
-        array $values,
-        int $expectedCount,
-    ): void {
+        mixed           $searchValue,
+        array           $values,
+        int             $expectedCount,
+    ): void
+    {
         $supportedDataTypes = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
         ])->getSupportedDataTypes();
@@ -228,9 +229,9 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         }
 
         foreach ([
-            SearchCondition::Equals,
-            SearchCondition::NotEquals,
-        ] as $condition) {
+                     SearchCondition::Equals,
+                     SearchCondition::NotEquals,
+                 ] as $condition) {
             $testCases["boolean-$condition->value"] = [ColumnDataType::Boolean, $condition, true, [true, false], 1];
         }
 
@@ -252,7 +253,7 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
         ];
         $table = $this->getTestTable($columnDefinitions);
 
-        $this->assertSame(0, $table->getMaxValueInColumn('age'));
+        $this->assertSame(null, $table->getMaxValueInColumn('age'));
 
         $table->createRow(['name' => 'John', 'age' => 30]);
         $table->createRow(['name' => 'Jane', 'age' => 20]);
@@ -367,11 +368,11 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     {
         $table = $this->getTestTable([
             new ColumnDefinition('id', ColumnDataType::Id),
-           ( new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
+            (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
         ]);
 
         $this->expectException(InvalidRow::class);
-        $this->expectExceptionMessage("Id not set in given row (DataTable updateRow)");
+        $this->expectExceptionMessage("Id not set in given row");
         $table->updateRow(['name' => 'Jane']);
     }
 
@@ -417,8 +418,8 @@ abstract class DataTableWithSchemaReferenceTestCase extends TestCase
     }
 
     /**
-     * @throws RowAlreadyExists
      * @param array<string, mixed> $badRow
+     * @throws RowAlreadyExists
      */
     #[Test]
     #[DataProvider('badRowProvider')]

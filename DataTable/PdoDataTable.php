@@ -369,7 +369,7 @@ class PdoDataTable extends GenericDataTable
     /**
      * @throws RuntimeException
      */
-    public function getMaxValueInColumn(string $columnName): int
+    public function getMaxValueInColumn(string $columnName): int|null
     {
         $sql = 'SELECT MAX(' . $columnName . ') FROM ' . $this->tableName;
 
@@ -377,14 +377,14 @@ class PdoDataTable extends GenericDataTable
 
         $maxId = $r->fetchColumn();
         if ($maxId === null) {
-            return 0;
+            return null;
         }
         return (int)$maxId;
     }
 
     public function getMaxId(): int
     {
-        return $this->getMaxValueInColumn($this->idColumnName);
+        return $this->getMaxValueInColumn($this->idColumnName) ?? 0;
 
     }
 

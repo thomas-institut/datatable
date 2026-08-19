@@ -278,7 +278,7 @@ abstract class GenericDataTable implements DataTable
     abstract public function getIdForKeyValue(string $key, mixed $value): int;
 
 
-    abstract public function getMaxValueInColumn(string $columnName): int;
+    abstract public function getMaxValueInColumn(string $columnName): int|null;
 
 
     /**

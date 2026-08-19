@@ -2,29 +2,6 @@
 
 declare(strict_types=1);
 
-/*
- * The MIT License
- *
- * Copyright 2017 Rafael Nájera <rafael@najera.ca>.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 namespace ThomasInstitut\DataTable;
 
 use ThomasInstitut\DataTable\Exception\InvalidRow;
@@ -36,22 +13,35 @@ use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
+use ThomasInstitut\TimeString\TimeString;
 
 /**
- * Defines a class that provides the same methods as a DataTable but with a
- * time indication.
+ *
+ * A DataTable in which rows are versioned and conform to a data schema.
  *
  * Just as with a regular DataTable, the table can be understood as being composed of rows, each one with
- * a unique ID. An unitemporal datatable, however, has access to different versions of each row, so that
- * it is possible to retrieve a version of a row at any particular moment in time.
+ * a unique ID. Each row is versioned with `valid_from` and `valid_until` columns (implementations MUST allow
+ * custom names for these columns). All CRUD operations are marked with a time string, and all previous data is
+ * preserved, so a complete history of the row is available. Normal DataTable operations are simply
+ * tagged as occurring at the present time.
  *
+ * All input rows MUST conform to a given schema, and it is possible to have different column names for
+ * input/output rows and rows stored in the underlying database.
+ *
+ * Time is expressed as a string in the format `YYYY-MM-DD HH:MM:SS.xxxxxx` without any timezone information.
+ * No timezone information is stored in the database.
+ *
+ * It is up to the user to ensure that the time string is in the correct format and to deal with timezones.
+ *
+ * @see UnitemporalDataTable
+ * @see TimeString
  *
  */
 interface UnitemporalDataTableWithSchema extends DataTableWithSchema
 {
 
-
     const array AdditionalRequiredDataTypes = [ColumnDataType::TimeString, ColumnDataType::ValidUntil, ColumnDataType::ValidFrom];
+
     /**
      * Creates a row that exists starting from the given time
      * Returns the id of the newly created row.
@@ -65,6 +55,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
 
     /**
      * Returns true if the row with the given $rowId exists at the given time
+     *
      * @throws InvalidTimeStringException
      */
     public function rowExistsWithTime(int $rowId, string $timeString) : bool;
@@ -95,7 +86,6 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
      * @param array<SearchSpec> $searchSpecArray
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
-     * @throws InvalidRow
      * @throws InvalidTimeStringException
      */
     public function searchWithTime(array $searchSpecArray, SearchType $searchType, string $timeString, int $maxResults = 0): ResultsIterator;
@@ -103,7 +93,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
     /**
      * Creates a new version of the given row that is valid from the given time.
      *
-     * Assumes that the given time is later than the last version of the row.
+     * The given time MUST be later than the last version of the row. Otherwise, and InvalidRowUpdateTimeException is thrown.
      *
      * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
@@ -116,8 +106,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
     /**
      * Makes a row non-existent after the given time.
      *
-     * It does not delete any previous version of the row. It simply makes the last version of the row
-     * be invalid after the given time.
+     * The given time MUST be later than the last version of the row. Otherwise, and InvalidRowUpdateTimeException is thrown.
      *
      * @throws InvalidTimeStringException
      * @throws InvalidRowUpdateTime
@@ -126,6 +115,7 @@ interface UnitemporalDataTableWithSchema extends DataTableWithSchema
 
     /**
      * Returns an array with all the different versions of the row with the given $rowId
+     * ordered by ascending time.
      *
      * @throws RowDoesNotExist
      * @return array<array<string, mixed>>

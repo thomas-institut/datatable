@@ -15,7 +15,6 @@ class SearchSpecTranslator
      * @param array<int, ColumnDefinition> $columnDefs
      * @param array<SupportedSearchCondition> $supportedSearchConditions
      * @return array<string, int|string>
-     * @throws InvalidRow
      * @throws InvalidSearchSpec
      */
     public static function toDataTableSearchSpec(SearchSpec $searchSpec, array $columnDefs, RowTranslator $rowTranslator, array $supportedSearchConditions): array
@@ -39,7 +38,11 @@ class SearchSpecTranslator
         }
 
         $rowToTranslate = [$searchSpec->column => $searchSpec->value];
-        $translatedRow = $rowTranslator->inputRowToDb($rowToTranslate, false);
+        try {
+            $translatedRow = $rowTranslator->inputRowToDb($rowToTranslate, false);
+        } catch (InvalidRow) {
+            throw new InvalidSearchSpec("Invalid value '{$searchSpec->value}' for column '$searchSpec->column' of type '{$columnDef->type->value}'.");
+        }
         $translatedColumnName = array_keys($translatedRow)[0];
         $translatedValue = $translatedRow[$translatedColumnName];
 
@@ -55,7 +58,6 @@ class SearchSpecTranslator
      * @return array<array<string, int|string>>
      * @param array<int, SearchSpec> $searchSpecArray
      * @param array<int, ColumnDefinition> $columnDefs
-     * @throws InvalidRow
      * @throws InvalidSearchSpec
      */
     public static function toDataTableSearchSpecArray(array $searchSpecArray, array $columnDefs, RowTranslator $rowTranslator, array $supportedSearchConditions): array {

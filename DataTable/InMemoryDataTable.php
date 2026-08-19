@@ -99,22 +99,25 @@ class InMemoryDataTable extends GenericDataTable
     }
 
 
-    public function getMaxValueInColumn(string $columnName): int
+    public function getMaxValueInColumn(string $columnName): int|null
     {
         if (count($this->theData) !== 0) {
             $colValues = array_column($this->theData, $columnName);
             if (count($colValues) === 0) {
-                throw new RuntimeException('Column ' . $columnName . ' does not exist');
+                return null;
             }
             return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $colValues));
         } else {
-            return 0;
+            return null;
         }
     }
 
     public function getMaxId() : int
     {
-        return $this->getMaxValueInColumn($this->idColumnName);
+        if (count($this->theData) === 0) {
+            return 0;
+        }
+        return $this->getMaxValueInColumn($this->idColumnName) ?? throw new RuntimeException("Cannot find max value in column {$this->idColumnName}");
     }
 
     public function getRow(int $rowId) : ?array

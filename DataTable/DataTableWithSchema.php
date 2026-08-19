@@ -2,29 +2,6 @@
 
 declare(strict_types=1);
 
-/*
- * The MIT License
- *
- * Copyright 2017-24 Thomas-Institut, Universität zu Köln.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 namespace ThomasInstitut\DataTable;
 
 use ArrayAccess;
@@ -42,12 +19,8 @@ use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
 
 /**
- * An interface to a table made out of associative array rows addressable by a unique integer and that is normally
- * stored in a database table.
- *
- * It captures common functionality for this kind of table but does not attempt to impose a particular implementation.
- * The idea is that one descendant of this class will implement the table as an SQL table, but an implementation
- * with arrays or with something just as simple can be provided for testing.
+ * An interface to a table made out of associative array rows addressable by a unique integer and in which
+ * rows MUST conform to a given schema.
  *
  * Each row must have a unique id integer column or key, which by default has the name 'id'. This name can be
  * changed with setIdColumnName.
@@ -56,6 +29,7 @@ use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
  * change this behaviour.
  *
  * @see https://github.com/thomas-institut/datatable
+ * @see DataTable
  *
  * @author Rafael Nájera <rafael.najera@uni-koeln.de>
  *
@@ -90,12 +64,16 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
     public function rowExists(int $rowId): bool;
 
     /**
-     * Creates a new row in the table.
+     * Creates a new row in the table and returns the ID of the new row.
      *
      * If the given row array does not have a value for the DataTable's ID column, that value is not an integer, or the
      * value is less or equal to zero, a new unique ID will be assigned.
      *
-     * Otherwise, if the given ID already exists in the table, the function will throw an exception.
+     * Otherwise, if the given ID already exists in the table, the function will throw an InvalidRow exception.
+     *
+     * The underlying database or data table may add other columns to the row array, such as timestamps or version numbers.
+     * So any further retrieval of the row will not necessarily return the same array as the one originally passed to
+     * createRow().
      *
      * @param array<string, mixed> $theRow
      * @throws RowAlreadyExists
@@ -103,11 +81,14 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      */
     public function createRow(array $theRow): int;
 
-
     /**
      * Returns the row with the given row ID.
      *
-     * If the row does not exist, returns null
+     * If the row does not exist, returns null.
+     *
+     * The array returned by this function will contain all columns in the table, including the ID column, plus
+     * other columns the underlying data table has. This means that the array returned by this function may
+     * not be identical to the array originally passed to createRow().
      *
      * @return array<string, mixed>|null
      */
@@ -141,24 +122,25 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      */
     function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator;
 
-
     /**
      * Searches the datatable according to the given $searchSpecArray
      *
      * $searchSpecArray is an array of searchSpecs.
      *
-     * If $searchType is SEARCH_AND, the row must satisfy:
+     * If $searchType is SearchType::And, the row must satisfy:
      *      $searchSpec[0] && $searchSpec[1] && ...  && $searchSpec[n]
      *
-     * If  $searchType is SEARCH_OR, the row must satisfy the negation of the spec:
+     * If  $searchType is SearchType::Or, the row must satisfy the negation of the spec:
      *
      *      $searchSpec[0] || $searchSpec[1] || ...  || $searchSpec[n]
      *
      *
      * A searchSpec is a class with the following properties:
+     * ```
      *      $searchSpec->column  // column to which the condition applies
      *      $searchSpec->condition // a SearchCondition
      *      $searchSpec->value // the value to which the condition applies
+     * ```
      *
      * Notice that each condition type has a negation:
      *      EQUAL_TO  <==> NOT_EQUAL_TO
@@ -168,24 +150,20 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * If $maxResults > 0, an iterator of max $maxResults will be returned;
      * if $maxResults <= 0, an iterator with all results will be returned
      *
+     *
      * @param array<SearchSpec> $searchSpecArray
      * @throws InvalidSearchSpec
      * @throws InvalidSearchType
-     * @throws InvalidRow
      */
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator;
 
-
     /**
-     * Returns an array of SupportedSearchCondition objects, each of which
-     * contains the supported search conditions for a given column data type.
+     * Returns an array of SupportedSearchCondition objects, each of which  contains the supported search conditions
+     * for a given column data type. This array describes the search capabilities of the table. If a search is done
+     * using a non-supported condition, an InvalidSearchSpec exception will be thrown.
      *
      * If a type is not present in the array, it means that no search conditions are supported for that type.
-     *
      * An empty array means that search is not supported.
-     *
-     * This array describes the search capabilities of the table. If a search is done using a non-supported
-     * condition, an InvalidSearchSpec exception will be thrown.
      *
      * @return array<SupportedSearchCondition>
      */
@@ -205,7 +183,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      *  (e.g., if in an SQL implementation the underlying SQL table does not
      *  have default values for the non-given keys)
      *
-     *
      * @param array<string, mixed> $theRow
      * @throws InvalidRow
      */
@@ -221,7 +198,6 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
      * If transactions are not supported, startTransaction() and commit() will do nothing.
      */
     public function supportsTransactions(): bool;
-
 
     /**
      *
@@ -273,15 +249,17 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
 
 
     /**
-     * Returns the max value in the given column.
+     * Returns the integer max value in the given column.
      *
-     * The actual column must exist and be numeric for the actual value returned
+     * The actual column must exist and be of type Integer for the actual value returned
      * to be meaningful. Implementations may throw a RunTime exception
      * if the column in the underlying database is not numeric.
      *
+     * If the column does not exist, returns null.
+     *
      * @throws InvalidArgumentException
      */
-    public function getMaxValueInColumn(string $columnName): int;
+    public function getMaxValueInColumn(string $columnName): int|null;
 
     /**
      * Returns the max id in the table
@@ -295,7 +273,9 @@ interface DataTableWithSchema extends ArrayAccess, IteratorAggregate, LoggerAwar
 
 
     /**
-     * Returns the table's name
+     * Returns the table's name.
+     *
+     * Most implementations will require that the table name is set in the constructor.
      */
     public function getName(): string;
 
