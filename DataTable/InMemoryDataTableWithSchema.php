@@ -2,6 +2,7 @@
 
 namespace ThomasInstitut\DataTable;
 
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;

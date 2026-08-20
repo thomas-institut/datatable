@@ -48,7 +48,6 @@ enum ColumnDataType : string
      */
     case Id = 'id';
 
-
     /**
      * The valid from column of a Unitemporal DataTable, a TimeString
      *
@@ -59,8 +58,6 @@ enum ColumnDataType : string
      * The valid until column of a Unitemporal DataTable, a TimeString
      */
     case ValidUntil = 'valid_until';
-
-
 
     /**
      * A time string (v1.3)

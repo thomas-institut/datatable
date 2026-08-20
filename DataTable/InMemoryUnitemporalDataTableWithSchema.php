@@ -2,20 +2,12 @@
 
 namespace ThomasInstitut\DataTable;
 
-use Iterator;
-use Psr\Log\LoggerInterface;
-use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
-use ThomasInstitut\DataTable\IdGenerator\IdGenerator;
-use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefArray;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\Schema\DataTableSchema;
 use ThomasInstitut\DataTable\Schema\NoOpRowValueTranslator;
-use ThomasInstitut\DataTable\Schema\RowValueTranslator;
 use ThomasInstitut\DataTable\Schema\SupportedSearchCondition;
-use ThomasInstitut\DataTable\UnitemporalDataTableWithSchema;
-use Traversable;
 
 class InMemoryUnitemporalDataTableWithSchema extends GenericUnitemporalDataTableWithSchema
 {

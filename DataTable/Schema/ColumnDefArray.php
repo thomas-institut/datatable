@@ -2,6 +2,9 @@
 
 namespace ThomasInstitut\DataTable\Schema;
 
+use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+
 class ColumnDefArray
 {
     /**
@@ -96,29 +99,6 @@ class ColumnDefArray
     }
 
     /**
-     * @param array<int, ColumnDefinition> $columnDefArray
-     * @return array<int, string>
-     */
-    public static function validateUnitemporal(array $columnDefArray): array
-    {
-        $errors = [];
-
-        foreach ([ColumnDataType::ValidFrom, ColumnDataType::ValidUntil] as $type) {
-            $defs = self::getColumnDefsForType($columnDefArray, $type);
-            if (count($defs) === 0) {
-                $errors[] = "Unitemporal data table must have at least one column of type '$type->value'.";
-                continue;
-            }
-
-            if (count($defs) > 1) {
-                $errors[] = "Unitemporal data table must have at most one column of type '$type->value'.";
-            }
-        }
-
-        return $errors;
-    }
-
-    /**
      * Checks the column definition array for validity.
      * Returns an array of errors if the column definition array is invalid.
      *
@@ -160,6 +140,13 @@ class ColumnDefArray
                 $errors[] = "Column at index $index has invalid dbColumn: '$columnDef->dbColumn'";
             }
 
+            $badVarCharColumn = false;
+            // check if type is Varchar: $typeLength must be > 0
+            if ($columnDef->type === ColumnDataType::VarChar && $columnDef->typeLength <= 0) {
+                $badVarCharColumn = true;
+                $errors[] = "Column '$columnDef->rowKey' is Varchar but has invalid typeLength: $columnDef->typeLength.";
+            }
+
             $specialTypes = [ColumnDataType::Id, ColumnDataType::ValidUntil, ColumnDataType::ValidFrom];
             if (!in_array($columnDef->type, $specialTypes)) {
                 // some types must be marked as required
@@ -170,8 +157,15 @@ class ColumnDefArray
                     $errors[] = "Column '$columnDef->rowKey' at index $index must have an explicitly set default value since it is not required.";
                 }
                 // explicitly set default values must be valid for the column type
-                if ($columnDef->defaultValueExplicitlySet && !ColumnDefinition::valueIsValidForColumn($columnDef->defaultValue, $columnDef)) {
-                    $errors[] = "Column at index $index has an invalid default value: '{$columnDef->defaultValue}' for type {$columnDef->type->value}.";
+                try {
+                    if ($columnDef->defaultValueExplicitlySet && !ColumnDefinition::valueIsValidForColumn($columnDef->defaultValue, $columnDef)) {
+                        $errors[] = "Column at index $index has an invalid default value: '$columnDef->defaultValue' for type {$columnDef->type->value}.";
+                    }
+                } catch (InvalidArgumentException $e) {
+                    if (!$badVarCharColumn) {
+                        // when badVarCharColumn is false, it means that the error is not related to a Varchar column with an invalid typeLength
+                        throw new RuntimeException("Unexpected error: " . $e->getMessage(), 0, $e);
+                    }
                 }
 
             }
@@ -190,10 +184,7 @@ class ColumnDefArray
             }
             $dbColumns[] = $effectiveDbColumn;
 
-            // check if type is Varchar: $typeLength must be > 0
-            if ($columnDef->type === ColumnDataType::VarChar && $columnDef->typeLength <= 0) {
-                $errors[] = "Column '$columnDef->rowKey' is Varchar but has invalid typeLength: $columnDef->typeLength.";
-            }
+
         }
 
         if ($idKey === null) {

@@ -2,6 +2,8 @@
 
 namespace ThomasInstitut\DataTable\Schema;
 
+use RuntimeException;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidRowFromDatabase;
@@ -93,8 +95,13 @@ readonly class GenericRowTranslator implements RowTranslator
                 throw new InvalidRow("Column '$key' is not defined in the schema");
             }
             $columnDef = $this->defsByRowKey[$key];
-            if (!ColumnDefinition::valueIsValidForColumn($value, $columnDef)) {
-                throw new InvalidRow("Invalid value for column '$key': $value");
+            try {
+                if (!ColumnDefinition::valueIsValidForColumn($value, $columnDef)) {
+                    throw new InvalidRow("Invalid value for column '$key': $value");
+                }
+            }  catch (InvalidArgumentException $e) {
+                // this means a bad schema, which at this point must be validated
+                throw new RuntimeException("Unexpected error validating column '$key': " . $e->getMessage(), $e->getCode(), $e);
             }
         }
     }

@@ -163,10 +163,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         $this->errorMessage = "";
     }
 
-    /**
-     * @param array<string, mixed> $theRow
-     * @throws InvalidTimeStringException
-     */
     public function createRowWithTime(array $theRow, string $timeString): int
     {
         $this->resetError();
@@ -175,7 +171,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         if (isset($theRow[$this->idColumnName])) {
             $newId = $theRow[$this->idColumnName];
             if (is_int($newId)) {
-                if ($this->rowExistsWithTime($theRow[$this->idColumnName], $timeString)) {
+                if ($this->rowExistsWithTime($newId, $timeString)) {
                     $this->setErrorCode(DataTable::ERROR_ROW_ALREADY_EXISTS);
                     $this->setErrorMessage("Row already exists");
                     throw new RowAlreadyExists("Row already exists");
@@ -191,7 +187,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         $theRow[$this->validFromColumn] = $timeString;
         $theRow[$this->validUntilColumn] = TimeString::END_OF_TIMES;
         $this->internalAddRow($theRow);
-        return $theRow[$this->idColumnName];
+        return $newId;
     }
 
     public function rowExistsWithTime(int $rowId, string $timeString): bool
@@ -222,9 +218,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         }
     }
 
-    /**
-     * @param array<string, mixed> $theRow
-     */
     public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator
     {
         $timeString = $this->getValidTimeString($timeString, 'findRowsWithTime');
@@ -261,9 +254,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         return true;
     }
 
-    /**
-     * @param array<int, array<string, mixed>> $searchSpecArray
-     */
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
         $this->checkSearchSpec($searchSpecArray, $searchType);
@@ -465,9 +455,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         }
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
+
     public function getRowHistory(int $rowId): array
     {
         try {

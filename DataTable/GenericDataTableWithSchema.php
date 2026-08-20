@@ -224,7 +224,12 @@ class GenericDataTableWithSchema implements DataTableWithSchema
     public function search(array $searchSpecArray, SearchType $searchType = SearchType::And, int $maxResults = 0): ResultsIterator
     {
         $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
-        $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator, $this->getSupportedSearchConditions());
+        try {
+            $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator, $this->getSupportedSearchConditions());
+        } catch (InvalidColumnDefinitionsArray $e) {
+            // should never happen
+            throw new RuntimeException("Unexpected error validating column definitions array: " . $e->getMessage(), 0, $e);
+        }
         return new TranslatedResultsIterator(
             $this->dataTable->search($dtSearchSpecArray, $dtSearchType, $maxResults),
             $this->rowTranslator

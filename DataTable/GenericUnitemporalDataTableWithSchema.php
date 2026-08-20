@@ -2,6 +2,7 @@
 
 namespace ThomasInstitut\DataTable;
 
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidColumnDefinitionsArray;
 use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
@@ -118,7 +119,12 @@ class GenericUnitemporalDataTableWithSchema extends GenericDataTableWithSchema i
     public function searchWithTime(array $searchSpecArray, SearchType $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
         $dtSearchType = SearchSpecTranslator::searchTypeToDataTableSearchType($searchType);
-        $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator, $this->getSupportedSearchConditions());
+        try {
+            $dtSearchSpecArray = SearchSpecTranslator::toDataTableSearchSpecArray($searchSpecArray, $this->columnDefinitions, $this->rowTranslator, $this->getSupportedSearchConditions());
+        } catch (InvalidColumnDefinitionsArray $e) {
+            // this should never happen because the column definitions should be validated at this point
+            throw new RuntimeException("Unexpected error validating column definitions array: " . $e->getMessage(), 0, $e);
+        }
         return new TranslatedResultsIterator(
             $this->unitemporalDataTable->searchWithTime($dtSearchSpecArray, $dtSearchType, $timeString, $maxResults),
             $this->rowTranslator

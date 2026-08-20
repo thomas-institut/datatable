@@ -117,7 +117,7 @@ class InMemoryDataTable extends GenericDataTable
         if (count($this->theData) === 0) {
             return 0;
         }
-        return $this->getMaxValueInColumn($this->idColumnName) ?? throw new RuntimeException("Cannot find max value in column {$this->idColumnName}");
+        return $this->getMaxValueInColumn($this->idColumnName) ?? throw new RuntimeException("Cannot find max value in column $this->idColumnName");
     }
 
     public function getRow(int $rowId) : ?array

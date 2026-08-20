@@ -76,7 +76,6 @@ class ColumnDefinition
 
         if ($columnDefinition->type === ColumnDataType::VarChar && $columnDefinition->typeLength < 0) {
             throw new InvalidArgumentException("Invalid type length $columnDefinition->typeLength for column '$columnDefinition->rowKey' of type '{$columnDefinition->type->value}'");
-
         }
 
         return match ($columnDefinition->type) {
