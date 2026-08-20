@@ -415,9 +415,6 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         return true;
     }
 
-    /**
-     * @param array<string, mixed> $theRow
-     */
     public function updateRowWithTime(array $theRow, string $timeString): void
     {
         $timeString = $this->getValidTimeString($timeString, 'updateRowWithTime');
@@ -427,7 +424,7 @@ class InMemoryUnitemporalDataTable implements UnitemporalDataTable
         try {
             $data = $this->internalGetRowHistory($theRow[$this->idColumnName]);
             $latestRow = $data[count($data) - 1];
-            if ($timeString <= $latestRow[$this->validFromColumn]) {
+            if ($latestRow[$this->validFromColumn] >= $timeString) {
                 $this->setError('The given time is not later than the last version of the row', UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
                 throw new InvalidRowUpdateTime("The given time is not later than the last version of the row");
             }

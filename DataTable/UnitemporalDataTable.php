@@ -123,6 +123,7 @@ interface UnitemporalDataTable extends DataTable
      * @throws RowDoesNotExist
      * @throws InvalidRowForUpdate
      * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeStringException
      */
     public function updateRowWithTime(array $theRow, string $timeString): void;
 

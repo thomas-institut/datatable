@@ -24,7 +24,7 @@ final class ColumnDefinitionTest extends TestCase
         $this->assertSame(-1, $columnDefinition->typeLength);
         $this->assertNull($columnDefinition->dbColumn);
         $this->assertFalse($columnDefinition->required);
-        $this->assertSame(null, $columnDefinition->defaultValue);
+        $this->assertNull($columnDefinition->defaultValue);
     }
 
     public static function constructorDefaultsProvider(): \Iterator

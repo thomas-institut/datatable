@@ -170,7 +170,7 @@ class ColumnDefArray
                     $errors[] = "Column '$columnDef->rowKey' at index $index must have an explicitly set default value since it is not required.";
                 }
                 // explicitly set default values must be valid for the column type
-                if ($columnDef->defaultValueExplicitlySet === true && !ColumnDefinition::valueIsValidForColumn($columnDef->defaultValue, $columnDef)) {
+                if ($columnDef->defaultValueExplicitlySet && !ColumnDefinition::valueIsValidForColumn($columnDef->defaultValue, $columnDef)) {
                     $errors[] = "Column at index $index has an invalid default value: '{$columnDef->defaultValue}' for type {$columnDef->type->value}.";
                 }
 

@@ -37,7 +37,6 @@ class ColumnDefinition
      * Prefer using the method ColumnDefinition::withDefaultValue() to manipulate default values
      *
      *
-     * @var bool
      * @see ColumnDefinition::withDefaultValue()
      */
     public bool $defaultValueExplicitlySet = false;
@@ -75,10 +74,8 @@ class ColumnDefinition
             return $columnDefinition->nullable;
         }
 
-        if ($columnDefinition->type === ColumnDataType::VarChar) {
-            if ($columnDefinition->typeLength < 0) {
-                throw new InvalidArgumentException("Invalid type length $columnDefinition->typeLength for column '$columnDefinition->rowKey' of type '{$columnDefinition->type->value}'");
-            }
+        if ($columnDefinition->type === ColumnDataType::VarChar && $columnDefinition->typeLength < 0) {
+            throw new InvalidArgumentException("Invalid type length $columnDefinition->typeLength for column '$columnDefinition->rowKey' of type '{$columnDefinition->type->value}'");
 
         }
 

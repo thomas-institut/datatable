@@ -12,6 +12,7 @@ use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
+use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\Schema\ColumnDataType;
 use ThomasInstitut\DataTable\Schema\ColumnDefinition;
 use ThomasInstitut\DataTable\SearchCondition;
@@ -77,7 +78,7 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
         $defs = [
             new ColumnDefinition('id', ColumnDataType::Id),
             (new ColumnDefinition('name', ColumnDataType::Text))->withRequired(true),
-            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withDefaultValue(0),
+            (new ColumnDefinition('age', ColumnDataType::Integer))->withDbColumn('edad')->withRequired(true),
             (new ColumnDefinition('salary', ColumnDataType::Integer))->withDefaultValue(1000),
             (new ColumnDefinition('validFrom', ColumnDataType::ValidFrom))->withDbColumn('valido_desde'),
             (new ColumnDefinition('validUntil', ColumnDataType::ValidUntil))->withDbColumn('valido_hasta'),
@@ -135,19 +136,19 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
         $invalidTimeString = 'not-a-time-string';
 
         $this->assertInvalidTimeString(
-            fn() => $table->createRowWithTime(['name' => 'Jane'], $invalidTimeString)
+            fn(): int => $table->createRowWithTime(['name' => 'Jane'], $invalidTimeString)
         );
         $this->assertInvalidTimeString(
-            fn() => $table->rowExistsWithTime($rowId, $invalidTimeString)
+            fn(): bool => $table->rowExistsWithTime($rowId, $invalidTimeString)
         );
         $this->assertInvalidTimeString(
-            fn() => $table->getRowWithTime($rowId, $invalidTimeString)
+            fn(): ?array => $table->getRowWithTime($rowId, $invalidTimeString)
         );
         $this->assertInvalidTimeString(
-            fn() => $table->findRowsWithTime(['name' => 'John'], 0, $invalidTimeString)
+            fn(): ResultsIterator => $table->findRowsWithTime(['name' => 'John'], 0, $invalidTimeString)
         );
         $this->assertInvalidTimeString(
-            fn() => $table->searchWithTime(
+            fn(): ResultsIterator => $table->searchWithTime(
                 [new SearchSpec('name', SearchCondition::Equals, 'John')],
                 SearchType::And,
                 $invalidTimeString,
@@ -157,7 +158,7 @@ abstract class UnitemporalDataTableWithSchemaReferenceTestCase extends DataTable
             fn() => $table->updateRowWithTime(['id' => $rowId, 'name' => 'Jane'], $invalidTimeString)
         );
         $this->assertInvalidTimeString(
-            fn() => $table->deleteRowWithTime($rowId, $invalidTimeString)
+            fn(): int => $table->deleteRowWithTime($rowId, $invalidTimeString)
         );
     }
 

@@ -34,6 +34,8 @@ use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
@@ -246,9 +248,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Creates a new row that is valid from the given time and returns the new
      * row's id
      *
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
-     * @param array<string, mixed> $theRow
      */
     public function createRowWithTime(array $theRow, string $timeString): int
     {
@@ -264,8 +266,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * not check for already used Ids
      *
      * @throws InvalidTimeStringException
-     */
-    /**
      * @param array<string, mixed> $theRow
      */
     protected function realCreateRowWithTime(array $theRow, string $timeString): int
@@ -292,8 +292,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Makes a row invalid from the given time
      *
      * @throws InvalidTimeStringException
-     */
-    /**
      * @param array<string, mixed> $theRow
      */
     protected function makeRowInvalid(array $theRow, string $timeString): int
@@ -341,8 +339,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
-     */
-    /**
      * @param array<string, mixed> $theRow
      */
     public function realUpdateRowWithTime(array $theRow, string $timeString): void
@@ -360,7 +356,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             throw new RowDoesNotExist();
         }
 
-        if ($currentRow[$this->validFromColumn] > $timeString) {
+        if ($currentRow[$this->validFromColumn] >= $timeString) {
             // attempt to update a row before the row's last version is valid
             $this->setError("Row update time is before the row's last version", self::ERROR_INVALID_ROW_UPDATE_TIME);
             throw new InvalidRowUpdateTime();
@@ -494,6 +490,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * @return array<string, mixed>|null
+     * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array
     {
@@ -533,8 +530,6 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * @throws InvalidTimeStringException
-     */
-    /**
      * @param array<string, mixed> $theRow
      */
     public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator
@@ -659,6 +654,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * @param array<int, array<string, mixed>> $searchSpecArray
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
+     * @throws InvalidTimeStringException
      */
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
@@ -701,6 +699,10 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * @param array<string, mixed> $theRow
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeStringException
+     * @throws RowDoesNotExist
      */
     public function updateRowWithTime(array $theRow, string $timeString): void
     {

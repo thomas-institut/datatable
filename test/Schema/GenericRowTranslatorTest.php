@@ -168,6 +168,6 @@ final class GenericRowTranslatorTest extends TestCase
             true,
         );
 
-        $this->assertEquals(['id' => 20, 'edad' => -1, 'name' => 'Unknown'], $translator->inputRowToDb(['id' => 20]));
+        $this->assertSame(['id' => 20, 'edad' => -1, 'name' => 'Unknown'], $translator->inputRowToDb(['id' => 20]));
     }
 }
