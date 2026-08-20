@@ -9,15 +9,20 @@ class ArrayResultsIterator implements ResultsIterator
      * @var mixed|null
      */
     private readonly mixed $first;
-    private int $currentKey;
+    private int $currentKey = 0;
+    /**
+     * @var array<int, array<string, mixed>>
+     */
     private array $theArray;
 
+    /**
+     * @param array<int, array<string, mixed>> $results
+     */
     public function __construct(array $results)
     {
         $this->theArray = array_values($results);
         $this->count = count($results);
         $this->first = $this->theArray[0] ?? null;
-        $this->currentKey = 0;
     }
 
     public function current(): ?array
@@ -50,6 +55,9 @@ class ArrayResultsIterator implements ResultsIterator
         return $this->count;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getFirst(): ?array
     {
         return $this->first;

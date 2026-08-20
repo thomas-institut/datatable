@@ -6,19 +6,24 @@ use Iterator;
 use PDO;
 use PDOStatement;
 
+/**
+ * @implements Iterator<int, int>
+ */
 class PdoUniqueIdsIterator implements Iterator
 {
 
     private readonly Iterator $source;
-    private int $currentKey;
+    private int $currentKey = 0;
 
     public function __construct(private readonly PDOStatement $statement)
     {
         $this->statement->setFetchMode(PDO::FETCH_NUM);
         $this->source = $this->statement->getIterator();
-        $this->currentKey = 0;
     }
 
+    /**
+     * @param array<int, mixed> $row
+     */
     private function getValueFromResultRow(array $row) : int {
         return intval($row[0]);
     }

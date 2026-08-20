@@ -46,10 +46,6 @@ use Traversable;
 
 abstract class GenericDataTable implements DataTable
 {
-    /**
-     *
-     * @var string
-     */
     protected string $tableName;
 
     protected string $idColumnName;
@@ -64,7 +60,7 @@ abstract class GenericDataTable implements DataTable
     public function __construct(?IdGenerator $idGenerator = null)
     {
 
-        if ($idGenerator === null) {
+        if (!$idGenerator instanceof IdGenerator) {
             $this->idGenerator = new SequentialIdGenerator();
         } else {
             $this->idGenerator = $idGenerator;
@@ -111,9 +107,6 @@ abstract class GenericDataTable implements DataTable
         return $this->errorMessage;
     }
 
-    /**
-     * @return int
-     */
     public function getErrorCode(): int
     {
         return $this->errorCode;
@@ -285,7 +278,7 @@ abstract class GenericDataTable implements DataTable
     abstract public function getIdForKeyValue(string $key, mixed $value): int;
 
 
-    abstract public function getMaxValueInColumn(string $columnName): int;
+    abstract public function getMaxValueInColumn(string $columnName): int|null;
 
 
     /**
@@ -297,14 +290,11 @@ abstract class GenericDataTable implements DataTable
     /** *********************************************************************
      * ABSTRACT PROTECTED METHODS
      ************************************************************************/
-
-
     /**
      * Creates a row in the table, returns the id of the newly created
      * row.
      *
      * @param array<string, mixed> $theRow
-     * @return int
      */
     abstract protected function realCreateRow(array $theRow): int;
 
@@ -315,7 +305,6 @@ abstract class GenericDataTable implements DataTable
      * Must throw a Runtime Exception if the row was not updated
      *
      * @param array<string, mixed> $theRow
-     * @return void
      * @throws RowDoesNotExist
      */
     abstract protected function realUpdateRow(array $theRow): void;
@@ -340,12 +329,10 @@ abstract class GenericDataTable implements DataTable
     {
         if (!isset($theRow[$this->idColumnName]) || !is_int($theRow[$this->idColumnName]) || $theRow[$this->idColumnName] <= 0) {
             $theRow[$this->idColumnName] = $this->getOneUnusedId();
-        } else {
-            if ($this->rowExists($theRow[$this->idColumnName])) {
-                $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
-                    self::ERROR_ROW_ALREADY_EXISTS);
-                throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
-            }
+        } elseif ($this->rowExists($theRow[$this->idColumnName])) {
+            $this->setError('The row with given id (' . $theRow[$this->idColumnName] . ') already exists, cannot create',
+                self::ERROR_ROW_ALREADY_EXISTS);
+            throw new RowAlreadyExists($this->getErrorMessage(), $this->getErrorCode());
         }
         return $theRow;
     }
@@ -355,7 +342,6 @@ abstract class GenericDataTable implements DataTable
      * defaults to a sequential id if the idGenerator cannot
      * come up with one
      *
-     * @return int
      *
      */
     protected function getOneUnusedId(): int
@@ -390,8 +376,9 @@ abstract class GenericDataTable implements DataTable
             $problems[] = ['specIndex' => -1, 'msg' => 'specArray is empty', 'code' => self::ERROR_SPEC_ARRAY_IS_EMPTY];
             return $problems;
         }
+        $counter = count($specArray);
 
-        for ($i = 0; $i < count($specArray); $i++) {
+        for ($i = 0; $i < $counter; $i++) {
             $spec = $specArray[$i];
             if (!isset($spec['column']) || !is_string($spec['column'])) {
                 $problems[] = [
@@ -440,7 +427,6 @@ abstract class GenericDataTable implements DataTable
 
     /**
      * @param array<int, array<string, mixed>> $searchSpecArray
-     * @param int $searchType
      * @throws InvalidSearchType
      * @throws InvalidSearchSpec
      */
@@ -459,8 +445,6 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
      */
     protected function setError(string $msg, int $code, array $otherContext = []): void
@@ -477,11 +461,7 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $logLevel
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
-     * @return void
      */
     protected function log(string $logLevel, string $msg, int $code, array $otherContext): void
     {
@@ -489,10 +469,7 @@ abstract class GenericDataTable implements DataTable
     }
 
     /**
-     * @param string $msg
-     * @param int $code
      * @param array<string|int, mixed> $otherContext
-     * @return void
      */
     protected function logWarning(string $msg, int $code, array $otherContext = []): void
     {
@@ -502,41 +479,20 @@ abstract class GenericDataTable implements DataTable
     /**********************************************************************
      * PRIVATE AREA
      ************************************************************************/
-
-    /**
-     * @var IdGenerator
-     */
     private IdGenerator $idGenerator;
 
 
-    /**
-     * @var LoggerInterface
-     */
     protected LoggerInterface $logger;
 
-    /**
-     *
-     * @var string
-     */
     private string $errorMessage;
 
-    /**
-     *
-     * @var int
-     */
     private int $errorCode;
 
-    /**
-     * @param string $message
-     */
     private function setErrorMessage(string $message): void
     {
         $this->errorMessage = $message;
     }
 
-    /**
-     * @param int $code
-     */
     private function setErrorCode(int $code): void
     {
         $this->errorCode = $code;
@@ -548,8 +504,6 @@ abstract class GenericDataTable implements DataTable
      * If not, sets an error and returns false;
      *
      * @param array<string, mixed> $theRow
-     * @param string $context
-     * @return bool
      */
     protected function isRowIdGoodForRowUpdate(array $theRow, string $context): bool
     {

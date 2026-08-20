@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable\ReferenceTests;
 
+
 use PHPUnit\Framework\TestCase;
 use ThomasInstitut\DataTable\DataTable;
+use ThomasInstitut\DataTable\DataTableWithSchema;
+use ThomasInstitut\DataTable\Exception\InvalidRow;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 
@@ -20,14 +24,15 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
     const string INT_COLUM = 'value';
     const int NUM_ROWS = 10;
 
-    protected ?DataTable $dataTable = null;
+    protected DataTable | DataTableWithSchema | null $dataTable = null;
 
 
-    abstract public function createDataTable() : DataTable;
+    abstract public function createDataTable() : DataTable | DataTableWithSchema;
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
-    private function getDataTable() : DataTable {
+    private function getDataTable() : DataTable | DataTableWithSchema {
 
         if ($this->dataTable === null) {
 
@@ -43,6 +48,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     function getNonEmptyIterator(): ResultsIterator
     {
@@ -51,6 +57,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     function getEmptyIterator(): ResultsIterator
     {
@@ -60,12 +67,13 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testEmptyIterator() : void
     {
         $iterator = $this->getEmptyIterator();
 
-        $this->assertEquals(0, $iterator->count());
+        $this->assertCount(0, $iterator);
 
         $this->assertNull($iterator->getFirst());
         $this->assertNull($iterator->current());
@@ -74,16 +82,17 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
         foreach ($iterator as $ignored) {
             $numIterations++;
         }
-        $this->assertEquals(0, $numIterations);
+        $this->assertSame(0, $numIterations);
     }
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testGetFirst() : void{
 
         $iterator = $this->getNonEmptyIterator();
-        $this->assertNotEquals(0, $iterator->count());
+        $this->assertNotCount(0, $iterator);
         $this->assertNotNull($iterator->getFirst());
         $firstResult = $iterator->getFirst();
         $this->assertValidResultRow($firstResult, __FUNCTION__);
@@ -91,6 +100,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
 
     /**
      * @throws RowAlreadyExists
+     * @throws InvalidRow
      */
     public function testForEachLoop() : void {
         $iterator = $this->getNonEmptyIterator();
@@ -99,7 +109,7 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
             $this->assertValidResultRow($row, __FUNCTION__);
             $numIterations++;
         }
-        $this->assertEquals($iterator->count(), $numIterations);
+        $this->assertSame($iterator->count(), $numIterations);
     }
 
 
@@ -113,8 +123,8 @@ abstract class ResultsIteratorReferenceTestCase extends TestCase
             $this->assertIsNotInt($key, $context . ": row keys must not be int");
         }
         $this->assertIsInt($row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
-        $this->assertTrue(isset($row[self::INT_COLUM]), $context);
-        $this->assertNotEquals(0, $row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
+        $this->assertArrayHasKey(self::INT_COLUM, $row, $context);
+        $this->assertNotSame(0, $row[DataTable::DEFAULT_ID_COLUMN_NAME], $context);
     }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -38,8 +40,6 @@ interface IdGenerator
 {
     /**
      * Generates an unused ID for the given DataTable
-     * @param DataTable $dataTable
-     * @return int
      */
     public function getOneUnusedId(DataTable $dataTable) : int;
 }

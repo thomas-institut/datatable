@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use PDO;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\SqlDialect\MySqlDialect;
 
@@ -38,10 +39,23 @@ class MySqlUnitemporalDataTable extends PdoUnitemporalDataTable
     /**
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
-     * @param string $idColumnName
+     * @throws InvalidArgumentException
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(
+        PDO|PdoProvider $pdoOrProvider,
+        string $tableName,
+        string $idColumnName = self::DEFAULT_ID_COLUMN_NAME,
+        string $validFromColumnName = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN,
+        string $validUntilColumnName = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN
+    )
     {
-        parent::__construct($pdoOrProvider, $tableName, new MySqlDialect(), $idColumnName);
+        parent::__construct(
+            $pdoOrProvider,
+            $tableName,
+            new MySqlDialect(),
+            $idColumnName,
+            $validFromColumnName,
+            $validUntilColumnName
+        );
     }
 }

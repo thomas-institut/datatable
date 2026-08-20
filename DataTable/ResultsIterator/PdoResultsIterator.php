@@ -15,18 +15,24 @@ class PdoResultsIterator implements ResultsIterator
 {
     private readonly Iterator $source;
 
-    private mixed $first;
-    private int $currentKey;
+    private mixed $first = null;
+    private int $currentKey = 0;
 
     public function __construct(private readonly PDOStatement $statement, private readonly string $idColumnName)
     {
         $this->statement->setFetchMode(PDO::FETCH_ASSOC);
         $this->source = $this->statement->getIterator();
-        $this->first = null;
-        $this->currentKey = 0;
     }
 
-    private function normalizeResultRowArray(array $row) : array {
+    /**
+     * @param array<string, mixed>|null $row
+     * @return array<string, mixed>|null
+     */
+    private function normalizeResultRowArray(?array $row) : array|null {
+        if ($row === null) {
+            return null;
+        }
+
         $row[$this->idColumnName] = intval($row[$this->idColumnName]);
         return $row;
     }
@@ -64,6 +70,9 @@ class PdoResultsIterator implements ResultsIterator
         return $this->statement->rowCount();
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getFirst(): ?array
     {
         if ($this->statement->rowCount() === 0) {

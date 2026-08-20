@@ -27,6 +27,7 @@
 namespace ThomasInstitut\DataTable;
 
 use LogicException;
+use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
 use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
@@ -44,7 +45,6 @@ class InMemoryDataTable extends GenericDataTable
 
     /**
      * @param array<int, array<string, mixed>>|null $data
-     * @param IdGenerator|null $idGenerator
      */
     public function __construct(array|null &$data = null, ?IdGenerator $idGenerator = null)
     {
@@ -65,10 +65,7 @@ class InMemoryDataTable extends GenericDataTable
     public function rowExists(int $rowId) : bool
     {
         $this->resetError();
-        if (isset($this->theData[$rowId])) {
-            return true;
-        }
-        return false;
+        return isset($this->theData[$rowId]);
     }
     
     public function realCreateRow(array $theRow) : int
@@ -102,18 +99,25 @@ class InMemoryDataTable extends GenericDataTable
     }
 
 
-    public function getMaxValueInColumn(string $columnName): int
+    public function getMaxValueInColumn(string $columnName): int|null
     {
         if (count($this->theData) !== 0) {
-            return max(array_column($this->theData, $columnName));
+            $colValues = array_column($this->theData, $columnName);
+            if (count($colValues) === 0) {
+                return null;
+            }
+            return max(array_map( fn($v): int => is_int($v) ? $v : throw new RuntimeException('Column ' . $columnName . ' contains non-integer values'), $colValues));
         } else {
-            return 0;
+            return null;
         }
     }
 
     public function getMaxId() : int
     {
-        return $this->getMaxValueInColumn($this->idColumnName);
+        if (count($this->theData) === 0) {
+            return 0;
+        }
+        return $this->getMaxValueInColumn($this->idColumnName) ?? throw new RuntimeException("Cannot find max value in column {$this->idColumnName}");
     }
 
     public function getRow(int $rowId) : ?array
@@ -137,6 +141,9 @@ class InMemoryDataTable extends GenericDataTable
         if ($id === false) {
             $this->logWarning('Value ' . $value . ' for key \'' . $key .  '\' not found', self::ERROR_KEY_VALUE_NOT_FOUND);
             return self::NULL_ROW_ID;
+        }
+        if (is_string($id)) {
+            throw new RuntimeException('Found non-integer row ID');
         }
         return $id;
     }
@@ -167,8 +174,6 @@ class InMemoryDataTable extends GenericDataTable
      *
      * @param array<string, mixed> $dataRow
      * @param array<int, array<string, mixed>> $searchSpec
-     * @param int $searchType
-     * @return bool
      */
     private function matchSearchSpec(array $dataRow, array $searchSpec, int $searchType) : bool {
 

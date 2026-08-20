@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable\Exception;
 
-class DataTableException extends \Exception
+use Exception;
+
+class DataTableException extends Exception
 {
 
 }

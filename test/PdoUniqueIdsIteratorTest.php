@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ThomasInstitut\DataTable;
 
 use PDO;
@@ -7,7 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(PdoUniqueIdsIterator::class)]
-class PdoUniqueIdsIteratorTest extends TestCase
+final class PdoUniqueIdsIteratorTest extends TestCase
 {
     private function getPdo(): PDO
     {
@@ -24,6 +26,9 @@ class PdoUniqueIdsIteratorTest extends TestCase
         $pdo->query("INSERT INTO test_ids VALUES (10), (20), (30)");
 
         $stmt = $pdo->query("SELECT id FROM test_ids ORDER BY id ");
+        if ($stmt === false) {
+            $this->fail('Failed to execute query');
+        }
         $iterator = new PdoUniqueIdsIterator($stmt);
 
         $expected = [10, 20, 30];
@@ -32,17 +37,20 @@ class PdoUniqueIdsIteratorTest extends TestCase
             $actual[] = $id;
         }
 
-        $this->assertEquals($expected, $actual);
+        $this->assertSame($expected, $actual);
 
         // Test basic methods
         $stmt = $pdo->query("SELECT id FROM test_ids ORDER BY id ");
+        if ($stmt === false) {
+            $this->fail('Failed to execute query');
+        }
         $iterator = new PdoUniqueIdsIterator($stmt);
-        $this->assertEquals(10, $iterator->current());
-        $this->assertEquals(0, $iterator->key());
+        $this->assertSame(10, $iterator->current());
+        $this->assertSame(0, $iterator->key());
 
         $iterator->next();
-        $this->assertEquals(20, $iterator->current());
-        $this->assertEquals(1, $iterator->key());
+        $this->assertSame(20, $iterator->current());
+        $this->assertSame(1, $iterator->key());
         $this->assertTrue($iterator->valid());
 
         $iterator->next();

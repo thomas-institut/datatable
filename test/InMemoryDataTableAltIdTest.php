@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -29,15 +31,18 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
-class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
+final class InMemoryDataTableAltIdTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
+    /**
+     * @var array<int, array<string, mixed>>|null
+     */
     static private ?array $theData = null;
     
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
     {
-        if (self::$motherTable === null) {  // first table to serve
+        if (!self::$motherTable instanceof \ThomasInstitut\DataTable\InMemoryDataTable) {  // first table to serve
             self::$theData = [];
             self::$motherTable = new InMemoryDataTable(self::$theData);
             self::$motherTable->setIdColumnName('tid');

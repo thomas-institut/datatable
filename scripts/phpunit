@@ -1,2 +1,2 @@
 #!/bin/bash
-docker exec -it -w /app dt-dev-php vendor/bin/phpunit "$@"
+docker exec -t -w /app dt-dev-php vendor/bin/phpunit "$@"

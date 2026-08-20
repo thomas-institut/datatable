@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -56,8 +59,6 @@ interface ResultsIterator extends Iterator, Countable
      * Returns the number of results without traversing the result set.
      *
      * It is better to use this function instead of PHP's _iterator_count_
-     *
-     * @return int
      */
     public function count() : int;
 
@@ -65,8 +66,6 @@ interface ResultsIterator extends Iterator, Countable
      * Returns the key/index of the current result.
      *
      * It is always an integer. Results are numbered from 0 to ($this->count() - 1).
-     *
-     * @return int
      */
     public function key(): int;
 
@@ -74,8 +73,6 @@ interface ResultsIterator extends Iterator, Countable
     /**
      * Returns the current result, which is always an array or null if the iterator has gone over its last
      * result.
-     *
-     * @return ?array
      */
     public function current(): ?array;
 
@@ -88,8 +85,7 @@ interface ResultsIterator extends Iterator, Countable
      * in many cases it will not be possible to use a foreach loop on the iterator once this
      * method is called, or, conversely, it will not be possible to execute this method after
      * a foreach loop.
-     *
-     * @return ?array
+     * @return array<string, mixed>|null
      */
     public function getFirst() : ?array;
 

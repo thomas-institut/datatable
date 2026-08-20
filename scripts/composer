@@ -1,2 +1,2 @@
 #!/bin/bash
-docker exec -it -w /app dt-dev-php composer "$@"
+docker exec -t -w /app dt-dev-php composer "$@"

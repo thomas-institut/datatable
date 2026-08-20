@@ -27,12 +27,15 @@
 namespace ThomasInstitut\DataTable;
 
 use Iterator;
+use Override;
 use PDO;
 use PDOException;
 use RuntimeException;
 use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
 use ThomasInstitut\DataTable\Exception\InvalidRowForUpdate;
 use ThomasInstitut\DataTable\Exception\InvalidRowUpdateTime;
+use ThomasInstitut\DataTable\Exception\InvalidSearchSpec;
+use ThomasInstitut\DataTable\Exception\InvalidSearchType;
 use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
 use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\Exception\RowDoesNotExist;
@@ -41,6 +44,7 @@ use ThomasInstitut\DataTable\ResultsIterator\ArrayResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\PdoResultsIterator;
 use ThomasInstitut\DataTable\ResultsIterator\ResultsIterator;
 use ThomasInstitut\DataTable\SqlDialect\SqlDialect;
+use ThomasInstitut\DataTable\UnitemporalConsistency\UnitemporalConsistencyChecker;
 use ThomasInstitut\TimeString\InvalidTimeZoneException;
 use ThomasInstitut\TimeString\MalformedStringException;
 use ThomasInstitut\TimeString\TimeString;
@@ -48,17 +52,7 @@ use Throwable;
 
 /**
  * Implements a PDO-based data table that keeps different versions
- * of its rows. The term 'unitemporal' is taken from
- * Johnston and Weis, "Managing Time in Relational Databases", 2010, but
- * this implementation does not necessarily follow the techniques
- * described in that book.
- *
- * The normal DataTable methods for creating, updating and deleting
- * rows do not delete any previous data but just mark that data as
- * not valid anymore. Data retrieval methods (getRow and findRows) get
- * the latest versions of the data and strip out the time information, so,
- * if used with the normal methods, the class behaves as any other DataTable.
- * There are, however, new methods to retrieve data at previous points in time.
+ * of its rows.
  *
  * The actual SQL table should have an integer id and two datetime
  * columns with precision up to the microsecond:
@@ -77,49 +71,51 @@ use Throwable;
 class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTable
 {
 
-    // Error codes
 
 
-    const string REPORT_TYPE_ERROR = 'error';
-    const string REPORT_TYPE_WARNING = 'warning';
-    const string REPORT_TYPE_INFO = 'info';
-
-    const int REPORT_ERROR_INVALID_TIME_RANGE = 100;
-    const int REPORT_WARNING_ZERO_TIME_RANGE = 101;
-    const int REPORT_ERROR_OVERLAPPING_VERSIONS = 102;
-    const int REPORT_INFO_GAP = 103;
-
-
-    // Other constants
-    const string FIELD_VALID_FROM = 'valid_from';
-    const string FIELD_VALID_UNTIL = 'valid_until';
+    protected string $validFromColumn = self::DEFAULT_VALID_FROM_COLUMN;
+    protected string $validUntilColumn = self::DEFAULT_VALID_UNTIL_COLUMN;
 
     /**
      *
      * @param PDO|PdoProvider $pdoOrProvider initialized PDO connection or provider
      * @param string $tableName SQL table name
-     * @param SqlDialect $sqlDialect
-     * @param string $idColumnName
+     * @throws InvalidArgumentException
      */
-    public function __construct(PDO|PdoProvider $pdoOrProvider, string $tableName, SqlDialect $sqlDialect, string $idColumnName = self::DEFAULT_ID_COLUMN_NAME)
+    public function __construct(
+        PDO|PdoProvider $pdoOrProvider,
+        string $tableName,
+        SqlDialect $sqlDialect,
+        string $idColumnName = self::DEFAULT_ID_COLUMN_NAME,
+        string $validFromColumnName = self::DEFAULT_VALID_FROM_COLUMN,
+        string $validUntilColumnName = self::DEFAULT_VALID_UNTIL_COLUMN
+    )
     {
+        $this->validateTimeColumnName($validFromColumnName);
+        $this->validateTimeColumnName($validUntilColumnName);
+        $this->validFromColumn = $validFromColumnName;
+        $this->validUntilColumn = $validUntilColumnName;
         parent::__construct($pdoOrProvider, $tableName, $sqlDialect, false, $idColumnName);
 
         // Check additional columns
-        if (!$this->isTableColumnValid(self::FIELD_VALID_FROM, ['datetime'])) {
+        if (!$this->isTableColumnValid($this->validFromColumn, ['datetime'])) {
             // error message and code set by isTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        if (!$this->isTableColumnValid(self::FIELD_VALID_UNTIL, ['datetime'])) {
+        if (!$this->isTableColumnValid($this->validUntilColumn, ['datetime'])) {
             // error message and code set by isTableColumnValid
             throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
         }
 
-        // Override rowExistsById statement
+        $this->prepareRowExistsByIdStatement();
+    }
+
+    private function prepareRowExistsByIdStatement(): void
+    {
         $quotedIdColumnName = $this->sqlDialect->quoteIdentifier($this->idColumnName);
         $quotedTableName = $this->sqlDialect->quoteIdentifier($this->tableName);
-        $quotedValidUntilColumnName = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidUntilColumnName = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
         try {
             $this->statements['rowExistsById'] =
                 $this->pdoProvider->getPdo()->prepare('SELECT ' . $quotedIdColumnName . ' FROM ' . $quotedTableName .
@@ -129,75 +125,56 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             // @codeCoverageIgnoreStart
             $this->setError("Could not prepare statements "
                 . "in constructor, " . $e->getMessage(), self::ERROR_PREPARING_STATEMENTS);
-            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode());
+            throw new RuntimeException($this->getErrorMessage(), $this->getErrorCode(), $e);
             // @codeCoverageIgnoreEnd
         }
     }
 
-    /**
-     * Checks that the data's time information is consistent across the table
-     * Returns an array of objects, each one describing an issue:
-     *    [
-     *         'id' => int
-     *         'type' =>  ERROR | WARNING | INFO
-     *         'code' =>  int
-     *         'description'  => string
-     *
-     *   ]
-     * @param array $ids
-     * @return array
-     * @throws InvalidArgumentException
-     * @throws RunTimeException
-     */
-    public function checkConsistency(array $ids = []): array
+    public function getValidFromColumnName(): string
     {
-        $issues = [];
-        if (count($ids) === 0) {
-            // check everything!
-            $ids = $this->getUniqueIdsWithTime('');
-        }
+        return $this->validFromColumn;
+    }
 
-        foreach ($ids as $id) {
-            $id = intval($id);  // just in case
-            if ($id < 0) {
-                continue;
-            }
+    public function getValidUntilColumnName(): string
+    {
+        return $this->validUntilColumn;
+    }
+
+    public function setValidFromColumnName(string $validFromColumnName): void
+    {
+        $this->validateTimeColumnName($validFromColumnName);
+        $this->validFromColumn = $validFromColumnName;
+    }
+
+    public function setValidUntilColumnName(string $validUntilColumnName): void
+    {
+        $this->validateTimeColumnName($validUntilColumnName);
+        $this->validUntilColumn = $validUntilColumnName;
+        if (isset($this->pdoProvider)) {
+            $this->prepareRowExistsByIdStatement();
+        }
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function validateTimeColumnName(string $columnName): void
+    {
+        if ($columnName === '' || trim($columnName) !== $columnName || preg_match('/\s/', $columnName) === 1) {
+            throw new InvalidArgumentException('Time column names must be non-empty and contain no whitespace');
+        }
+    }
+
+    public function getConsistencyIssues(array|null $idsToCheck): array
+    {
+        if ($idsToCheck === null) {
+            // check everything!
+            $idsToCheck = $this->getUniqueIdsWithTime('');
+        }
+        $issues = [];
+        foreach($idsToCheck as $id) {
             $rowHistory = $this->getRowHistory($id);
-            //print_r($rowHistory);
-            $previousVersion = null;
-            foreach ($rowHistory as $version) {
-                if ($version[self::FIELD_VALID_UNTIL] < $version[self::FIELD_VALID_FROM]) {
-                    $issues[] = [
-                        'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
-                        'code' => self::REPORT_ERROR_INVALID_TIME_RANGE,
-                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " < validFrom " . $version[self::FIELD_VALID_FROM]
-                    ];
-                }
-                if ($version[self::FIELD_VALID_UNTIL] === $version[self::FIELD_VALID_FROM]) {
-                    $issues[] = [
-                        'id' => $id, 'type' => self::REPORT_TYPE_WARNING,
-                        'code' => self::REPORT_WARNING_ZERO_TIME_RANGE,
-                        'description' => "validUntil " . $version[self::FIELD_VALID_UNTIL] . " = validFrom " . $version[self::FIELD_VALID_FROM]
-                    ];
-                }
-                if (!is_null($previousVersion)) {
-                    if ($version[self::FIELD_VALID_FROM] < $previousVersion[self::FIELD_VALID_UNTIL]) {
-                        $issues[] = [
-                            'id' => $id, 'type' => self::REPORT_TYPE_ERROR,
-                            'code' => self::REPORT_ERROR_OVERLAPPING_VERSIONS,
-                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " < previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
-                        ];
-                    }
-                    if ($version[self::FIELD_VALID_FROM] > $previousVersion[self::FIELD_VALID_UNTIL]) {
-                        $issues[] = [
-                            'id' => $id, 'type' => self::REPORT_TYPE_INFO,
-                            'code' => self::REPORT_INFO_GAP,
-                            'description' => "validFrom " . $version[self::FIELD_VALID_FROM] . " > previous version validUntil " . $previousVersion[self::FIELD_VALID_UNTIL]
-                        ];
-                    }
-                }
-                $previousVersion = $version;
-            }
+            $issues = [...$issues, ...UnitemporalConsistencyChecker::getConsistencyIssues($id, $rowHistory, $this->validFromColumn, $this->validUntilColumn)];
         }
         return $issues;
     }
@@ -219,13 +196,11 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Get all unique Ids in the table at the given time,
      * If the given time is not a valid timeString returns
      * all uniqueIds regardless of time.
-     * @param string $timeString
-     * @return Iterator
      */
     public function getUniqueIdsWithTime(string $timeString): Iterator
     {
-        $quotedValidFrom = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
-        $quotedValidUntil = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidFrom = $this->sqlDialect->quoteIdentifier($this->validFromColumn);
+        $quotedValidUntil = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
 
         if ($timeString === '') {
             $sqlTimeConstraint = '';
@@ -251,7 +226,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
-    #[\Override]
+    #[Override]
     public function getUniqueIds(): Iterator
     {
         return $this->getUniqueIdsWithTime(TimeString::now());
@@ -261,11 +236,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Creates a row valid from the current time.
      *
-     * @param array $theRow
-     * @return int
      * @throws InvalidTimeStringException
      */
-    #[\Override]
+    #[Override]
     public function realCreateRow(array $theRow): int
     {
         return $this->realCreateRowWithTime($theRow, TimeString::now());
@@ -275,9 +248,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Creates a new row that is valid from the given time and returns the new
      * row's id
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
+     * @param array<string, mixed> $theRow
      * @throws InvalidTimeStringException
      * @throws RowAlreadyExists
      */
@@ -294,10 +265,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Uses PdoDataTable's realCreateRow to create a row since that method does
      * not check for already used Ids
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
+     * @param array<string, mixed> $theRow
      */
     protected function realCreateRowWithTime(array $theRow, string $timeString): int
     {
@@ -312,8 +281,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             }
         }
 
-        $theRow[self::FIELD_VALID_FROM] = $timeString;
-        $theRow[self::FIELD_VALID_UNTIL] = TimeString::END_OF_TIMES;
+        $theRow[$this->validFromColumn] = $timeString;
+        $theRow[$this->validUntilColumn] = TimeString::END_OF_TIMES;
 
         return parent::realCreateRow($theRow);
     }
@@ -322,10 +291,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Makes a row invalid from the given time
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
+     * @param array<string, mixed> $theRow
      */
     protected function makeRowInvalid(array $theRow, string $timeString): int
     {
@@ -336,13 +303,13 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         }
         $quotedTableName = $this->sqlDialect->quoteIdentifier($this->tableName);
         $quotedIdColumnName = $this->sqlDialect->quoteIdentifier($this->idColumnName);
-        $quotedValidFrom = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
-        $quotedValidUntil = $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL);
+        $quotedValidFrom = $this->sqlDialect->quoteIdentifier($this->validFromColumn);
+        $quotedValidUntil = $this->sqlDialect->quoteIdentifier($this->validUntilColumn);
         $sql = 'UPDATE ' . $quotedTableName . ' SET ' .
             $quotedValidUntil . '=' . $this->quoteValue($timeString) .
             ' WHERE ' . $quotedIdColumnName . '=' . $theRow[$this->idColumnName] .
-            ' AND ' . $quotedValidFrom . ' = ' . $this->quoteValue($theRow[self::FIELD_VALID_FROM]) .
-            ' AND ' . $quotedValidUntil . '= ' . $this->quoteValue($theRow[self::FIELD_VALID_UNTIL]);
+            ' AND ' . $quotedValidFrom . ' = ' . $this->quoteValue($theRow[$this->validFromColumn]) .
+            ' AND ' . $quotedValidUntil . '= ' . $this->quoteValue($theRow[$this->validUntilColumn]);
 
         $this->doQuery($sql, 'makeRowInvalid');
 
@@ -354,7 +321,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * @throws InvalidRowUpdateTime
      * @throws RowDoesNotExist
      */
-    #[\Override]
+    #[Override]
     public function realUpdateRow(array $theRow): void
     {
         try {
@@ -369,12 +336,10 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Updates the last version of a row marking the change as
      * occurring at the given $timeString
      *
-     * @param array $theRow
-     * @param string $timeString
-     * @return void
      * @throws InvalidRowUpdateTime
      * @throws InvalidTimeStringException
      * @throws RowDoesNotExist
+     * @param array<string, mixed> $theRow
      */
     public function realUpdateRowWithTime(array $theRow, string $timeString): void
     {
@@ -391,9 +356,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             throw new RowDoesNotExist();
         }
 
-        if ($currentRow[self::FIELD_VALID_FROM] > $timeString) {
+        if ($currentRow[$this->validFromColumn] >= $timeString) {
             // attempt to update a row before the row's last version is valid
-            $this->setError("Row update time is before the row's last version", UnitemporalDataTable::ERROR_INVALID_ROW_UPDATE_TIME);
+            $this->setError("Row update time is before the row's last version", self::ERROR_INVALID_ROW_UPDATE_TIME);
             throw new InvalidRowUpdateTime();
         }
 
@@ -407,7 +372,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         try {
             $this->makeRowInvalid($currentRow, $timeString);
             foreach (array_keys($currentRow) as $key) {
-                if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
+                if ($key === $this->validFromColumn || $key === $this->validUntilColumn) {
                     continue;
                 }
                 if (!array_key_exists($key, $theRow)) {
@@ -438,12 +403,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     /**
      * Returns the sql query needed to get the search results
      *
-     * @param array $searchSpecArray
-     * @param int $searchType
-     * @param int $maxResults
-     * @return string
+     * @param array<int, array<string, mixed>> $searchSpecArray
      */
-    #[\Override]
+    #[Override]
     protected function getSearchSqlQuery(array $searchSpecArray, int $searchType, int $maxResults): string
     {
 
@@ -452,7 +414,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             $conditions[] = $this->getSqlConditionFromSpec($spec);
         }
         $sqlLogicalOperator = 'AND';
-        if ($searchType == self::SEARCH_OR) {
+        if ($searchType === self::SEARCH_OR) {
             $sqlLogicalOperator = 'OR';
         }
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE '
@@ -460,7 +422,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
         $eot = TimeString::END_OF_TIMES;
 
-        $sql .= ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '=' . $this->quoteValue($eot);
+        $sql .= ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '=' . $this->quoteValue($eot);
 
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
@@ -469,7 +431,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $sql;
     }
 
-    #[\Override]
+    #[Override]
     public function getAllRows(): ResultsIterator
     {
         try {
@@ -490,19 +452,22 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $timeString = $this->getValidTimeString($timeString, 'getAllRowsWithTime');
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
-            ' WHERE ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+            ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
 
         return new PdoResultsIterator($this->doQuery($sql, 'getAllRowsWithTime'), $this->idColumnName);
     }
 
-    #[\Override]
+    #[Override]
     public function getRow(int $rowId): ?array
     {
         $this->resetError();
         return $this->realGetRow($rowId, true);
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function realGetRow(int $rowId, bool $stripTimeInfo = false): ?array
     {
 
@@ -516,14 +481,15 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
             return null;
         }
         if ($stripTimeInfo) {
-            unset($theRow[self::FIELD_VALID_FROM]);
-            unset($theRow[self::FIELD_VALID_UNTIL]);
+            unset($theRow[$this->validFromColumn]);
+            unset($theRow[$this->validUntilColumn]);
         }
         return $theRow;
     }
 
 
     /**
+     * @return array<string, mixed>|null
      * @throws InvalidTimeStringException
      */
     public function getRowWithTime(int $rowId, string $timeString): ?array
@@ -535,8 +501,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
             ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->idColumnName) . '=' . $rowId .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString .
             ' LIMIT 1';
 
         $r = $this->doQuery($sql, 'getRowWithTime');
@@ -550,7 +516,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         return $res;
     }
 
-    #[\Override]
+    #[Override]
     public function findRows(array $rowToMatch, int $maxResults = 0): ResultsIterator
     {
         try {
@@ -564,8 +530,9 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     /**
      * @throws InvalidTimeStringException
+     * @param array<string, mixed> $theRow
      */
-    public function findRowsWithTime($theRow, $maxResults, string $timeString): ResultsIterator
+    public function findRowsWithTime(array $theRow, int $maxResults, string $timeString): ResultsIterator
     {
         $this->resetError();
 
@@ -574,7 +541,7 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $keys = array_keys($theRow);
         $conditions = [];
         foreach ($keys as $key) {
-            if ($key === self::FIELD_VALID_FROM or $key === self::FIELD_VALID_UNTIL) {
+            if ($key === $this->validFromColumn || $key === $this->validUntilColumn) {
                 // Ignore time info keys
                 continue;
             }
@@ -589,8 +556,8 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
         $quotedTimeString = $this->quoteValue($timeString);
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE ' .
             implode(' AND ', $conditions) .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM) . '<=' . $quotedTimeString .
-            ' AND ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_UNTIL) . '>' . $quotedTimeString;
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
 
         if ($maxResults > 0) {
             $sql .= ' LIMIT ' . $maxResults;
@@ -628,13 +595,13 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
     }
 
 
-    #[\Override]
+    #[Override]
     public function deleteRow(int $rowId): int
     {
         try {
             return $this->deleteRowWithTime($rowId, TimeString::now());
-        } catch (InvalidTimeStringException) { // @codeCoverageIgnore
-            throw new RuntimeException('deleteRow should never throw an exception'); // @codeCoverageIgnore
+        } catch (InvalidTimeStringException|InvalidRowUpdateTime $e) { // @codeCoverageIgnore
+            throw new RuntimeException('Unexpected error in deleteRow', $e->getCode(), $e); // @codeCoverageIgnore
         }
     }
 
@@ -646,16 +613,19 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      *
      * Returns 1 if the row was deleted, 0 if the row did not exist in the first place.
      *
-     * @param int $rowId
-     * @param string $timeString
-     * @return int
      * @throws InvalidTimeStringException
+     * @throws InvalidRowUpdateTime
      */
     public function deleteRowWithTime(int $rowId, string $timeString): int
     {
+        $timeString = $this->getValidTimeString($timeString, 'deleteRowWithTime');
         $oldRow = $this->realGetRow($rowId);
         if ($oldRow === null) {
             return 0;
+        }
+        if ($timeString <= $oldRow[$this->validFromColumn]) {
+            $this->setError('The given time is not later than the last version of the row', self::ERROR_INVALID_ROW_UPDATE_TIME);
+            throw new InvalidRowUpdateTime("The given time is not later than the last version of the row");
         }
         $this->makeRowInvalid($oldRow, $timeString);
         return 1;
@@ -682,15 +652,58 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
 
     }
 
+    /**
+     * @param array<int, array<string, mixed>> $searchSpecArray
+     * @throws InvalidSearchSpec
+     * @throws InvalidSearchType
+     * @throws InvalidTimeStringException
+     */
     public function searchWithTime(array $searchSpecArray, int $searchType, string $timeString, int $maxResults = 0): ResultsIterator
     {
-        // TODO: implement searchWithTime
-        $this->setError('Full search with time not implemented yet', self::ERROR_NOT_IMPLEMENTED);
-        return new ArrayResultsIterator([]);
+        $this->checkSpec($searchSpecArray, $searchType);
+        try {
+            $timeString = TimeString::fromString($timeString);
+        } catch (InvalidTimeZoneException|MalformedStringException) {
+            $this->throwExceptionForInvalidTime($timeString, 'searchWithTime');
+        }
+
+        $conditions = [];
+        foreach ($searchSpecArray as $spec) {
+            $conditions[] = $this->getSqlConditionFromSpec($spec);
+        }
+        $sqlLogicalOperator = $searchType === self::SEARCH_OR ? ' OR ' : ' AND ';
+        $quotedTimeString = $this->quoteValue($timeString);
+        $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) . ' WHERE (' .
+            implode($sqlLogicalOperator, $conditions) . ')' .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn) . '<=' . $quotedTimeString .
+            ' AND ' . $this->sqlDialect->quoteIdentifier($this->validUntilColumn) . '>' . $quotedTimeString;
+
+        if ($maxResults > 0) {
+            $sql .= ' LIMIT ' . $maxResults;
+        }
+
+        return new PdoResultsIterator($this->doQuery($sql, 'searchWithTime'), $this->idColumnName);
 
     }
 
+    #[Override]
+    public function search(array $searchSpecArray, int $searchType = self::SEARCH_AND, int $maxResults = 0): ResultsIterator
+    {
+        try {
+            return $this->searchWithTime($searchSpecArray, $searchType, TimeString::now(), $maxResults);
+        } catch (InvalidTimeStringException $e) {
+            throw new RuntimeException("Unexpected error: " . $e->getMessage(), $e->getCode(), $e);
+        }
+    }
 
+
+    /**
+     * @param array<string, mixed> $theRow
+     * @throws InvalidRowForUpdate
+     * @throws InvalidRowUpdateTime
+     * @throws InvalidTimeStringException
+     * @throws RowDoesNotExist
+     */
     public function updateRowWithTime(array $theRow, string $timeString): void
     {
         $this->resetError();
@@ -705,15 +718,14 @@ class PdoUnitemporalDataTable extends PdoDataTable implements UnitemporalDataTab
      * Each version has the same fields as any row in the datatable plus
      *  'valid_from' and a 'valid_until' fields.
      *
-     * @param int $rowId
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws RowDoesNotExist
      */
     public function getRowHistory(int $rowId): array
     {
         $sql = 'SELECT * FROM ' . $this->sqlDialect->quoteIdentifier($this->tableName) .
             ' WHERE ' . $this->sqlDialect->quoteIdentifier($this->idColumnName) . '=' . $rowId .
-            ' ORDER BY ' . $this->sqlDialect->quoteIdentifier(self::FIELD_VALID_FROM);
+            ' ORDER BY ' . $this->sqlDialect->quoteIdentifier($this->validFromColumn);
 
         $r = $this->doQuery($sql, 'getRowHistory');
         if ($r->rowCount() === 0) {

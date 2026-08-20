@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -30,10 +32,13 @@ use ThomasInstitut\DataTable\IdGenerator\SequentialIdGenerator;
 use ThomasInstitut\DataTable\ReferenceTests\DataTableReferenceTestCase;
 
 #[CoversClass(InMemoryDataTable::class)]
-class InMemoryDataTableTest extends DataTableReferenceTestCase
+final class InMemoryDataTableTest extends DataTableReferenceTestCase
 {
 
     static private ?InMemoryDataTable $motherTable = null;
+    /**
+     * @var array<int, array<string, mixed>>|null
+     */
     static private ?array $theData = null;
 
     public function multipleDataAccessSessionsAvailable(): bool
@@ -43,7 +48,7 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
 
     public function getTestDataTable(bool $resetTable = true, bool $newSession = false) : DataTable
     {
-        if (self::$motherTable === null) {  // first table to serve
+        if (!self::$motherTable instanceof \ThomasInstitut\DataTable\InMemoryDataTable) {  // first table to serve
             self::$theData = [];
             self::$motherTable = new InMemoryDataTable(self::$theData);
             $dt = self::$motherTable;
@@ -59,7 +64,7 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
     public function testEmptyDataInitialization(): void
     {
          $dataTable = new InMemoryDataTable();
-        $this->assertEquals(0, $dataTable->getAllRows()->count());
+        $this->assertCount(0, $dataTable->getAllRows());
     }
 
     public function testIdGeneratorInitialization(): void
@@ -68,6 +73,6 @@ class InMemoryDataTableTest extends DataTableReferenceTestCase
         $data = [];
         $dataTable = new InMemoryDataTable($data, $idGenerator);
         $rowId = $dataTable->createRow(['name' => 'test']);
-        $this->assertEquals(1, $rowId);
+        $this->assertSame(1, $rowId);
     }
 }

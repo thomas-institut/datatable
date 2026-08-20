@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /*
  * The MIT License
  *
@@ -22,7 +25,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 namespace ThomasInstitut\DataTable\IdGenerator;
 
 
@@ -46,7 +48,7 @@ class RandomIdGenerator implements IdGenerator
             try {
                 $theId = random_int($this->minId, $this->maxId);
             } catch (Exception $e) {  // @codeCoverageIgnore
-                throw new RuntimeException($e->getMessage(), self::ERROR_RANDOM_NUMBER_GENERATOR_ERROR); // @codeCoverageIgnore
+                throw new RuntimeException($e->getMessage(), self::ERROR_RANDOM_NUMBER_GENERATOR_ERROR, $e); // @codeCoverageIgnore
             }
             if (!$dataTable->rowExists($theId)) {
                 return $theId;

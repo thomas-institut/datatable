@@ -1,17 +1,22 @@
 <?php
 
-
+declare(strict_types=1);
 
 namespace ThomasInstitut\DataTable;
 
+use Override;
 use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Test;
+use ThomasInstitut\DataTable\Exception\InvalidArgumentException;
+use ThomasInstitut\DataTable\Exception\InvalidTimeStringException;
+use ThomasInstitut\DataTable\Exception\RowAlreadyExists;
 use ThomasInstitut\DataTable\PdoProvider\PdoProvider;
 use ThomasInstitut\DataTable\ReferenceTests\PdoUnitemporalDataTableReferenceTestCase;
 
 
 #[CoversClass(MySqlUnitemporalDataTable::class)]
-class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTestCase
+final class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTestCase
 {
 
     public int $numRows = 100;
@@ -60,39 +65,28 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return 'row_id';
     }
 
-    protected function constructPdoUnitemporalDataTable(PDO $pdo): PdoUnitemporalDataTable
+    protected function constructPdoUnitemporalDataTable(PDO $pdo): MySqlUnitemporalDataTable
     {
         return new MySqlUnitemporalDataTable($pdo, $this->getTableName(), $this->getIdColumnName());
     }
 
-    protected function constructPdoUnitemporalDataTableForTable(PDO|PdoProvider $pdoOrProvider, string $tableName): PdoUnitemporalDataTable
+    protected function constructPdoUnitemporalDataTableForTable(PDO|PdoProvider $pdoOrProvider, string $tableName): MySqlUnitemporalDataTable
     {
         return new MySqlUnitemporalDataTable($pdoOrProvider, $tableName, $this->getIdColumnName());
     }
 
-    protected function getMockColumnInfoResponse(): array
+    #[Override]
+    public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoUnitemporalDataTable
     {
-        return ['Type' => 'int'];
-    }
-
-    protected function getMockDatetimeColumnInfoResponse(): array
-    {
-        return ['Type' => 'datetime'];
-    }
-
-    public function getTestDataTable(bool $resetTable = true, bool $newSession = false): PdoDataTable
-    {
-        if (self::$motherSession === null) {
+        if (!self::$motherSession instanceof PDO) {
             self::$motherSession = $this->getPdo();
             $pdo = self::$motherSession;
             self::$pdoCount = 1;
+        } elseif ($newSession) {
+            $pdo = $this->getPdo();
+            self::$pdoCount++;
         } else {
-            if ($newSession) {
-                $pdo = $this->getPdo();
-                self::$pdoCount++;
-            } else {
-                $pdo = self::$motherSession;
-            }
+            $pdo = self::$motherSession;
         }
 
         if ($resetTable) {
@@ -102,7 +96,7 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return $this->constructPdoDataTable($pdo);
     }
 
-    protected function getRestrictedDt(): PdoDataTable
+    protected function getRestrictedDt(): MySqlUnitemporalDataTable
     {
         $restrictedPdo = $this->getRestrictedPdo();
         return new MySqlUnitemporalDataTable($restrictedPdo, $this->getTableName(), $this->getIdColumnName());
@@ -122,17 +116,17 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
         return new PDO($dsn, 'restricted', 'restricted');
     }
 
-    protected function resetTestDb(PDO $pdo, bool $autoInc = false): void
+    protected function resetTestDb(PDO $pdo): void
     {
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
         $otherStringCol = self::STRING_COLUMN_2;
         $tableName = $this->getTableName();
         $idCol = $this->getIdColumnName();
-        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
+        $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
-        $tableSetupSQL =<<<EOD
+        $tableSetupSQL = <<<EOD
             DROP TABLE IF EXISTS `$tableName`;
             CREATE TABLE IF NOT EXISTS `$tableName` (
               $idCol int(11) UNSIGNED NOT NULL,
@@ -146,17 +140,17 @@ class MySqlUnitemporalDataTableTest extends PdoUnitemporalDataTableReferenceTest
 EOD;
         $pdo->query($tableSetupSQL);
     }
-    
+
     protected function resetTestDbWithBadTables(PDO $pdo): void
     {
 
         $intCol = self::INT_COLUMN;
         $stringCol = self::STRING_COLUMN;
-        $idCol =  $this->getIdColumnName();
-        $validFromCol = PdoUnitemporalDataTable::FIELD_VALID_FROM;
-        $validUntilCol = PdoUnitemporalDataTable::FIELD_VALID_UNTIL;
+        $idCol = $this->getIdColumnName();
+        $validFromCol = UnitemporalDataTable::DEFAULT_VALID_FROM_COLUMN;
+        $validUntilCol = UnitemporalDataTable::DEFAULT_VALID_UNTIL_COLUMN;
 
-        $tableSetupSQL =<<<EOD
+        $tableSetupSQL = <<<EOD
             DROP TABLE IF EXISTS `test_table_bad_1`;
             CREATE TABLE IF NOT EXISTS `test_table_bad_1` (
               $idCol varchar(100) NOT NULL,
@@ -201,5 +195,52 @@ EOD;
             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;  
 EOD;
         $pdo->query($tableSetupSQL);
+    }
+
+    /**
+     * @throws InvalidTimeStringException
+     * @throws RowAlreadyExists
+     * @throws InvalidArgumentException
+     */
+    #[Test]
+    public function testCustomValidTimeColumnNames(): void
+    {
+        $pdo = $this->getPdo();
+        $tableName = 'dt_test_table_custom_time_columns';
+        $idColumn = $this->getIdColumnName();
+        $validFromColumn = 'created_at';
+        $validUntilColumn = 'expired_at';
+
+        $pdo->exec("DROP TABLE IF EXISTS `$tableName`");
+        $pdo->exec("CREATE TABLE `$tableName` (
+            `$idColumn` int(11) UNSIGNED NOT NULL,
+            `$validFromColumn` datetime(6) NOT NULL,
+            `$validUntilColumn` datetime(6) NOT NULL,
+            `a_string` varchar(100) DEFAULT NULL,
+            PRIMARY KEY (`$idColumn`, `$validFromColumn`, `$validUntilColumn`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1");
+
+        $table = new MySqlUnitemporalDataTable(
+            $pdo,
+            $tableName,
+            $idColumn,
+            $validFromColumn,
+            $validUntilColumn
+        );
+        $rowId = $table->createRowWithTime(['a_string' => 'custom'], '2010-01-01');
+        $row = $table->getRowWithTime($rowId, '2010-01-02');
+        if ($row === null) {
+            $this->fail("Null value when getting just created row with time");
+        }
+
+        $this->assertSame($validFromColumn, $table->getValidFromColumnName());
+        $this->assertSame($validUntilColumn, $table->getValidUntilColumnName());
+        $this->assertSame('2010-01-01 00:00:00.000000', $row[$validFromColumn]);
+        $this->assertSame('9999-12-31 23:59:59.999999', $row[$validUntilColumn]);
+    }
+
+    public function getTestUnitemporalDataTable(bool $resetTable = true, bool $newSession = false): UnitemporalDataTable
+    {
+        return $this->getTestDataTable($resetTable, $newSession);
     }
 }
